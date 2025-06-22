@@ -2,7 +2,7 @@
  * src/services/authService.js
  * ===========================
  * Encapsula toda la lógica de autenticación de la aplicación.
- * Proporciona una capa de abstracción sobre el cliente de Supabase.
+ * Ahora propaga los errores de conexión para ser manejados por la UI.
  */
 
 import { supabase } from './supabaseClient.js';
@@ -13,8 +13,18 @@ export const authService = {
      * @returns {Promise<object|null>} El objeto de usuario o null.
      */
     getUser: async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.user ?? null;
+        try {
+            const { data, error } = await supabase.auth.getSession();
+            if (error) {
+                // Si Supabase devuelve un error (ej. red caída), lo lanzamos.
+                throw error;
+            }
+            return data.session?.user ?? null;
+        } catch (e) {
+            // Si ocurre cualquier otra excepción (ej. mala configuración del cliente)
+            console.error("Excepción en authService.getUser:", e);
+            throw new Error(`No se pudo comunicar con el servicio de autenticación. Verifica la conexión y la configuración. (${e.message})`);
+        }
     },
 
     /**
