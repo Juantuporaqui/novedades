@@ -4,8 +4,6 @@
 // para que `specificGroupViewRenderer.js` pueda construir y gestionar el formulario:
 // el HTML de los campos, los contenedores de listas, el mapeo de datos y los manejadores de eventos.
 
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { db } from '../../firebase.js';
 import { getAppId } from '../../services/viewManager.js';
@@ -81,7 +79,8 @@ const getGrupoPendientes = () => getBasicListItems('grupoPendientesList');
  * Genera un PDF con el resumen de datos del Grupo 1 en un rango de fechas.
  */
 async function generateGroup1Pdf() {
-    const doc = new jsPDF();
+   const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
     const desde = document.getElementById('pdfDesde').value;
     const hasta = document.getElementById('pdfHasta').value;
     if (!desde || !hasta) {
