@@ -2,8 +2,7 @@
  * src/views/groupView.js
  * ======================
  * Renderiza la vista detallada para un grupo de trabajo específico.
- * Ahora incluye la generación de formularios, la lógica de guardado y la
- * visualización de registros existentes.
+ * Corregido para leer los datos desde la columna 'data' de tipo JSONB.
  */
 
 import { groups } from '../config/groups.js';
@@ -91,13 +90,12 @@ const buildEntriesListHtml = (entries, fieldsConfig) => {
 
     const rows = entries.map(entry => {
         const cells = fieldsConfig.map(field => {
-            const value = entry[field.id] || '---';
+            // **CORRECCIÓN**: Acceder a los datos desde el campo 'data' (JSONB).
+            const value = entry.data ? (entry.data[field.id] || '---') : '---';
             let displayValue = value;
-            // Corregir la visualización de la fecha para evitar problemas de zona horaria
             if (field.type === 'date' && value !== '---') {
                 displayValue = new Date(value).toLocaleDateString('es-ES', { timeZone: 'UTC' });
             }
-            // Sanitización básica para evitar la inyección de HTML
             const tempDiv = document.createElement('div');
             tempDiv.textContent = displayValue;
             return `<td>${tempDiv.innerHTML}</td>`;
