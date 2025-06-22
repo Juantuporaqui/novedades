@@ -1,0 +1,52 @@
+// views/groupForms/gestionView.js
+// Propósito: Definir la configuración para el formulario del Grupo de Gestión.
+// Exporta un objeto de configuración para el renderer de formularios.
+
+export const getGestionConfig = () => ({
+    formFields: `
+        <div class="mb-4">
+            <label for="descripcionBreve">Resumen del día / Novedad principal</label>
+            <textarea id="descripcionBreve" class="w-full rounded border px-2 py-1" rows="2"></textarea>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label for="menasGestion">MENAs</label>
+                <input type="number" id="menasGestion" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+            <div>
+                <label for="asilosGestion">Asilos</label>
+                <input type="number" id="asilosGestion" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+            <div>
+                <label for="citasOfertadas">Citas ofertadas</label>
+                <input type="number" id="citasOfertadas" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+            <div>
+                <label for="cues">CUEs</label>
+                <input type="number" id="cues" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+            <div>
+                <label for="asignaciones">Asignaciones</label>
+                <input type="number" id="asignaciones" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+            <div>
+                <label for="protecciones">Protecciones</label>
+                <input type="number" id="protecciones" min="0" value="0" class="w-full rounded border px-2 py-1">
+            </div>
+        </div>
+        <div class="mb-4">
+            <label for="observacionesGestion">Observaciones</label>
+            <textarea id="observacionesGestion" class="w-full rounded border px-2 py-1" rows="3"></textarea>
+        </div>
+    `,
+    dataMap: {
+        descripcionBreve: 'descripcionBreve',
+        menasGestion: 'menasGestion',
+        asilosGestion: 'asilosGestion',
+        citasOfertadas: 'citasOfertadas',
+        cues: 'cues',
+        asignaciones: 'asignaciones',
+        protecciones: 'protecciones',
+        observaciones: 'observacionesGestion',
+    },
+});
