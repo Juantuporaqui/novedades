@@ -3,103 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benito - Respaldo de Trabajo</title>
-    <meta name="description" content="Una herramienta simple para respaldar y consultar datos de trabajo.">
-    <link rel="stylesheet" href="style.css">
+    <title>Benito - Gestor de Datos</title>
+    <meta name="description" content="Aplicación para el respaldo, consulta y resumen de datos de trabajo.">
+
+    <!-- Preconexión a Google Fonts para mejorar el rendimiento de carga de la fuente -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Importación de la fuente 'Inter' desde Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="script.js" defer></script>
+    
+    <!-- Enlace al archivo de estilos CSS que crearemos a continuación -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- El script principal de la aplicación se carga como módulo y con 'defer' -->
+    <!-- 'defer' asegura que el script se ejecute después de que el HTML haya sido analizado -->
+    <!-- 'type="module"' nos permite usar 'import' y 'export' en nuestros archivos JS -->
+    <script type="module" src="src/app.js" defer></script>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
 
-    <header class="main-header">
-        <div class="container">
-            <h1>Benito</h1>
-            <p class="subtitle">Tu asistente personal para el registro de trabajo</p>
-        </div>
-    </header>
-
-    <main class="container">
-        <section class="card" id="add-entry-section">
-            <h2>Añadir Nuevo Registro</h2>
-            <form id="entry-form">
-                <div class="form-group">
-                    <label for="entry-title">Título</label>
-                    <input type="text" id="entry-title" required placeholder="Ej: Desarrollo de la API de usuarios">
-                </div>
-                <div class="form-group">
-                    <label for="entry-date">Fecha</label>
-                    <input type="date" id="entry-date" required>
-                </div>
-                <div class="form-group">
-                    <label for="entry-description">Descripción</label>
-                    <textarea id="entry-description" rows="4" required placeholder="Detalles de la tarea realizada..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="entry-hours">Horas Dedicadas (opcional)</label>
-                    <input type="number" id="entry-hours" min="0" step="0.1" placeholder="Ej: 8.5">
-                </div>
-                <button type="submit" class="btn btn-primary">Guardar Registro</button>
-            </form>
-        </section>
-
-        <section class="card" id="summary-section">
-            <h2>Análisis por Fechas</h2>
-            <div class="date-range-filter">
-                <div class="form-group">
-                    <label for="start-date">Desde</label>
-                    <input type="date" id="start-date">
-                </div>
-                <div class="form-group">
-                    <label for="end-date">Hasta</label>
-                    <input type="date" id="end-date">
-                </div>
-                <button id="filter-btn" class="btn">Generar Resumen</button>
-            </div>
-            <div id="summary-result" class="summary-result-container">
-                </div>
-        </section>
-
-        <section id="entries-list-section">
-            <h2>Registros Guardados</h2>
-            <div id="entries-list" class="entries-grid">
-                <p id="no-entries-message">Aún no hay registros. ¡Añade el primero!</p>
-            </div>
-        </section>
-
-        <section class="card" id="data-management-section">
-            <h2>Gestión de Datos</h2>
-            <p>Realiza copias de seguridad de tus datos o importa un respaldo existente.</p>
-            <div class="data-actions">
-                <button id="export-btn" class="btn">Exportar Datos (JSON)</button>
-                <div class="import-wrapper">
-                    <button id="import-btn-proxy" class="btn btn-secondary">Importar Datos (JSON)</button>
-                    <input type="file" id="import-file" accept=".json" class="hidden">
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="main-footer">
-        <div class="container">
-            <p>© 2024 Proyecto Benito. Construido con una arquitectura profesional.</p>
-        </div>
-    </footer>
-
-    <div id="detail-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="modal-close-btn" class="modal-close">×</button>
-            <h3 id="modal-title"></h3>
-            <p id="modal-date"></p>
-            <p id="modal-hours"></p>
-            <div id="modal-description" class="modal-description-box"></div>
-            <button id="modal-delete-btn" class="btn btn-danger">Eliminar Registro</button>
-        </div>
+    <!-- Notificación Toast para feedback al usuario (inicialmente oculta) -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+        <p>Mensaje de notificación</p>
     </div>
 
-    <div id="toast-notification" class="toast hidden"></div>
+    <!-- Contenedor principal de la aplicación -->
+    <!-- La arquitectura SPA significa que todo el contenido se renderizará dinámicamente aquí dentro -->
+    <div id="app-container">
+        <!-- 1. La Vista de Autenticación se renderizará aquí inicialmente -->
+        <!-- 2. Una vez autenticado, el Header, Main y Footer se renderizarán aquí -->
+    </div>
 
 </body>
 </html>
