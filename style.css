@@ -1,35 +1,52 @@
-/* --- RESET Y ESTILOS GLOBALES --- */
-:root {
-    /* Paleta de Colores: Centralizar los colores facilita el mantenimiento y la tematización. */
-    --color-primary: #007bff;
-    --color-primary-dark: #0056b3;
-    --color-secondary: #6c757d;
-    --color-secondary-dark: #5a6268;
-    --color-success: #28a745;
-    --color-danger: #dc3545;
-    --color-danger-dark: #c82333;
-    --color-light: #f8f9fa;
-    --color-dark: #343a40;
-    --color-text: #212529;
-    --color-text-light: #6c757d;
-    --color-border: #dee2e6;
-    --color-background: #f4f7f6;
-    --color-white: #ffffff;
+/*
+ * style.css
+ * =========
+ * Hoja de estilos principal para la aplicación "Benito".
+ * * Arquitectura:
+ * 1. Definición de Variables Globales (Custom Properties) en :root.
+ * 2. Reseteo y Estilos Base.
+ * 3. Clases de Utilidad.
+ * 4. Estilos para componentes de la UI (Layout, Tarjetas, Formularios, Botones, Modal, etc.).
+ * 5. Media Queries para Diseño Responsivo.
+ *
+ */
 
-    /* Tipografía: Usar unidades relativas (rem) para fuentes mejora la accesibilidad. */
-    --font-family: 'Inter', sans-serif;
+/* 1. VARIABLES CSS (CUSTOM PROPERTIES) */
+/* ------------------------------------ */
+/* Usar variables nos permite mantener un diseño consistente y facilita */
+/* la implementación de temas (ej. modo oscuro) en el futuro. */
+:root {
+    /* Paleta de Colores Profesional */
+    --color-primary: #3b82f6;      /* Azul principal para acciones */
+    --color-primary-dark: #2563eb; /* Azul más oscuro para :hover */
+    --color-secondary: #6b7280;    /* Gris para texto secundario */
+    --color-success: #16a34a;      /* Verde para notificaciones de éxito */
+    --color-danger: #dc2626;       /* Rojo para acciones destructivas y errores */
+    --color-background: #f3f4f6;   /* Gris muy claro para el fondo */
+    --color-surface: #ffffff;      /* Blanco para las superficies (tarjetas) */
+    --color-text-primary: #1f2937; /* Gris oscuro para el texto principal */
+    --color-text-secondary: #4b5563;/* Gris para texto secundario o descriptivo */
+    --color-border: #d1d5db;       /* Gris claro para los bordes */
+
+    /* Tipografía */
+    --font-family-base: 'Inter', sans-serif;
     --font-size-base: 16px;
     --line-height-base: 1.6;
 
-    /* Espaciado: Un sistema de espaciado consistente crea un ritmo visual agradable. */
-    --spacing-unit: 8px;
+    /* Espaciado */
+    --spacing-unit: 8px; /* Base para un sistema de espaciado consistente (8px grid) */
 
-    /* Bordes y Sombras: Unificar estos valores da un aspecto coherente. */
-    --border-radius: 6px;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Bordes y Sombras */
+    --border-radius-medium: 8px;
+    --border-radius-small: 4px;
+    --box-shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-*, *::before, *::after {
+/* 2. RESETEO Y ESTILOS BASE */
+/* --------------------------- */
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -37,337 +54,102 @@
 
 html {
     font-size: var(--font-size-base);
+    scroll-behavior: smooth;
 }
 
 body {
-    font-family: var(--font-family);
+    font-family: var(--font-family-base);
     line-height: var(--line-height-base);
-    color: var(--color-text);
+    color: var(--color-text-primary);
     background-color: var(--color-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-.container {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 calc(var(--spacing-unit) * 2);
-}
-
-/* --- CLASES DE UTILIDAD --- */
+/* 3. CLASES DE UTILIDAD */
+/* --------------------- */
 .hidden {
-    display: none!important;
+    display: none !important;
 }
 
-/* --- CABECERA Y PIE DE PÁGINA --- */
-.main-header,.main-footer {
-    background-color: var(--color-dark);
-    color: var(--color-light);
-    padding: calc(var(--spacing-unit) * 3) 0;
-    text-align: center;
+/* 4. ESTILOS DE COMPONENTES DE UI */
+/* -------------------------------- */
+
+/* Contenedor Principal */
+#app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: calc(var(--spacing-unit) * 4);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-.main-header h1 {
-    margin-bottom: var(--spacing-unit);
+/* Notificación Toast */
+#toast-notification {
+    position: fixed;
+    bottom: calc(var(--spacing-unit) * 3);
+    right: calc(var(--spacing-unit) * 3);
+    padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3);
+    background-color: var(--color-text-primary);
+    color: var(--color-surface);
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--box-shadow-medium);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.main-header.subtitle {
-    color: var(--color-text-light);
-    font-weight: 400;
+#toast-notification.show {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.main-footer {
-    margin-top: calc(var(--spacing-unit) * 4);
-    padding: calc(var(--spacing-unit) * 2) 0;
-    font-size: 0.9em;
+#toast-notification.success {
+    background-color: var(--color-success);
 }
 
-/* --- COMPONENTES PRINCIPALES --- */
-main.container {
-    padding-top: calc(var(--spacing-unit) * 4);
-    padding-bottom: calc(var(--spacing-unit) * 4);
-    display: grid;
-    gap: calc(var(--spacing-unit) * 4);
+#toast-notification.error {
+    background-color: var(--color-danger);
 }
 
-.card {
-    background-color: var(--color-white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: calc(var(--spacing-unit) * 3);
-}
+/* Estilos para futuros componentes que inyectaremos con JS */
+/* (Header, Formularios, Tarjetas, Botones, etc.) */
 
-section h2 {
-    margin-bottom: calc(var(--spacing-unit) * 2);
-    border-bottom: 2px solid var(--color-primary);
-    padding-bottom: var(--spacing-unit);
-    color: var(--color-dark);
-}
-
-/* --- FORMULARIOS --- */
-.form-group {
-    margin-bottom: calc(var(--spacing-unit) * 2);
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: var(--spacing-unit);
-    font-weight: 500;
-}
-
-.form-group input[type="text"],
-.form-group input[type="date"],
-.form-group input[type="number"],
-.form-group textarea {
-    width: 100%;
-    padding: calc(var(--spacing-unit) * 1.5);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-family: inherit;
-    font-size: 1em;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-}
-
-/* --- BOTONES --- */
+/* Ejemplo de cómo definiremos un botón */
 .btn {
     display: inline-block;
-    padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3);
+    padding: calc(var(--spacing-unit) * 1.25) calc(var(--spacing-unit) * 2.5);
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-medium);
     font-family: inherit;
-    font-size: 1em;
+    font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
     text-align: center;
     text-decoration: none;
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .btn-primary {
     background-color: var(--color-primary);
-    color: var(--color-white);
+    color: var(--color-surface);
 }
 
 .btn-primary:hover {
     background-color: var(--color-primary-dark);
 }
 
-.btn-secondary {
-    background-color: var(--color-secondary);
-    color: var(--color-white);
-}
-
-.btn-secondary:hover {
-    background-color: var(--color-secondary-dark);
-}
-
-.btn-danger {
-    background-color: var(--color-danger);
-    color: var(--color-white);
-}
-
-.btn-danger:hover {
-    background-color: var(--color-danger-dark);
-}
-
-/* --- SECCIÓN DE RESUMEN --- */
-.date-range-filter {
-    display: flex;
-    gap: calc(var(--spacing-unit) * 2);
-    align-items: flex-end;
-    flex-wrap: wrap;
-    margin-bottom: calc(var(--spacing-unit) * 2);
-}
-
-.summary-result-container {
-    background-color: var(--color-light);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: calc(var(--spacing-unit) * 2);
-    margin-top: calc(var(--spacing-unit) * 2);
-    min-height: 50px;
-}
-
-.summary-result-container p {
-    margin: 0;
-}
-
-/* --- LISTA DE REGISTROS --- */
-.entries-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: calc(var(--spacing-unit) * 3);
-}
-
-.entry-card {
-    background-color: var(--color-white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: calc(var(--spacing-unit) * 2);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border-left: 5px solid var(--color-secondary);
-}
-
-.entry-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-}
-
-.entry-card__title {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--color-dark);
-    margin-bottom: var(--spacing-unit);
-}
-
-.entry-card__date {
-    font-size: 0.9em;
-    color: var(--color-text-light);
-}
-
-#no-entries-message {
-    color: var(--color-text-light);
-    font-style: italic;
-}
-
-/* --- GESTIÓN DE DATOS --- */
-.data-actions {
-    display: flex;
-    gap: calc(var(--spacing-unit) * 2);
-    margin-top: var(--spacing-unit);
-}
-
-.import-wrapper {
-    position: relative;
-    overflow: hidden;
-    display: inline-block;
-}
-
-#import-file {
-    position: absolute;
-    left: 0;
-    top: 0;
-    opacity: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-}
-
-/* --- MODAL --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.modal-overlay:not(.hidden) {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.modal-content {
-    background-color: var(--color-white);
-    padding: calc(var(--spacing-unit) * 4);
-    border-radius: var(--border-radius);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    width: 90%;
-    max-width: 600px;
-    position: relative;
-    transform: scale(0.95);
-    transition: transform 0.3s ease;
-}
-
-.modal-overlay:not(.hidden).modal-content {
-    transform: scale(1);
-}
-
-.modal-close {
-    position: absolute;
-    top: var(--spacing-unit);
-    right: calc(var(--spacing-unit) * 2);
-    background: none;
-    border: none;
-    font-size: 2em;
-    cursor: pointer;
-    color: var(--color-text-light);
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    margin-bottom: var(--spacing-unit);
-    color: var(--color-primary);
-}
-
-.modal-content #modal-date,
-.modal-content #modal-hours {
-    color: var(--color-text-light);
-    margin-bottom: calc(var(--spacing-unit) * 2);
-}
-
-.modal-description-box {
-    background-color: var(--color-light);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: calc(var(--spacing-unit) * 2);
-    margin-bottom: calc(var(--spacing-unit) * 3);
-    max-height: 200px;
-    overflow-y: auto;
-    white-space: pre-wrap; /* Respeta saltos de línea y espacios */
-    word-wrap: break-word;
-}
-
-/* --- NOTIFICACIÓN TOAST --- */
-.toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--color-dark);
-    color: var(--color-white);
-    padding: var(--spacing-unit) calc(var(--spacing-unit) * 2);
-    border-radius: var(--border-radius);
-    z-index: 1001;
-    opacity: 0;
-    transition: opacity 0.3s, bottom 0.3s;
-    pointer-events: none;
-}
-
-.toast.show {
-    opacity: 1;
-    bottom: 30px;
-}
-
-/* --- DISEÑO RESPONSIVE --- */
+/* 5. DISEÑO RESPONSIVO */
+/* -------------------- */
 @media (max-width: 768px) {
-  .date-range-filter {
-        flex-direction: column;
-        align-items: stretch;
+    #app-container {
+        padding: calc(var(--spacing-unit) * 2);
     }
-    
-  .date-range-filter.form-group,
-  .date-range-filter.btn {
-        width: 100%;
+
+    html {
+        /* Hacemos la fuente un poco más pequeña en móviles para mejor ajuste */
+        font-size: 15px;
     }
 }
