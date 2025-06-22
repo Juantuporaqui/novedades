@@ -2,7 +2,7 @@
  * src/services/dataService.js
  * ===========================
  * Módulo para todas las operaciones de base de datos (CRUD).
- * Abstrae la comunicación con Supabase para los datos de la aplicación.
+ * Corregido para usar la columna 'data' de tipo JSONB.
  */
 
 import { supabase } from './supabaseClient.js';
@@ -21,10 +21,12 @@ export const dataService = {
             return { data: null, error: { message: 'Usuario no autenticado. No se puede guardar.' } };
         }
 
+        // Estructura de datos correcta para la tabla 'entries'.
+        // Todos los datos del formulario se anidan dentro de la columna 'data'.
         const dataToInsert = {
-            ...entryData, // Contiene los campos del formulario
             group_id: groupId,
             user_id: user.id,
+            data: entryData, 
         };
 
         const { data, error } = await supabase
