@@ -3,20 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prueba de Carga</title>
-</head>
-<body style="font-family: sans-serif; background-color: #f0f0f0; margin: 0; padding: 2rem;">
+    <title>Benito - Gestor de Datos</title>
+    <meta name="description" content="Aplicación para el respaldo, consulta y resumen de datos de trabajo.">
 
-    <div style="max-width: 600px; margin: 2rem auto; padding: 2rem; background-color: #e0f2fe; border: 2px solid #7dd3fc; border-radius: 8px; text-align: center;">
-        <h1 style="color: #0c4a6e; margin-top: 0;">PRUEBA DEFINITIVA</h1>
-        <p style="color: #0369a1; font-size: 1.1rem;">
-            Si puedes ver este mensaje con fondo azul, significa que estás abriendo y viendo el archivo <strong>index.html correcto</strong> del nuevo proyecto.
-        </p>
-        <p style="color: #075985; margin-bottom: 0;">
-            Si ves esto, avísame y restauraremos el código original para continuar.
-        </p>
+    <!-- Preconexión a Google Fonts para mejorar el rendimiento de carga de la fuente -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Importación de la fuente 'Inter' desde Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Enlace al archivo de estilos CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- El script principal de la aplicación se carga como módulo y con 'defer' -->
+    <script type="module" src="src/app.js" defer></script>
+</head>
+<body style="background-color: #f3f4f6; color: #1f2937;">
+
+    <!-- Notificación Toast para feedback al usuario (inicialmente oculta) -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300" style="position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; z-index: 1000; transition: opacity 0.3s ease; opacity: 0;">
+        <p>Mensaje de notificación</p>
+    </div>
+
+    <!-- Contenedor principal de la aplicación -->
+    <!-- La arquitectura SPA significa que todo el contenido se renderizará dinámicamente aquí dentro -->
+    <div id="app-container">
+        <!-- El script src/app.js se encargará de rellenar este contenedor. -->
     </div>
 
 </body>
 </html>
-
