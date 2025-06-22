@@ -27,9 +27,6 @@ export const dataService = {
             user_id: user.id,
         };
 
-        // 'entries' es el nombre de nuestra tabla principal en Supabase.
-        // Asegúrate de que esta tabla exista en tu proyecto de Supabase con las
-        // columnas correspondientes a los campos del formulario, más 'group_id' y 'user_id'.
         const { data, error } = await supabase
             .from('entries')
             .insert([dataToInsert])
@@ -39,11 +36,23 @@ export const dataService = {
     },
 
     /**
-     * Obtiene los registros para un grupo específico.
-     * (Se implementará en un paso futuro)
+     * Obtiene los registros para un grupo específico, ordenados por fecha de creación.
+     * @param {string} groupId - El ID del grupo.
+     * @returns {Promise<{data: Array, error: object}>}
      */
     getEntries: async (groupId) => {
-        console.log(`Función getEntries para ${groupId} aún no implementada.`);
-        return Promise.resolve({ data: [], error: null });
+        const user = await authService.getUser();
+        if (!user) {
+            return { data: [], error: { message: 'Usuario no autenticado.' } };
+        }
+
+        const { data, error } = await supabase
+            .from('entries')
+            .select('*')
+            .eq('group_id', groupId)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        return { data, error };
     }
 };
