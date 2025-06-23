@@ -1,0 +1,140 @@
+html, body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: linear-gradient(135deg, #cbefff 60%, #e6f3fa 100%);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  color: #193559;
+}
+.puerto-header {
+  display: flex;
+  align-items: center;
+  gap: 1.7rem;
+  padding: 1.3rem 2.3rem 0.6rem 2.3rem;
+  background: transparent;
+}
+.puerto-logo img, .puerto-logo span {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 18px #26bbec3b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.puerto-title {
+  display: flex;
+  flex-direction: column;
+}
+.title-main {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #079cd8;
+  letter-spacing: 1.1px;
+}
+.title-desc {
+  font-size: 1.03rem;
+  color: #155475;
+  font-weight: 600;
+}
+.main-container {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 10px 0 70px 0;
+}
+.panel.panel-glass {
+  background: rgba(255,255,255,0.97);
+  border-radius: 2rem;
+  box-shadow: 0 7px 28px #079cd82a, 0 1px 1.5px #fff9 inset;
+  padding: 2rem 2.2rem 1.5rem 2.2rem;
+  margin-bottom: 2.3rem;
+  transition: box-shadow .19s;
+}
+.row-cols { margin-bottom: 1.05rem; }
+.form-control, .input-date, select {
+  font-size: 1.1rem;
+  border-radius: 1rem;
+  border: 1.2px solid #b9e9f8;
+  padding: 10px 15px;
+  outline: none;
+  margin-bottom: 0;
+  background: #f6fdff;
+  color: #15498e;
+  transition: border .12s;
+}
+.form-control:focus, .input-date:focus, select:focus { border-color: #079cd8; }
+.control-group {
+  margin-bottom: 1.12rem;
+}
+.control-group label {
+  font-weight: bold;
+  color: #268fc5;
+  font-size: 1.06rem;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+textarea.form-control { min-height: 48px; }
+.action-buttons {
+  display: flex;
+  gap: 1.2rem;
+  margin-top: 1.3rem;
+  justify-content: flex-end;
+}
+.btn-guardar, .btn-pdf {
+  background: linear-gradient(90deg, #079cd8 70%, #5bd7f8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  font-size: 1.13rem;
+  font-weight: bold;
+  padding: 11px 30px;
+  box-shadow: 0 4px 18px #079cd824;
+  cursor: pointer;
+  transition: background .13s, box-shadow .13s, transform .13s;
+}
+.btn-guardar:hover, .btn-pdf:hover {
+  background: linear-gradient(90deg, #0485b8 70%, #8af9e8 100%);
+  box-shadow: 0 8px 32px #079cd82b;
+  transform: scale(1.04);
+}
+input[type="file"] {
+  background: transparent;
+  padding: 7px 0;
+  border: none;
+  font-size: 1.06rem;
+}
+input[type="file"]:focus { outline: 1.5px solid #079cd8;}
+#panelResumenPuerto {
+  margin-top: 2.4rem;
+}
+#resumenPuerto {
+  background: #f5fbfe;
+  border-radius: 1rem;
+  min-height: 40px;
+  padding: 15px 16px;
+  font-size: 1.09rem;
+  color: #1d355e;
+  box-shadow: 0 1px 8px #079cd817;
+}
+.footer {
+  width: 100%;
+  background: #18509e;
+  color: #fff;
+  text-align: right;
+  font-size: 1.05rem;
+  padding: 17px 32px 13px 0;
+  border-top-left-radius: 2.3rem;
+  letter-spacing: 0.08em;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+}
+@media (max-width: 700px) {
+  .main-container, .panel.panel-glass { padding-left: 2vw; padding-right: 2vw;}
+  .puerto-header { padding: 1.1rem 1vw 1rem 2vw;}
+}
+@media (max-width: 570px) {
+  .main-container { padding: 5px 1vw 60px 1vw;}
+  .panel.panel-glass { padding: 1rem 2vw 1rem 2vw;}
+  .footer { font-size: .97rem; padding-right: 7px;}
+}
