@@ -1,0 +1,172 @@
+:root {
+  --police-blue: #14224b;
+  --police-blue-light: #29497a;
+  --police-yellow: #ffd94a;
+  --police-green: #3cb371;
+  --police-red: #ee4444;
+  --police-white: #f8fafc;
+  --police-grey: #e4e9f2;
+  --invest-pink: #e39fc5;
+  --invest-purple: #7856ff;
+  --invest-brown: #a78c65;
+}
+
+body.bg-police {
+  background: linear-gradient(135deg, #20366c 70%, #46608e 100%);
+  min-height: 100vh;
+}
+
+.bg-police-blue { background: var(--police-blue) !important; }
+.bg-police-dark { background: #182b4d !important; }
+.text-police-blue { color: var(--police-blue) !important; }
+.text-police-yellow { color: var(--police-yellow) !important; }
+.text-purple { color: var(--invest-purple) !important; }
+.text-pink { color: var(--invest-pink) !important; }
+.text-brown { color: var(--invest-brown) !important; }
+
+.card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 3px 18px 0 #14224b22;
+  background: #f8fafc;
+}
+
+.card .form-label,
+.accordion .form-label {
+  color: var(--police-blue);
+  font-weight: 600;
+  letter-spacing: .01em;
+  font-size: 1.01rem;
+}
+
+input[type='text'], input[type='number'], input[type='date'], .form-control, .form-select, textarea {
+  border-radius: 10px !important;
+  border: 1.3px solid #b1bdd9 !important;
+  font-size: 1.09rem;
+  min-height: 46px;
+  padding: .55em 1em;
+  background: #f8fafc !important;
+  transition: border .18s, box-shadow .15s;
+}
+input:focus, .form-control:focus, .form-select:focus, textarea:focus {
+  border-color: #29497a !important;
+  box-shadow: 0 0 0 2.5px #29497a30;
+  outline: none;
+}
+
+.btn-police-blue {
+  background: linear-gradient(90deg, #275c99, #14224b 80%);
+  color: #fff;
+  border: none;
+}
+.btn-police-blue:hover, .btn-police-blue:focus {
+  background: linear-gradient(90deg, #466bac, #254473 80%);
+  color: #fff;
+  filter: brightness(1.07);
+}
+.btn-police-yellow {
+  background: linear-gradient(90deg, #ffd94a, #ffe8a1 80%);
+  color: #24385d;
+  font-weight: 600;
+  border: none;
+}
+.btn-police-yellow:hover, .btn-police-yellow:focus {
+  background: #ffe57a;
+  color: #24385d;
+  filter: brightness(1.04);
+}
+
+.ventana-datos {
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 9px;
+  border: 1.2px solid #d1dbeb;
+  box-shadow: 0 1px 8px #29497a14;
+  padding: .65em 1em;
+  margin-bottom: .6em;
+  font-size: .99rem;
+  min-height: 38px;
+}
+.dato-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: .2em;
+  padding-right: .2em;
+  transition: background .13s;
+}
+.dato-item:not(:last-child) {
+  border-bottom: 1px solid #e4e9f2;
+}
+.dato-item:hover, .dato-item:focus-within {
+  background: #eaf0ff;
+}
+
+.dato-item button {
+  opacity: 0.10;
+  transition: opacity .17s;
+}
+.dato-item:hover button, .dato-item:focus-within button {
+  opacity: 1;
+}
+@media (max-width: 768px) {
+  .dato-item button { opacity: 1; }
+}
+
+/* Accordion diseño profesional */
+.accordion-button {
+  font-size: 1.07rem;
+  font-weight: 600;
+  background: #f1f4fa;
+  color: #20366c;
+  border: none;
+  outline: none;
+  box-shadow: none !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+.accordion-button:not(.collapsed) {
+  background: #dbe7ff;
+  color: var(--police-blue);
+  box-shadow: 0 1px 8px #29497a14;
+}
+.accordion-item {
+  background: none;
+  border: none;
+  margin-bottom: 1.2rem;
+  border-radius: 14px;
+}
+.accordion-body {
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+}
+
+.btn,
+.btn-lg {
+  font-size: 1.08rem;
+  border-radius: 9px;
+  box-shadow: 0 1px 9px #29497a18;
+  padding: .6em 1.6em;
+  transition: filter .19s, box-shadow .19s, background .19s;
+}
+.btn:focus { outline: none !important; }
+
+footer.footer.bg-police-blue {
+  background: var(--police-blue);
+  border-top: 3px solid var(--police-yellow);
+  letter-spacing: .03em;
+  font-size: 1.02rem;
+}
+
+input[type="file"].form-control {
+  background: #f5f9fd !important;
+}
+
+@media (max-width: 991px) {
+  .card { padding: 1.2em 1em !important; }
+  .accordion-button { font-size: 1rem; }
+}
+@media (max-width: 576px) {
+  .ventana-datos { max-height: 110px; font-size: .97rem; }
+  .btn { font-size: .96rem; padding: .6em 1.1em; }
+}

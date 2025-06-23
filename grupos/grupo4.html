@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIREX · Grupo 4 Operativo</title>
+  <!-- CSS GRUPO4 -->
+<link rel="stylesheet" href="grupo4.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../img/grupo4.svg">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-operativo">
+  <header class="operativo-header">
+    <div class="operativo-logo">
+      <img src="../img/grupo4.svg" alt="Grupo 4 Operativo" />
+    </div>
+    <div class="operativo-tit">
+      <span class="op-title">GRUPO 4</span>
+      <span class="op-desc">Operativo</span>
+    </div>
+  </header>
+  <main class="main-container">
+    <!-- Fecha -->
+    <section class="panel panel-glass mb-3">
+      <form id="formBusquedaG4" class="row row-cols-1 row-cols-md-2 g-2 align-items-center">
+        <div class="col flex-grow-1">
+          <label class="form-label mb-0 fw-bold">Fecha del registro</label>
+          <input type="date" class="form-control input-date" id="fechaRegistroG4" required />
+        </div>
+        <div class="col-auto d-flex gap-2">
+          <button type="button" class="btn-cargar" id="btnCargarG4"><span class="icon">📂</span> Cargar</button>
+          <button type="button" class="btn-guardar" id="btnGuardarG4"><span class="icon">💾</span> Guardar</button>
+        </div>
+      </form>
+    </section>
+    <!-- Campos dinámicos + cuantificables -->
+    <section class="panel panel-glass mb-3">
+      <!-- Colaboraciones -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Colaboraciones con otros grupos</span>
+          <input type="number" class="campo-cuantia" id="cuantiaColab" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="colabInputG4" placeholder="Descripción..." maxlength="128">
+            <button type="button" class="btn-add" id="btnAddColabG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="colabListG4"></div>
+      </div>
+      <!-- Detenidos -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Detenidos</span>
+          <input type="number" class="campo-cuantia" id="cuantiaDetenidos" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="detenidoMotivoG4" placeholder="Motivo..." maxlength="48">
+            <input type="text" class="form-control" id="detenidoNacionalidadG4" placeholder="Nacionalidad..." maxlength="24">
+            <button type="button" class="btn-add" id="btnAddDetenidoG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="detenidosListG4"></div>
+      </div>
+      <!-- Citados -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Citados</span>
+          <input type="number" class="campo-cuantia" id="cuantiaCitados" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="citadosInputG4" placeholder="Nombre o datos...">
+            <button type="button" class="btn-add" id="btnAddCitadosG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="citadosListG4"></div>
+      </div>
+      <!-- Otras gestiones -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Otras gestiones</span>
+          <input type="number" class="campo-cuantia" id="cuantiaGestiones" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="gestionesInputG4" placeholder="Descripción..." maxlength="128">
+            <button type="button" class="btn-add" id="btnAddGestionesG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="gestionesListG4"></div>
+      </div>
+      <!-- Inspecciones de trabajo -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Inspecciones de trabajo</span>
+          <input type="number" class="campo-cuantia" id="cuantiaInspeccion" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="inspeccionTrabajoInputG4" placeholder="Empresa/Lugar...">
+            <button type="button" class="btn-add" id="btnAddInspeccionTrabajoG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="inspeccionTrabajoListG4"></div>
+      </div>
+      <!-- Otras inspecciones -->
+      <div class="campo-section">
+        <div class="campo-header">
+          <span class="campo-titulo">Otras inspecciones</span>
+          <input type="number" class="campo-cuantia" id="cuantiaOtrasInspecciones" min="0" placeholder="Total">
+          <div class="add-bar">
+            <input type="text" class="form-control" id="otrasInspeccionesInputG4" placeholder="Descripción...">
+            <button type="button" class="btn-add" id="btnAddOtrasInspeccionesG4">+</button>
+          </div>
+        </div>
+        <div class="campo-list" id="otrasInspeccionesListG4"></div>
+      </div>
+    </section>
+    <!-- Resumen -->
+    <section class="panel panel-glass mb-4">
+      <div class="resumen-bar">
+        <label>Resumen entre fechas:</label>
+        <input type="date" id="resumenDesdeG4" class="form-control input-date">
+        <input type="date" id="resumenHastaG4" class="form-control input-date">
+        <button type="button" class="btn-resumen" id="btnGenerarResumenG4"><span class="icon">📊</span> Generar Resumen</button>
+      </div>
+      <div id="resumenContenidoG4" class="resumen-content mt-2"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    SIREX · UCRIF · Grupo 4 &copy; 2025
+  </footer>
+  <script src="grupo4.js"></script>
+</body>
+</html>
