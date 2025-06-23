@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SIREX · Grupo Puerto</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS -->
+  <link rel="stylesheet" href="../css/puerto.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+</head>
+<body class="bg-puerto">
+  <header class="puerto-header">
+    <div class="puerto-logo">
+      <!-- Si tienes un logo SVG propio ponlo aquí. Si no, este emoji queda simpático y es libre -->
+      <span style="font-size:48px; display:inline-block;">⚓️</span>
+    </div>
+    <div class="puerto-title">
+      <span class="title-main">GRUPO PUERTO</span>
+      <span class="title-desc">Control y Estadística Portuaria</span>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Fecha, tipo de control -->
+    <form id="formPuerto" autocomplete="off">
+      <section class="panel panel-glass">
+        <div class="row-cols">
+          <label>Fecha del registro</label>
+          <input type="date" id="fechaPuerto" required class="form-control input-date">
+        </div>
+        <div class="row-cols">
+          <label>Tipo de control</label>
+          <select id="tipoControl" class="form-control" required>
+            <option value="">--Seleccione--</option>
+            <option>General</option>
+            <option>Cruceros</option>
+            <option>Ferry</option>
+            <option>Puerto deportivo</option>
+            <option>Visados</option>
+            <option>Especial</option>
+          </select>
+        </div>
+
+        <div id="camposPuerto">
+          <div class="control-group">
+            <label>Marinos chequedos en Argos</label>
+            <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Nº marinos">
+          </div>
+          <div class="control-group">
+            <label>Control pasaportes marinos</label>
+            <input type="number" min="0" id="controlPasaportes" class="form-control" placeholder="Nº controles">
+          </div>
+          <div class="control-group">
+            <label>Cruceros / Cruceristas</label>
+            <div style="display:flex; gap:12px;">
+              <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros">
+              <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Visados</label>
+            <div style="display:flex; gap:12px;">
+              <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia">
+              <input type="number" min="0" id="visadosCG" class="form-control" placeholder="CG">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Ferry</label>
+            <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px;">
+              <input type="number" min="0" id="ferryEntradas" class="form-control" placeholder="Entradas">
+              <input type="number" min="0" id="ferrySalidas" class="form-control" placeholder="Salidas">
+              <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehículos">
+              <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasajeros">
+              <input type="number" min="0" id="ferryCulminados" class="form-control" placeholder="Culminados EISICS">
+              <input type="number" min="0" id="ferryExcepcionales" class="form-control" placeholder="Entradas excepcionales">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Denegaciones</label>
+            <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Total denegaciones">
+          </div>
+          <div class="control-group">
+            <label>Puerto deportivo</label>
+            <input type="number" min="0" id="puertoDeportivo" class="form-control" placeholder="Nº registros">
+          </div>
+          <div class="control-group">
+            <label>Observaciones</label>
+            <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Adjuntar documentos/imágenes</label>
+          <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+        </div>
+
+        <div class="row-cols align-center">
+          <label>¿Queda alguna tarea pendiente?</label>
+          <select id="tareaPendiente" class="form-control">
+            <option>No</option>
+            <option>Sí</option>
+          </select>
+        </div>
+        <div class="action-buttons">
+          <button type="submit" class="btn-guardar">Guardar Registro</button>
+          <button type="button" class="btn-pdf" id="btnPDF">Imprimir / PDF</button>
+        </div>
+      </section>
+    </form>
+
+    <section class="panel panel-glass mt-4" id="panelResumenPuerto" style="display:none;">
+      <h3>Resumen del día</h3>
+      <div id="resumenPuerto"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    SIREX · UCRIF · Grupo Puerto &copy; 2025
+  </footer>
+  <script src="puerto.js"></script>
+</body>
+</html>
