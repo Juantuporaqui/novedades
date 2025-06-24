@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SIREX · CECOREX · Coordinación</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/cecorex.css">
+</head>
+<body>
+  <header class="cecorex-header">
+    <img src="../img/logo_cnp.png" alt="CNP" class="logo-cnp">
+    <div class="titulo-header">
+      <span class="titulo-main">SIREX · CECOREX</span>
+      <span class="titulo-desc">Coordinación y Estadística</span>
+    </div>
+    <button class="btn-menu" onclick="window.location.href='../index.html'">&larr; Menú</button>
+  </header>
+  <main>
+    <section class="panel panel-glass">
+      <!-- Botonera superior -->
+      <div class="botonera">
+        <select id="registroSelect" class="form-control"></select>
+        <input type="date" id="fechaRegistro" required class="form-control">
+        <button type="button" class="btn-azul" id="btnBuscar"><i class="bi bi-search"></i> Cargar</button>
+        <button type="button" class="btn-gris" id="btnNuevo"><i class="bi bi-plus-circle"></i> Nuevo</button>
+        <button type="button" class="btn-verde" id="btnGuardarTop"><i class="bi bi-save2"></i> Guardar</button>
+      </div>
+
+      <form id="cecorexForm" autocomplete="off">
+        <div class="row-cols">
+          <label for="turno">Turno</label>
+          <select id="turno" class="form-control" required>
+            <option value="">--Seleccione--</option>
+            <option>Mañana</option>
+            <option>Tarde</option>
+            <option>Noche</option>
+          </select>
+        </div>
+        <div class="row-cols">
+          <label for="incoacciones">Incoacciones</label>
+          <input type="text" id="incoacciones" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="consultasTel">Consultas telefónicas</label>
+          <input type="text" id="consultasTel" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="consultasEquipo">Consultas equipo</label>
+          <input type="text" id="consultasEquipo" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="diligenciasInforme">Diligencias informe</label>
+          <input type="text" id="diligenciasInforme" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="ciesConcedidos">CIEs concedidos (por nacionalidad)</label>
+          <input type="text" id="ciesConcedidos" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="ciesDenegados">CIEs denegados (por nacionalidad)</label>
+          <input type="text" id="ciesDenegados" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="menas">MENAs</label>
+          <input type="text" id="menas" class="form-control">
+        </div>
+        <div class="row-cols">
+          <label for="observaciones">Observaciones / Incidencias</label>
+          <textarea id="observaciones" class="form-control"></textarea>
+        </div>
+        <div class="row-cols">
+          <label for="adjuntos">Documentos/Imágenes</label>
+          <input type="file" id="adjuntos" class="form-control" multiple>
+        </div>
+        <div class="row-cols">
+          <label for="tareaPendiente"><b>¿Queda alguna tarea pendiente?</b></label>
+          <select id="tareaPendiente" class="form-control">
+            <option>No</option>
+            <option>Sí</option>
+          </select>
+        </div>
+        <!-- Botón Guardar inferior -->
+        <div class="row-cols" style="text-align:right">
+          <button type="submit" class="btn-verde"><i class="bi bi-save2"></i> Guardar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Resumen por fechas -->
+    <section class="panel panel-glass" id="panelResumenFechas">
+      <h3>Resumen entre fechas</h3>
+      <div class="resumen-fechas-bar">
+        <input type="date" id="desdeResumen" class="form-control">
+        <input type="date" id="hastaResumen" class="form-control">
+        <button class="btn-azul" id="btnResumenFechas"><i class="bi bi-table"></i> Mostrar resumen</button>
+      </div>
+      <div id="resumenFechas"></div>
+    </section>
+
+    <!-- Resumen registro -->
+    <section class="panel panel-glass" id="panelResumen" style="display:none;">
+      <h3>Resumen del registro</h3>
+      <div id="resumen"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    SIREX · CECOREX &copy; 2025
+  </footer>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="../js/cecorex.js"></script>
+</body>
+</html>

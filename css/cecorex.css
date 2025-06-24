@@ -1,0 +1,148 @@
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: linear-gradient(135deg, #e6f3fa 60%, #f6fbff 100%);
+  margin: 0;
+  color: #193559;
+}
+.cecorex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #172747;
+  padding: 1rem 1.3rem;
+  color: #fff;
+}
+.logo-cnp {
+  width: 46px;
+  margin-right: 1.2rem;
+  border-radius: 8px;
+}
+.titulo-header {
+  display: flex; flex-direction: column; flex:1;
+}
+.titulo-main {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #53cdf5;
+  letter-spacing: .03em;
+}
+.titulo-desc {
+  font-size: 1rem;
+  color: #e0f4ff;
+}
+.btn-menu {
+  background: #2d95d6;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 9px 19px;
+  cursor: pointer;
+  transition: background .14s;
+}
+.btn-menu:hover { background: #145899; }
+
+main { max-width: 540px; margin: 0 auto; padding-bottom: 110px;}
+.panel-glass {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 22px #0b4a8022;
+  padding: 1.6em 1.1em;
+  margin-bottom: 2em;
+}
+.botonera {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 1.3em;
+  flex-wrap: wrap;
+}
+.form-control, select {
+  font-size: 1.06rem;
+  border-radius: 9px;
+  border: 1.2px solid #b7e7fd;
+  background: #f8fdff;
+  padding: 8px 13px;
+  margin-bottom: 9px;
+  color: #172747;
+  transition: border .14s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.botonera .form-control,
+.botonera select,
+.botonera input[type="date"] {
+  width: 115px; min-width: 90px; margin-bottom: 0;
+}
+.botonera button {
+  min-width: 108px;
+}
+label { font-weight: 700; color: #197bbd; margin-bottom: 2px;}
+textarea.form-control { min-height: 44px;}
+.btn-azul, .btn-verde, .btn-gris {
+  border: none;
+  border-radius: 10px;
+  font-size: 1.03rem;
+  font-weight: 700;
+  padding: 9px 21px;
+  cursor: pointer;
+  transition: background .14s, box-shadow .13s;
+  margin-right: 3px;
+}
+.btn-azul {
+  background: linear-gradient(90deg, #0096c7 70%, #5bd7f8 100%);
+  color: #fff;
+}
+.btn-verde {
+  background: linear-gradient(90deg, #13ca78 70%, #b3f7cd 100%);
+  color: #fff;
+}
+.btn-gris {
+  background: #4c5463;
+  color: #fff;
+}
+.btn-azul:hover { background: #2267a9; }
+.btn-verde:hover { background: #18925f; }
+.btn-gris:hover { background: #1a1a1e; }
+.row-cols { margin-bottom: 0.7rem;}
+.resumen-fechas-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+#resumenFechas {
+  background: #f4fbff;
+  border-radius: 1rem;
+  padding: 1.1rem 1.3rem;
+  color: #16466a;
+  font-size: 1.04rem;
+  margin-bottom: 1.2rem;
+  overflow-x: auto;
+}
+#resumen {
+  background: #f4fbff;
+  border-radius: 1rem;
+  padding: 1.1rem 1.3rem;
+  color: #16466a;
+  font-size: 1.04rem;
+}
+.footer {
+  background: #172747;
+  color: #fff;
+  text-align: right;
+  font-size: 1.01rem;
+  padding: 15px 19px 11px 0;
+  letter-spacing: .07em;
+  border-top-left-radius: 2.2rem;
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 9;
+}
+@media (max-width:650px) {
+  .panel-glass { padding: 0.7em 1vw; }
+  .footer { font-size: .93rem; padding-right: 7vw;}
+  .botonera .form-control, .botonera select { width: 90px; }
+}

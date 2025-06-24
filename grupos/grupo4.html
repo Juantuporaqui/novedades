@@ -4,128 +4,154 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SIREX · Grupo 4 Operativo</title>
-  <!-- CSS GRUPO4 -->
- <link rel="stylesheet" href="../css/grupo4.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="../img/grupo4.svg">
-  <!-- Firebase SDK -->
+  <link rel="stylesheet" href="../css/grupo4.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2323a7e5'/%3E%3Ctext x='50' y='55' font-size='40' fill='%23fff' text-anchor='middle' dominant-baseline='middle' font-family='Arial, sans-serif' font-weight='bold'%3EG4%3C/text%3E%3C/svg%3E">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-operativo">
-  <header class="operativo-header">
-    <div class="operativo-logo">
-      <img src="../img/grupo4.svg" alt="Grupo 4 Operativo" />
+
+  <header class="main-header">
+    <div class="header-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#fff"/><text x="50" y="55" font-size="40" fill="#23a7e5" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-weight="bold">G4</text></svg>
     </div>
-    <div class="operativo-tit">
-      <span class="op-title">GRUPO 4</span>
-      <span class="op-desc">Operativo</span>
+    <div class="header-title">
+      <span class="title-main">GRUPO 4</span>
+      <span class="title-sub">Operativo</span>
     </div>
   </header>
+
   <main class="main-container">
-    <!-- Fecha -->
-    <section class="panel panel-glass mb-3">
-      <form id="formBusquedaG4" class="row row-cols-1 row-cols-md-2 g-2 align-items-center">
-        <div class="col flex-grow-1">
-          <label class="form-label mb-0 fw-bold">Fecha del registro</label>
-          <input type="date" class="form-control input-date" id="fechaRegistroG4" required />
+    
+    <div id="notification-area" class="notification-area"></div>
+
+    <section class="panel panel-glass">
+      <form id="formBusquedaG4" class="date-control-form">
+        <div class="form-group">
+          <label for="fechaRegistroG4" class="form-label">Fecha del registro</label>
+          <input type="date" class="form-control" id="fechaRegistroG4" required />
         </div>
-        <div class="col-auto d-flex gap-2">
-          <button type="button" class="btn-cargar" id="btnCargarG4"><span class="icon">📂</span> Cargar</button>
-          <button type="button" class="btn-guardar" id="btnGuardarG4"><span class="icon">💾</span> Guardar</button>
+        <div class="main-actions">
+          <button type="button" class="btn btn-primary" id="btnCargarG4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+            <span>Cargar</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnGuardarG4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v4.5h2v-4.5zM2 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/><path d="M4.5 0h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/></svg>
+            <span>Guardar</span>
+          </button>
+          <button type="button" class="btn btn-danger" id="btnEliminarG4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5zM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11zm-7.487 1a.5.5 0 0 1 .528.47l.8 10a1 1 0 0 1-.997.93H4.885a1 1 0 0 1-.997-.93l.8-10a.5.5 0 0 1 .47-.528zM8 4.5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5z"/></svg>
+            <span>Eliminar</span>
+          </button>
+          <button type="button" class="btn btn-neutral" id="btnLimpiarG4" title="Limpiar formulario">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.5a.5.5 0 0 1 0-1h3.917a.5.5 0 0 1 .5.5v3.917a.5.5 0 0 1-1 0V8.232a4.996 4.996 0 0 0-7.857-3.428zM1.5 6.083a.5.5 0 0 1 1 0v1.685a4.996 4.996 0 0 0 7.857 3.428.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.5a.5.5 0 0 1 0 1H.083a.5.5 0 0 1-.5-.5V6.083z"/></svg>
+          </button>
         </div>
       </form>
     </section>
-    <!-- Campos dinámicos + cuantificables -->
-    <section class="panel panel-glass mb-3">
-      <!-- Colaboraciones -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Colaboraciones con otros grupos</span>
-          <input type="number" class="campo-cuantia" id="cuantiaColab" min="0" placeholder="Total">
-          <div class="add-bar">
-            <input type="text" class="form-control" id="colabInputG4" placeholder="Descripción..." maxlength="128">
-            <button type="button" class="btn-add" id="btnAddColabG4">+</button>
+
+    <section class="panel panel-glass">
+      <div class="dynamic-sections-container">
+        
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Colaboraciones con otros grupos</span>
+            <input type="number" class="campo-cuantia" id="cuantiaColab" min="0" placeholder="Total">
           </div>
-        </div>
-        <div class="campo-list" id="colabListG4"></div>
-      </div>
-      <!-- Detenidos -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Detenidos</span>
-          <input type="number" class="campo-cuantia" id="cuantiaDetenidos" min="0" placeholder="Total">
           <div class="add-bar">
-            <input type="text" class="form-control" id="detenidoMotivoG4" placeholder="Motivo..." maxlength="48">
+            <input type="text" class="form-control" id="colabInputG4" placeholder="Descripción de la colaboración..." maxlength="128">
+            <button type="button" class="btn-add" id="btnAddColabG4" title="Añadir Colaboración">+</button>
+          </div>
+          <div class="campo-list" id="colabListG4"></div>
+        </div>
+
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Detenidos</span>
+            <input type="number" class="campo-cuantia" id="cuantiaDetenidos" min="0" placeholder="Total">
+          </div>
+          <div class="add-bar split">
+            <input type="text" class="form-control" id="detenidoMotivoG4" placeholder="Motivo de la detención..." maxlength="48">
             <input type="text" class="form-control" id="detenidoNacionalidadG4" placeholder="Nacionalidad..." maxlength="24">
-            <button type="button" class="btn-add" id="btnAddDetenidoG4">+</button>
+            <button type="button" class="btn-add" id="btnAddDetenidoG4" title="Añadir Detenido">+</button>
           </div>
+          <div class="campo-list" id="detenidosListG4"></div>
         </div>
-        <div class="campo-list" id="detenidosListG4"></div>
-      </div>
-      <!-- Citados -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Citados</span>
-          <input type="number" class="campo-cuantia" id="cuantiaCitados" min="0" placeholder="Total">
+
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Citados</span>
+            <input type="number" class="campo-cuantia" id="cuantiaCitados" min="0" placeholder="Total">
+          </div>
           <div class="add-bar">
-            <input type="text" class="form-control" id="citadosInputG4" placeholder="Nombre o datos...">
-            <button type="button" class="btn-add" id="btnAddCitadosG4">+</button>
+            <input type="text" class="form-control" id="citadosInputG4" placeholder="Nombre o datos de la citación...">
+            <button type="button" class="btn-add" id="btnAddCitadosG4" title="Añadir Citado">+</button>
           </div>
+          <div class="campo-list" id="citadosListG4"></div>
         </div>
-        <div class="campo-list" id="citadosListG4"></div>
-      </div>
-      <!-- Otras gestiones -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Otras gestiones</span>
-          <input type="number" class="campo-cuantia" id="cuantiaGestiones" min="0" placeholder="Total">
+        
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Otras gestiones</span>
+            <input type="number" class="campo-cuantia" id="cuantiaGestiones" min="0" placeholder="Total">
+          </div>
           <div class="add-bar">
-            <input type="text" class="form-control" id="gestionesInputG4" placeholder="Descripción..." maxlength="128">
-            <button type="button" class="btn-add" id="btnAddGestionesG4">+</button>
+            <input type="text" class="form-control" id="gestionesInputG4" placeholder="Descripción de la gestión..." maxlength="128">
+            <button type="button" class="btn-add" id="btnAddGestionesG4" title="Añadir Gestión">+</button>
           </div>
+          <div class="campo-list" id="gestionesListG4"></div>
         </div>
-        <div class="campo-list" id="gestionesListG4"></div>
-      </div>
-      <!-- Inspecciones de trabajo -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Inspecciones de trabajo</span>
-          <input type="number" class="campo-cuantia" id="cuantiaInspeccion" min="0" placeholder="Total">
+        
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Inspecciones de trabajo</span>
+            <input type="number" class="campo-cuantia" id="cuantiaInspeccion" min="0" placeholder="Total">
+          </div>
           <div class="add-bar">
-            <input type="text" class="form-control" id="inspeccionTrabajoInputG4" placeholder="Empresa/Lugar...">
-            <button type="button" class="btn-add" id="btnAddInspeccionTrabajoG4">+</button>
+            <input type="text" class="form-control" id="inspeccionTrabajoInputG4" placeholder="Empresa o lugar inspeccionado...">
+            <button type="button" class="btn-add" id="btnAddInspeccionTrabajoG4" title="Añadir Inspección de Trabajo">+</button>
           </div>
+          <div class="campo-list" id="inspeccionTrabajoListG4"></div>
         </div>
-        <div class="campo-list" id="inspeccionTrabajoListG4"></div>
-      </div>
-      <!-- Otras inspecciones -->
-      <div class="campo-section">
-        <div class="campo-header">
-          <span class="campo-titulo">Otras inspecciones</span>
-          <input type="number" class="campo-cuantia" id="cuantiaOtrasInspecciones" min="0" placeholder="Total">
+
+        <div class="campo-section">
+          <div class="campo-header">
+            <span class="campo-titulo">Otras inspecciones</span>
+            <input type="number" class="campo-cuantia" id="cuantiaOtrasInspecciones" min="0" placeholder="Total">
+          </div>
           <div class="add-bar">
-            <input type="text" class="form-control" id="otrasInspeccionesInputG4" placeholder="Descripción...">
-            <button type="button" class="btn-add" id="btnAddOtrasInspeccionesG4">+</button>
+            <input type="text" class="form-control" id="otrasInspeccionesInputG4" placeholder="Descripción de la inspección...">
+            <button type="button" class="btn-add" id="btnAddOtrasInspeccionesG4" title="Añadir Otra Inspección">+</button>
           </div>
+          <div class="campo-list" id="otrasInspeccionesListG4"></div>
         </div>
-        <div class="campo-list" id="otrasInspeccionesListG4"></div>
+
       </div>
     </section>
-    <!-- Resumen -->
-    <section class="panel panel-glass mb-4">
-      <div class="resumen-bar">
-        <label>Resumen entre fechas:</label>
-        <input type="date" id="resumenDesdeG4" class="form-control input-date">
-        <input type="date" id="resumenHastaG4" class="form-control input-date">
-        <button type="button" class="btn-resumen" id="btnGenerarResumenG4"><span class="icon">📊</span> Generar Resumen</button>
+
+    <section class="panel panel-glass">
+      <div class="summary-controls">
+        <label for="resumenDesdeG4" class="form-label">Resumen entre fechas:</label>
+        <input type="date" id="resumenDesdeG4" class="form-control">
+        <input type="date" id="resumenHastaG4" class="form-control">
+        <button type="button" class="btn btn-primary" id="btnGenerarResumenG4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2zm1 12h2V2h-2v12zm-3 0V7H7v7h2zm-5 0v-3H2v3h2z"/></svg>
+          <span>Generar Resumen</span>
+        </button>
       </div>
-      <div id="resumenContenidoG4" class="resumen-content mt-2"></div>
+      <div id="resumenContenidoG4" class="summary-content"></div>
     </section>
+
   </main>
-  <footer class="footer">
-    SIREX · UCRIF · Grupo 4 &copy; 2025
+
+  <footer class="main-footer">
+    <span>SIREX · UCRIF · Grupo 4 &copy; 2025</span>
   </footer>
-  <script src="grupo4.js"></script>
+  
+  <script src="../js/grupo4.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// ====== Inicialización de Firebase ======
+// Inicialización de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
     authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -8,12 +8,13 @@ const firebaseConfig = {
     appId: "1:241698436443:web:1f333b3ae3f813b755167e",
     measurementId: "G-S2VPQNWZ21"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ====== Utilidades generales ======
+// ====== Utilidades ======
+
 function showToast(mensaje, tipo = "info") {
-    // Reemplazable por un toast animado (Bootstrap o personalizado)
     alert(mensaje);
 }
 
@@ -33,6 +34,7 @@ function scrollVentana(idVentana) {
 }
 
 // ====== Referencias DOM ======
+
 const fechaDiaInput = document.getElementById('fechaDia');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNuevo = document.getElementById('btnNuevo');
@@ -102,7 +104,7 @@ async function cargarDia(fecha) {
     const ref = getDocRefDia(fecha);
     const docSnap = await ref.get();
     if (!docSnap.exists) {
-        // No mostrar alerta si es un nuevo registro, solo si se pulsa Buscar
+        // No muestres alert al cargar un día vacío, sólo vacía campos
         return;
     }
     const datos = docSnap.data();
@@ -110,11 +112,10 @@ async function cargarDia(fecha) {
     mostrarListaVentana(expulsadosVentana, datos.expulsados || [], 'expulsado', true);
     mostrarListaVentana(fletadosVentana, datos.fletados || [], 'fletado', true);
     mostrarListaVentana(fletadosFuturosVentana, datos.fletadosFuturos || [], 'fletadoFuturo', true);
-    mostrarListaVentana(conduccionesPosVentana, datos.conduccionesPositivas || [], 'conduccionPositiva', true);
-    mostrarListaVentana(conduccionesNegVentana, datos.conduccionesNegativas || [], 'conduccionNegativa', true);
+    mostrarListaVentana(conduccionesPosVentana, datos.conduccionesPositivas || [], 'conduccionPositiva', false);
+    mostrarListaVentana(conduccionesNegVentana, datos.conduccionesNegativas || [], 'conduccionNegativa', false);
     mostrarListaVentana(pendientesVentana, datos.pendientes || [], 'pendiente', true);
 }
-
 function limpiarTodo() {
     expulsadosVentana.innerHTML = "";
     fletadosVentana.innerHTML = "";
@@ -123,6 +124,11 @@ function limpiarTodo() {
     conduccionesNegVentana.innerHTML = "";
     pendientesVentana.innerHTML = "";
 }
+
+// ====== Mantener fecha seleccionada ======
+fechaDiaInput.addEventListener('change', () => {
+    fechaActual = fechaDiaInput.value;
+});
 
 // ====== Mostrar listados ======
 function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
@@ -135,9 +141,11 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
         let texto = "";
         switch (tipo) {
             case "expulsado":
-                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}] Pos: ${item.nConduccionesPos || 0}`;
+                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
                 break;
             case "fletado":
+                texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
+                break;
             case "fletadoFuturo":
                 texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
                 break;
@@ -167,17 +175,18 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     scrollVentana(ventana.id);
 }
 
-// ====== Añadir datos ======
+// ====== Añadir datos (asegúrate de usar siempre la fecha seleccionada) ======
 async function añadirExpulsado(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const nombre = nombreExpulsado.value.trim();
     const nacionalidad = nacionalidadExpulsado.value.trim();
     const diligencias = diligenciasExpulsado.value.trim();
-    const nConducciones = parseInt(nConduccionesPos.value) || 0;
-    if (!nombre || !nacionalidad) { showToast("Introduce nombre y nacionalidad."); return; }
-
-    const expulsado = { nombre, nacionalidad, diligencias, nConduccionesPos: nConducciones };
+    const ncondu = parseInt(nConduccionesPos.value) || 0;
+    if (!nombre) { showToast("Introduce nombre."); return; }
+    if (!nacionalidad) { showToast("Introduce nacionalidad."); return; }
+    const expulsado = { nombre, nacionalidad, diligencias, nConduccionesPos: ncondu };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
         expulsados: firebase.firestore.FieldValue.arrayUnion(expulsado)
@@ -188,11 +197,13 @@ async function añadirExpulsado(e) {
 
 async function añadirFletado(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const destino = destinoFletado.value.trim();
     const pax = parseInt(paxFletado.value) || 0;
     const fecha = fechaFletado.value;
-    if (!destino || !fecha) { showToast("Introduce destino y fecha."); return; }
+    if (!destino) { showToast("Introduce destino."); return; }
+    if (!fecha) { showToast("Selecciona fecha."); return; }
     const fletado = { destino, pax, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -204,11 +215,13 @@ async function añadirFletado(e) {
 
 async function añadirFletadoFuturo(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const destino = destinoFletadoFuturo.value.trim();
     const pax = parseInt(paxFletadoFuturo.value) || 0;
     const fecha = fechaFletadoFuturo.value;
-    if (!destino || !fecha) { showToast("Introduce destino y fecha."); return; }
+    if (!destino) { showToast("Introduce destino."); return; }
+    if (!fecha) { showToast("Selecciona fecha."); return; }
     const fletado = { destino, pax, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -220,9 +233,11 @@ async function añadirFletadoFuturo(e) {
 
 async function añadirConduccionPositiva(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const numero = parseInt(conduccionPositiva.value) || 0;
-    const dato = { numero, fecha: fechaActual };
+    const fecha = fechaActual;
+    const dato = { numero, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
         conduccionesPositivas: firebase.firestore.FieldValue.arrayUnion(dato)
@@ -233,9 +248,11 @@ async function añadirConduccionPositiva(e) {
 
 async function añadirConduccionNegativa(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const numero = parseInt(conduccionNegativa.value) || 0;
-    const dato = { numero, fecha: fechaActual };
+    const fecha = fechaActual;
+    const dato = { numero, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
         conduccionesNegativas: firebase.firestore.FieldValue.arrayUnion(dato)
@@ -246,10 +263,12 @@ async function añadirConduccionNegativa(e) {
 
 async function añadirPendiente(e) {
     e.preventDefault();
-    if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
     const descripcion = descPendiente.value.trim();
     const fecha = fechaPendiente.value;
-    if (!descripcion || !fecha) { showToast("Introduce descripción y fecha."); return; }
+    if (!descripcion) { showToast("Introduce descripción."); return; }
+    if (!fecha) { showToast("Selecciona fecha."); return; }
     const pendiente = { descripcion, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -261,42 +280,33 @@ async function añadirPendiente(e) {
 
 // ====== Eliminar dato ======
 async function eliminarDato(tipo, idx) {
-    if (!fechaActual) return;
+    if (!fechaDiaInput.value) return;
+    fechaActual = fechaDiaInput.value;
     const ref = getDocRefDia(fechaActual);
     const docSnap = await ref.get();
     if (!docSnap.exists) return;
     const datos = docSnap.data();
-    let clave;
-    switch (tipo) {
-        case "expulsado": clave = "expulsados"; break;
-        case "fletado": clave = "fletados"; break;
-        case "fletadoFuturo": clave = "fletadosFuturos"; break;
-        case "conduccionPositiva": clave = "conduccionesPositivas"; break;
-        case "conduccionNegativa": clave = "conduccionesNegativas"; break;
-        case "pendiente": clave = "pendientes"; break;
-        default: return;
-    }
-    let lista = datos[clave] || [];
+    let lista = datos[tipo + (tipo.endsWith('a') ? 's' : '')] || [];
     if (idx < 0 || idx >= lista.length) return;
     lista.splice(idx, 1);
     await ref.set({
-        [clave]: lista
+        [tipo + (tipo.endsWith('a') ? 's' : '')]: lista
     }, { merge: true });
     cargarDia(fechaActual);
 }
 
 // ====== Buscar y nuevo registro ======
 btnBuscar.addEventListener('click', () => {
-    const fecha = fechaDiaInput.value;
-    if (!fecha) { showToast("Introduce una fecha para buscar."); return; }
-    cargarDia(fecha);
+    if (!fechaDiaInput.value) { showToast("Introduce una fecha para buscar."); return; }
+    fechaActual = fechaDiaInput.value;
+    cargarDia(fechaActual);
 });
 
 btnNuevo.addEventListener('click', () => {
-    const fecha = fechaDiaInput.value;
-    if (!fecha) { showToast("Introduce la fecha para el nuevo registro."); return; }
-    fechaActual = fecha;
+    if (!fechaDiaInput.value) { showToast("Introduce la fecha para el nuevo registro."); return; }
+    fechaActual = fechaDiaInput.value;
     limpiarTodo();
+    // No borres la fecha del input
 });
 
 // ====== Formularios: eventos ======
@@ -363,5 +373,6 @@ function mostrarResumen(resumen) {
 window.addEventListener('DOMContentLoaded', () => {
     const hoy = new Date().toISOString().slice(0, 10);
     fechaDiaInput.value = hoy;
+    fechaActual = hoy;
     cargarDia(hoy);
 });
