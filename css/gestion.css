@@ -1,0 +1,201 @@
+body.gestion-bg {
+  background: linear-gradient(120deg, #e4f0fb 55%, #b3dafe 100%);
+  font-family: 'Inter', Arial, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+}
+.gestion-header {
+  background: #193559;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+  padding: 12px 26px;
+}
+.gestion-header .logo {
+  width: 42px;
+  border-radius: 10px;
+  box-shadow: 0 1px 7px #19355932;
+}
+.gestion-title {
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  flex: 1;
+}
+.btn-menu {
+  background: #285be1;
+  color: #fff;
+  border: none;
+  padding: 7px 23px;
+  font-size: 1.15rem;
+  border-radius: 11px;
+  box-shadow: 0 1px 8px #053ea025;
+  cursor: pointer;
+  transition: background .14s;
+}
+.btn-menu:hover { background: #1d3d78; }
+
+.container-gestion {
+  max-width: 1300px;
+  margin: 30px auto 0 auto;
+  display: flex;
+  gap: 2.3rem;
+  align-items: flex-start;
+}
+.gestion-card {
+  background: #fff;
+  border-radius: 26px;
+  box-shadow: 0 6px 36px #1e7eea19;
+  padding: 2.4em 2.6em 1.7em 2.6em;
+  min-width: 450px;
+  flex: 2;
+  animation: fadeIn .5s;
+}
+.gestion-card h2 {
+  color: #285be1;
+  margin-bottom: 2.3em;
+  font-size: 1.7em;
+  font-weight: 900;
+  letter-spacing: .7px;
+}
+.gestion-toolbar {
+  display: flex;
+  gap: .8em;
+  margin-bottom: 1.5em;
+  align-items: flex-end;
+}
+.gestion-select {
+  min-width: 180px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.2px solid #b6d5f9;
+  font-size: 1.07em;
+}
+.btn-azul, .btn-gris, .btn-verde, .btn-rojo {
+  font-size: 1.09em;
+  border-radius: 11px;
+  padding: 9px 26px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 12px #285be11b;
+  font-weight: bold;
+  margin-right: 4px;
+  transition: background .17s, box-shadow .14s, transform .11s;
+}
+.btn-azul { background: linear-gradient(90deg, #3a77df, #1c3a7b 90%); color: #fff; }
+.btn-azul:hover { background: #285be1; }
+.btn-gris { background: #edf1fa; color: #2a4e6e; }
+.btn-gris:hover { background: #ced8e9; }
+.btn-verde { background: linear-gradient(90deg, #38c97b, #1b6e45 90%); color: #fff; }
+.btn-verde:hover { background: #1bb55d; }
+.btn-rojo { background: linear-gradient(90deg, #df4b52, #910808 90%); color: #fff; }
+.btn-rojo:hover { background: #df4b52; }
+
+.gestion-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1em 2.1em;
+  margin-bottom: 2em;
+}
+.gestion-fields-grid > div {
+  display: flex;
+  flex-direction: column;
+}
+.gestion-input, .gestion-input-n {
+  border-radius: 9px;
+  border: 1.3px solid #b6d5f9;
+  padding: 8px 12px;
+  font-size: 1.09em;
+  background: #fafdff;
+  transition: border .14s;
+}
+.gestion-input:focus, .gestion-input-n:focus { border-color: #1c60db; }
+.gestion-textarea {
+  border-radius: 9px;
+  border: 1.3px solid #b6d5f9;
+  padding: 7px 12px;
+  font-size: 1.07em;
+  background: #fafdff;
+  resize: vertical;
+}
+label {
+  font-size: 1.02em;
+  font-weight: 600;
+  color: #175495;
+  margin-bottom: .25em;
+}
+.gestion-stats-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1em;
+  margin-bottom: 1.7em;
+}
+.gestion-resumen-bar {
+  display: flex;
+  gap: 1.2em;
+  margin-bottom: 1.4em;
+  margin-top: .7em;
+}
+#resumenGestion {
+  background: #e4f4fd;
+  border-radius: 1rem;
+  padding: 18px 24px;
+  min-height: 60px;
+  font-size: 1.13em;
+  margin-top: 1.4em;
+  box-shadow: 0 1px 8px #1d3e5c16;
+}
+.gestion-footer {
+  background: #193559;
+  color: #e6f1fb;
+  font-size: 1.06em;
+  text-align: center;
+  padding: 1.3em 0 .8em 0;
+  margin-top: 2em;
+  border-top-left-radius: 2.5em;
+}
+
+.gestion-sidebar {
+  background: #fafcff;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px #78a9e42b;
+  min-width: 290px;
+  max-width: 310px;
+  padding: 2em 1.5em;
+  animation: slideIn .7s;
+}
+.gestion-sidebar h3 {
+  font-size: 1.11em;
+  font-weight: 800;
+  color: #285be1;
+  margin-bottom: 1em;
+}
+#historialLista {
+  font-size: 1em;
+  color: #13559e;
+}
+#historialLista .histo-item {
+  border-bottom: 1px solid #d7e0ed;
+  padding: 8px 0 7px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background .12s;
+}
+#historialLista .histo-item:hover {
+  background: #eaf5ff;
+}
+@media (max-width: 1000px) {
+  .container-gestion { flex-direction: column; }
+  .gestion-sidebar { max-width: 99vw; min-width: unset; margin: 1em 0;}
+}
+@keyframes fadeIn {
+  from { opacity:0; transform: scale(.98);}
+  to { opacity:1; transform: scale(1);}
+}
+@keyframes slideIn {
+  from { opacity:0; transform: translateX(80px);}
+  to { opacity:1; transform: translateX(0);}
+}
