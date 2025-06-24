@@ -4,16 +4,13 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo Puerto</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS -->
   <link rel="stylesheet" href="../css/puerto.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
 </head>
 <body class="bg-puerto">
   <header class="puerto-header">
-    <div class="puerto-logo">
-      <!-- Si tienes un logo SVG propio ponlo aquí. Si no, este emoji queda simpático y es libre -->
-      <span style="font-size:48px; display:inline-block;">⚓️</span>
-    </div>
+    <button class="btn-menu" onclick="window.location.href='../index.html'">🏠</button>
+    <div class="puerto-logo"><span style="font-size:48px; display:inline-block;">⚓️</span></div>
     <div class="puerto-title">
       <span class="title-main">GRUPO PUERTO</span>
       <span class="title-desc">Control y Estadística Portuaria</span>
@@ -21,15 +18,17 @@
   </header>
 
   <main class="main-container">
-    <!-- Fecha, tipo de control -->
     <form id="formPuerto" autocomplete="off">
       <section class="panel panel-glass">
+        <!-- Fecha y controles -->
         <div class="row-cols">
-          <label>Fecha del registro</label>
+          <label for="fechaPuerto">Fecha del registro</label>
           <input type="date" id="fechaPuerto" required class="form-control input-date">
+          <button type="button" class="btn-cargar" id="btnCargar">Cargar</button>
+          <button type="button" class="btn-nuevo" id="btnNuevo">Nuevo</button>
         </div>
         <div class="row-cols">
-          <label>Tipo de control</label>
+          <label for="tipoControl">Tipo de control</label>
           <select id="tipoControl" class="form-control" required>
             <option value="">--Seleccione--</option>
             <option>General</option>
@@ -40,60 +39,59 @@
             <option>Especial</option>
           </select>
         </div>
-
+        <!-- Campos compactos en grid -->
         <div id="camposPuerto">
-          <div class="control-group">
-            <label>Marinos chequedos en Argos</label>
-            <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Nº marinos">
+          <div class="control-grid">
+            <label>Marinos Argos</label>
+            <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Argos">
+            <label>Pasaportes Marinos</label>
+            <input type="number" min="0" id="controlPasaportes" class="form-control" placeholder="Pasaportes">
           </div>
-          <div class="control-group">
-            <label>Control pasaportes marinos</label>
-            <input type="number" min="0" id="controlPasaportes" class="form-control" placeholder="Nº controles">
+          <div class="control-grid">
+            <label>Cruceros</label>
+            <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros">
+            <label>Cruceristas</label>
+            <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros">
           </div>
-          <div class="control-group">
-            <label>Cruceros / Cruceristas</label>
-            <div style="display:flex; gap:12px;">
-              <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros">
-              <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros">
-            </div>
+          <div class="control-grid">
+            <label>Visados Valencia</label>
+            <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia">
+            <label>Visados CG</label>
+            <input type="number" min="0" id="visadosCG" class="form-control" placeholder="CG">
           </div>
-          <div class="control-group">
-            <label>Visados</label>
-            <div style="display:flex; gap:12px;">
-              <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia">
-              <input type="number" min="0" id="visadosCG" class="form-control" placeholder="CG">
-            </div>
+          <div class="control-grid">
+            <label>Ferry Entradas</label>
+            <input type="number" min="0" id="ferryEntradas" class="form-control" placeholder="Entradas">
+            <label>Ferry Salidas</label>
+            <input type="number" min="0" id="ferrySalidas" class="form-control" placeholder="Salidas">
           </div>
-          <div class="control-group">
-            <label>Ferry</label>
-            <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:8px;">
-              <input type="number" min="0" id="ferryEntradas" class="form-control" placeholder="Entradas">
-              <input type="number" min="0" id="ferrySalidas" class="form-control" placeholder="Salidas">
-              <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehículos">
-              <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasajeros">
-              <input type="number" min="0" id="ferryCulminados" class="form-control" placeholder="Culminados EISICS">
-              <input type="number" min="0" id="ferryExcepcionales" class="form-control" placeholder="Entradas excepcionales">
-            </div>
+          <div class="control-grid">
+            <label>Vehículos</label>
+            <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehículos">
+            <label>Pasajeros</label>
+            <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasajeros">
           </div>
-          <div class="control-group">
+          <div class="control-grid">
+            <label>Culminados EISICS</label>
+            <input type="number" min="0" id="ferryCulminados" class="form-control" placeholder="Culminados">
+            <label>Entradas excepcionales</label>
+            <input type="number" min="0" id="ferryExcepcionales" class="form-control" placeholder="Excepcionales">
+          </div>
+          <div class="control-grid">
             <label>Denegaciones</label>
-            <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Total denegaciones">
-          </div>
-          <div class="control-group">
-            <label>Puerto deportivo</label>
-            <input type="number" min="0" id="puertoDeportivo" class="form-control" placeholder="Nº registros">
-          </div>
-          <div class="control-group">
-            <label>Observaciones</label>
-            <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
+            <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Denegaciones">
+            <label>Puerto Deportivo</label>
+            <input type="number" min="0" id="puertoDeportivo" class="form-control" placeholder="Registros">
           </div>
         </div>
-
+        <div class="control-group">
+          <label>Observaciones</label>
+          <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
+        </div>
         <div class="control-group">
           <label>Adjuntar documentos/imágenes</label>
           <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
         </div>
-
         <div class="row-cols align-center">
           <label>¿Queda alguna tarea pendiente?</label>
           <select id="tareaPendiente" class="form-control">
@@ -113,10 +111,13 @@
       <div id="resumenPuerto"></div>
     </section>
   </main>
-
   <footer class="footer">
     SIREX · UCRIF · Grupo Puerto &copy; 2025
   </footer>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-storage-compat.js"></script>
   <script src="puerto.js"></script>
 </body>
 </html>

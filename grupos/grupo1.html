@@ -1,51 +1,49 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="G. Expulsiones · Sistema Benito">
-  <title>G. Expulsiones · Benito UCRIF</title>
-  <link rel="icon" type="image/png" href="/img/logo_cnp.png">
+  <title>SIREX · Grupo 1 Expulsiones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Estilos corporativos -->
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/grupo1.css"> <!-- CSS específico para Grupo 1 -->
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="../css/grupo1.css">
+  <link rel="icon" type="image/png" href="../img/logo_cnp.png">
 </head>
 <body class="bg-police">
-  <!-- CABECERA CORPORATIVA POLICIAL -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-4">
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
     <div class="container">
-      <img src="/img/logo_cnp.png" alt="CNP" width="50" height="50" class="me-3 d-none d-md-block">
-      <span class="navbar-brand fs-3 fw-bold">G. Expulsiones <span class="fs-5">· Benito · UCRIF</span></span>
-      <a href="/index.html" class="btn btn-outline-light ms-auto d-none d-md-block"><i class="bi bi-house-door"></i> Menú principal</a>
+      <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
+      <span class="navbar-brand fs-3 fw-bold">SIREX · G1 Expulsiones</span>
+      <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
   </nav>
-  <!-- Para móvil -->
-  <div class="text-center mb-3 d-md-none">
-    <a href="/index.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-house-door"></i> Menú principal</a>
+  <!-- PARA MÓVIL -->
+  <div class="text-center mb-2 d-md-none">
+    <a href="../index.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-house-door"></i> Menú principal</a>
   </div>
-  <!-- ENCABEZADO: Fecha de trabajo -->
-  <div class="container mb-4">
+
+  <!-- FECHA Y BOTONES PRINCIPALES -->
+  <div class="container mb-3">
     <div class="row justify-content-center">
       <div class="col-lg-10">
-        <div class="card shadow-lg p-4 bg-police-dark text-white border-0">
-          <div class="row align-items-end g-3">
-            <div class="col-md-4 mb-2 mb-md-0">
-              <label for="fechaDia" class="form-label fw-bold">Fecha de trabajo</label>
+        <div class="card shadow p-3 bg-police-dark text-white border-0">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-4 mb-2 mb-sm-0">
+              <label for="fechaDia" class="form-label fw-bold mb-1">Fecha de trabajo</label>
               <input type="date" id="fechaDia" class="form-control form-control-lg" autocomplete="off" required>
             </div>
-            <div class="col-md-3 mb-2 mb-md-0">
+            <div class="col-6 col-sm-3">
               <button id="btnBuscar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-search"></i> Buscar</button>
             </div>
-            <div class="col-md-3 mb-2 mb-md-0">
+            <div class="col-6 col-sm-3">
               <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
             </div>
-            <div class="col-md-2 text-end mt-2 mt-md-0">
-              <span class="badge bg-warning text-dark py-2 px-3">Todos los datos quedan guardados online automáticamente</span>
+            <div class="col-12 col-sm-2 text-end mt-2 mt-sm-0">
+              <span class="badge bg-info text-dark py-2 px-2 w-100">Guardado online automático</span>
             </div>
           </div>
         </div>
@@ -54,182 +52,178 @@
   </div>
 
   <!-- FORMULARIO PRINCIPAL -->
-
   <div class="container mb-5">
     <div class="row justify-content-center">
       <div class="col-lg-10">
         <div class="card shadow-lg p-4">
           <h2 class="mb-4 text-police-blue"><i class="bi bi-person-fill-lock"></i> Gestión de expulsados y novedades</h2>
 
-```
-      <!-- SECCIÓN EXPULSADOS -->
-      <div class="mb-4">
-        <h4 class="mb-2">Expulsados</h4>
-        <form id="expulsadoForm" class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <input type="text" id="nombreExpulsado" class="form-control" placeholder="Nombre" maxlength="60">
-          </div>
-          <div class="col-md-3">
-            <input type="text" id="nacionalidadExpulsado" class="form-control" placeholder="Nacionalidad" maxlength="30">
-          </div>
-          <div class="col-md-3">
-            <input type="text" id="diligenciasExpulsado" class="form-control" placeholder="Diligencias asociadas" maxlength="90">
-          </div>
-          <div class="col-md-2">
-            <input type="number" id="nConduccionesPos" class="form-control" placeholder="Conduc. Positivas" min="0">
-          </div>
-          <div class="col-md-1 d-grid">
-            <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
-          </div>
-        </form>
-        <div class="expulsados-list mt-2">
-          <small class="text-muted">Listado expulsados (hoy):</small>
-          <div id="expulsadosVentana" class="ventana-datos mt-1"></div>
-        </div>
-      </div>
-
-      <!-- SECCIÓN FLETADOS -->
-      <div class="mb-4">
-        <h4 class="mb-2">Fletados</h4>
-        <form id="fletadoForm" class="row g-2 align-items-end">
-          <div class="col-md-5">
-            <input type="text" id="destinoFletado" class="form-control" placeholder="Destino" maxlength="60">
-          </div>
-          <div class="col-md-3">
-            <input type="number" id="paxFletado" class="form-control" placeholder="Nº Pax" min="1" max="999">
-          </div>
-          <div class="col-md-2">
-            <input type="date" id="fechaFletado" class="form-control">
-          </div>
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
-          </div>
-        </form>
-        <div class="fletados-list mt-2">
-          <small class="text-muted">Listado fletados:</small>
-          <div id="fletadosVentana" class="ventana-datos mt-1"></div>
-        </div>
-      </div>
-
-      <!-- SECCIÓN FLETADOS FUTUROS -->
-      <div class="mb-4">
-        <h4 class="mb-2">Fletados Futuros</h4>
-        <form id="fletadoFuturoForm" class="row g-2 align-items-end">
-          <div class="col-md-4">
-            <input type="text" id="destinoFletadoFuturo" class="form-control" placeholder="Destino futuro" maxlength="60">
-          </div>
-          <div class="col-md-2">
-            <input type="number" id="paxFletadoFuturo" class="form-control" placeholder="Nº Pax" min="1" max="999">
-          </div>
-          <div class="col-md-4">
-            <input type="date" id="fechaFletadoFuturo" class="form-control">
-          </div>
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
-          </div>
-        </form>
-        <div class="fletados-futuros-list mt-2">
-          <small class="text-muted">Listado fletados futuros:</small>
-          <div id="fletadosFuturosVentana" class="ventana-datos mt-1"></div>
-        </div>
-      </div>
-
-      <!-- SECCIÓN CONDUCCIONES POSITIVAS Y NEGATIVAS -->
-      <div class="mb-4 row">
-        <div class="col-md-6">
-          <h4 class="mb-2">Conducciones Positivas</h4>
-          <form id="conduccionPosForm" class="row g-2 align-items-end">
-            <div class="col-9">
-              <input type="number" id="conduccionPositiva" class="form-control" placeholder="Número de conducciones positivas" min="0">
+          <!-- SECCIÓN EXPULSADOS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Expulsados</h4>
+            <form id="expulsadoForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <input type="text" id="nombreExpulsado" class="form-control" placeholder="Nombre" maxlength="60">
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="nacionalidadExpulsado" class="form-control" placeholder="Nacionalidad" maxlength="30">
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="diligenciasExpulsado" class="form-control" placeholder="Diligencias asociadas" maxlength="90">
+              </div>
+              <div class="col-8 col-md-2">
+                <input type="number" id="nConduccionesPos" class="form-control" placeholder="Conduc. Positivas" min="0">
+              </div>
+              <div class="col-4 col-md-1 d-grid">
+                <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="expulsados-list mt-2">
+              <small class="text-muted">Listado expulsados (día):</small>
+              <div id="expulsadosVentana" class="ventana-datos mt-1"></div>
             </div>
-            <div class="col-3 d-grid">
-              <button type="submit" class="btn btn-police-green"><i class="bi bi-plus"></i> Añadir</button>
-            </div>
-          </form>
-          <div class="conducciones-pos-list mt-2">
-            <small class="text-muted">Histórico conducciones positivas:</small>
-            <div id="conduccionesPosVentana" class="ventana-datos mt-1"></div>
           </div>
-        </div>
-        <div class="col-md-6">
-          <h4 class="mb-2">Conducciones Negativas</h4>
-          <form id="conduccionNegForm" class="row g-2 align-items-end">
-            <div class="col-9">
-              <input type="number" id="conduccionNegativa" class="form-control" placeholder="Número de conducciones negativas" min="0">
-            </div>
-            <div class="col-3 d-grid">
-              <button type="submit" class="btn btn-police-red"><i class="bi bi-plus"></i> Añadir</button>
-            </div>
-          </form>
-          <div class="conducciones-neg-list mt-2">
-            <small class="text-muted">Histórico conducciones negativas:</small>
-            <div id="conduccionesNegVentana" class="ventana-datos mt-1"></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- SECCIÓN PENDIENTES DE GESTIÓN -->
-      <div class="mb-4">
-        <h4 class="mb-2">Pendientes de Gestión</h4>
-        <form id="pendienteForm" class="row g-2 align-items-end">
-          <div class="col-md-8">
-            <input type="text" id="descPendiente" class="form-control" placeholder="Descripción pendiente" maxlength="120">
+          <!-- FLETADOS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Fletados</h4>
+            <form id="fletadoForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-6">
+                <input type="text" id="destinoFletado" class="form-control" placeholder="Destino" maxlength="60">
+              </div>
+              <div class="col-7 col-md-2">
+                <input type="number" id="paxFletado" class="form-control" placeholder="Nº Pax" min="1" max="999">
+              </div>
+              <div class="col-5 col-md-2">
+                <input type="date" id="fechaFletado" class="form-control">
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button type="submit" class="btn btn-police-blue w-100"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="fletados-list mt-2">
+              <small class="text-muted">Listado fletados:</small>
+              <div id="fletadosVentana" class="ventana-datos mt-1"></div>
+            </div>
           </div>
-          <div class="col-md-2">
-            <input type="date" id="fechaPendiente" class="form-control">
-          </div>
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-police-yellow"><i class="bi bi-plus"></i> Añadir</button>
-          </div>
-        </form>
-        <div class="pendientes-list mt-2">
-          <small class="text-muted">Listado de tareas pendientes:</small>
-          <div id="pendientesVentana" class="ventana-datos mt-1"></div>
-        </div>
-      </div>
 
-      <!-- SECCIÓN RESUMENES Y PDF -->
-      <div class="bg-police-light rounded-3 p-4 mt-5">
-        <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen</h4>
-        <div class="row g-3 align-items-end">
-          <div class="col-md-5">
-            <label for="desdeResumen" class="form-label">Desde</label>
-            <input type="date" id="desdeResumen" class="form-control">
+          <!-- FLETADOS FUTUROS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Fletados Futuros</h4>
+            <form id="fletadoFuturoForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <input type="text" id="destinoFletadoFuturo" class="form-control" placeholder="Destino futuro" maxlength="60">
+              </div>
+              <div class="col-7 col-md-2">
+                <input type="number" id="paxFletadoFuturo" class="form-control" placeholder="Nº Pax" min="1" max="999">
+              </div>
+              <div class="col-5 col-md-4">
+                <input type="date" id="fechaFletadoFuturo" class="form-control">
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button type="submit" class="btn btn-police-blue w-100"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="fletados-futuros-list mt-2">
+              <small class="text-muted">Listado fletados futuros:</small>
+              <div id="fletadosFuturosVentana" class="ventana-datos mt-1"></div>
+            </div>
           </div>
-          <div class="col-md-5">
-            <label for="hastaResumen" class="form-label">Hasta</label>
-            <input type="date" id="hastaResumen" class="form-control">
+
+          <!-- CONDUCCIONES POSITIVAS Y NEGATIVAS -->
+          <div class="mb-4 row">
+            <div class="col-md-6">
+              <h4 class="mb-2">Conducciones Positivas</h4>
+              <form id="conduccionPosForm" class="row g-2 align-items-end">
+                <div class="col-9">
+                  <input type="number" id="conduccionPositiva" class="form-control" placeholder="Número de conducciones positivas" min="0">
+                </div>
+                <div class="col-3 d-grid">
+                  <button type="submit" class="btn btn-police-green"><i class="bi bi-plus"></i></button>
+                </div>
+              </form>
+              <div class="conducciones-pos-list mt-2">
+                <small class="text-muted">Histórico conducciones positivas:</small>
+                <div id="conduccionesPosVentana" class="ventana-datos mt-1"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h4 class="mb-2">Conducciones Negativas</h4>
+              <form id="conduccionNegForm" class="row g-2 align-items-end">
+                <div class="col-9">
+                  <input type="number" id="conduccionNegativa" class="form-control" placeholder="Número de conducciones negativas" min="0">
+                </div>
+                <div class="col-3 d-grid">
+                  <button type="submit" class="btn btn-police-red"><i class="bi bi-plus"></i></button>
+                </div>
+              </form>
+              <div class="conducciones-neg-list mt-2">
+                <small class="text-muted">Histórico conducciones negativas:</small>
+                <div id="conduccionesNegVentana" class="ventana-datos mt-1"></div>
+              </div>
+            </div>
           </div>
-          <div class="col-md-2 d-grid">
-            <button id="generarResumenBtn" class="btn btn-police-blue" type="button"><i class="bi bi-file-earmark-bar-graph"></i> Generar Resumen PDF</button>
+
+          <!-- PENDIENTES DE GESTIÓN -->
+          <div class="mb-4">
+            <h4 class="mb-2">Pendientes de Gestión</h4>
+            <form id="pendienteForm" class="row g-2 align-items-end">
+              <div class="col-8 col-md-8">
+                <input type="text" id="descPendiente" class="form-control" placeholder="Descripción pendiente" maxlength="120">
+              </div>
+              <div class="col-4 col-md-2">
+                <input type="date" id="fechaPendiente" class="form-control">
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button type="submit" class="btn btn-police-yellow w-100"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="pendientes-list mt-2">
+              <small class="text-muted">Listado de tareas pendientes:</small>
+              <div id="pendientesVentana" class="ventana-datos mt-1"></div>
+            </div>
           </div>
+
+          <!-- RESUMEN PDF -->
+          <div class="bg-police-light rounded-3 p-4 mt-5">
+            <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen</h4>
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-5">
+                <label for="desdeResumen" class="form-label">Desde</label>
+                <input type="date" id="desdeResumen" class="form-control">
+              </div>
+              <div class="col-12 col-md-5">
+                <label for="hastaResumen" class="form-label">Hasta</label>
+                <input type="date" id="hastaResumen" class="form-control">
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button id="generarResumenBtn" class="btn btn-police-blue w-100" type="button"><i class="bi bi-file-earmark-bar-graph"></i> Resumen PDF</button>
+              </div>
+            </div>
+            <div id="resumenVentana" class="ventana-datos mt-4"></div>
+          </div>
+
+          <div id="mensajeGuardado" class="mensaje-guardado"></div>
+          <div id="errorMensaje" class="mensaje-error"></div>
+          <div id="toast" class="toast"></div>
         </div>
-        <div id="resumenVentana" class="ventana-datos mt-4"></div>
       </div>
     </div>
   </div>
-</div>
-```
-
-  </div>
 
   <!-- FOOTER -->
-
   <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
     <small>
-      &copy; 2025 UCRIF · Benito · G. Expulsiones | Plataforma policial | <a href="#" class="link-light text-decoration-underline">Soporte</a>
+      &copy; 2025 UCRIF · Benito · G. Expulsiones | Plataforma policial
     </small>
   </footer>
 
   <!-- Bootstrap JS -->
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Lógica específica Grupo 1 -->
-
-<script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
-<script src="/js/grupo1.js"></script>
-
+  <!-- Firebase (ajusta si cambias de versión) -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <!-- JS Grupo 1 -->
+  <script src="grupo1.js"></script>
 </body>
 </html>
