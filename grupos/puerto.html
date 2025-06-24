@@ -9,7 +9,7 @@
 </head>
 <body class="bg-puerto">
   <header class="puerto-header">
-    <button class="btn-menu" onclick="window.location.href='../index.html'">🏠</button>
+    <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
     <div class="puerto-logo"><span style="font-size:48px; display:inline-block;">⚓️</span></div>
     <div class="puerto-title">
       <span class="title-main">GRUPO PUERTO</span>
@@ -41,48 +41,51 @@
         </div>
         <!-- Campos compactos en grid -->
         <div id="camposPuerto">
-          <div class="control-grid">
-            <label>Marinos Argos</label>
-            <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Argos">
-            <label>Pasaportes Marinos</label>
-            <input type="number" min="0" id="controlPasaportes" class="form-control" placeholder="Pasaportes">
-          </div>
-          <div class="control-grid">
-            <label>Cruceros</label>
-            <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros">
-            <label>Cruceristas</label>
-            <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros">
-          </div>
-          <div class="control-grid">
-            <label>Visados Valencia</label>
-            <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia">
-            <label>Visados CG</label>
-            <input type="number" min="0" id="visadosCG" class="form-control" placeholder="CG">
-          </div>
-          <div class="control-grid">
-            <label>Ferry Entradas</label>
-            <input type="number" min="0" id="ferryEntradas" class="form-control" placeholder="Entradas">
-            <label>Ferry Salidas</label>
-            <input type="number" min="0" id="ferrySalidas" class="form-control" placeholder="Salidas">
-          </div>
-          <div class="control-grid">
-            <label>Vehículos</label>
-            <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehículos">
-            <label>Pasajeros</label>
-            <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasajeros">
-          </div>
-          <div class="control-grid">
-            <label>Culminados EISICS</label>
-            <input type="number" min="0" id="ferryCulminados" class="form-control" placeholder="Culminados">
-            <label>Entradas excepcionales</label>
-            <input type="number" min="0" id="ferryExcepcionales" class="form-control" placeholder="Excepcionales">
-          </div>
-          <div class="control-grid">
-            <label>Denegaciones</label>
-            <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Denegaciones">
-            <label>Puerto Deportivo</label>
-            <input type="number" min="0" id="puertoDeportivo" class="form-control" placeholder="Registros">
-          </div>
+          <!-- ...cabecera y fecha igual... -->
+<div class="form-grid">
+  <label for="marinosArgos">Marinos Argos</label>
+  <input type="number" min="0" id="marinosArgos" placeholder="Argos">
+  
+  <label for="controlPasaportes">Pasaportes Marinos</label>
+  <input type="number" min="0" id="controlPasaportes" placeholder="Pasaportes">
+  
+  <label for="cruceros">Cruceros</label>
+  <input type="number" min="0" id="cruceros" placeholder="Cruceros">
+  
+  <label for="cruceristas">Cruceristas</label>
+  <input type="number" min="0" id="cruceristas" placeholder="Pasajeros">
+  
+  <label for="visadosValencia">Visados Valencia</label>
+  <input type="number" min="0" id="visadosValencia" placeholder="Valencia">
+  
+  <label for="visadosCG">Visados CG</label>
+  <input type="number" min="0" id="visadosCG" placeholder="CG">
+  
+  <label for="ferryEntradas">Ferry Entradas</label>
+  <input type="number" min="0" id="ferryEntradas" placeholder="Entradas">
+  
+  <label for="ferrySalidas">Ferry Salidas</label>
+  <input type="number" min="0" id="ferrySalidas" placeholder="Salidas">
+  
+  <label for="ferryVehiculos">Vehículos</label>
+  <input type="number" min="0" id="ferryVehiculos" placeholder="Vehículos">
+  
+  <label for="ferryPasajeros">Pasajeros</label>
+  <input type="number" min="0" id="ferryPasajeros" placeholder="Pasajeros">
+  
+  <label for="ferryCulminados">Culminados EISICS</label>
+  <input type="number" min="0" id="ferryCulminados" placeholder="Culminados">
+  
+  <label for="ferryExcepcionales">Entradas excepcionales</label>
+  <input type="number" min="0" id="ferryExcepcionales" placeholder="Excepcionales">
+  
+  <label for="denegaciones">Denegaciones</label>
+  <input type="number" min="0" id="denegaciones" placeholder="Denegaciones">
+  
+  <label for="puertoDeportivo">Puerto Deportivo</label>
+  <input type="number" min="0" id="puertoDeportivo" placeholder="Registros">
+</div>
+
         </div>
         <div class="control-group">
           <label>Observaciones</label>

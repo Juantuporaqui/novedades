@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SIREX · Grupo CIE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/cie.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+</head>
+<body class="bg-cie">
+  <header class="cie-header">
+    <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
+    <div class="cie-logo"><span style="font-size:48px; display:inline-block;">🏢</span></div>
+    <div class="cie-title">
+      <span class="title-main">GRUPO CIE</span>
+      <span class="title-desc">Centro de Internamiento</span>
+    </div>
+  </header>
+  <main class="main-container">
+    <form id="formCIE" autocomplete="off">
+      <section class="panel panel-glass">
+        <!-- FECHA Y NUEVO/CARGAR -->
+        <div class="row-cols">
+          <label for="fechaCIE">Fecha</label>
+          <input type="date" id="fechaCIE" required class="form-control input-date">
+          <button type="button" class="btn-cargar" id="btnCargar">Cargar</button>
+          <button type="button" class="btn-nuevo" id="btnNuevo">Nuevo</button>
+        </div>
+        <div class="row-cols">
+          <label for="descripcionBreve">Descripción breve</label>
+          <input type="text" id="descripcionBreve" class="form-control" maxlength="90" placeholder="Resumen rápido de la jornada">
+        </div>
+        <div class="form-grid">
+          <label for="tipoActuacion">Tipo de actuación</label>
+          <input type="text" id="tipoActuacion" placeholder="Admisión, visita, traslado...">
+          <label for="nInternos">Nº internos total</label>
+          <input type="number" min="0" id="nInternos" placeholder="Total internos">
+        </div>
+        <div class="subseccion">
+          <label>Internos por nacionalidad</label>
+          <div class="input-row-multi">
+            <input type="text" id="nacionalidadInterno" placeholder="Nacionalidad" maxlength="30">
+            <input type="number" min="0" id="numInternosNac" placeholder="Número">
+            <button type="button" class="btn-add" id="btnAddInternoNac">Añadir</button>
+          </div>
+          <div class="ventana-datos" id="ventanaInternosNac"></div>
+        </div>
+        <div class="subseccion">
+          <label>Ingresos</label>
+          <div class="input-row-multi">
+            <input type="text" id="nacionalidadIngreso" placeholder="Nacionalidad" maxlength="30">
+            <input type="number" min="0" id="numIngresos" placeholder="Número">
+            <button type="button" class="btn-add" id="btnAddIngreso">Añadir</button>
+          </div>
+          <div class="ventana-datos" id="ventanaIngresos"></div>
+        </div>
+        <div class="subseccion">
+          <label>Salidas</label>
+          <div class="input-row-multi">
+            <input type="text" id="destinoSalida" placeholder="Destino" maxlength="30">
+            <input type="number" min="0" id="numSalidas" placeholder="Número">
+            <button type="button" class="btn-add" id="btnAddSalida">Añadir</button>
+          </div>
+          <div class="ventana-datos" id="ventanaSalidas"></div>
+        </div>
+        <div class="subseccion">
+          <label>Motivos, Observaciones</label>
+          <input type="text" id="nombrePersona" class="form-control" placeholder="Nombre de la persona">
+          <input type="text" id="nacionalidadPersona" class="form-control" placeholder="Nacionalidad de la persona">
+          <textarea id="motivo" class="form-control" placeholder="Motivo, observaciones..."></textarea>
+          <textarea id="observaciones" class="form-control" placeholder="Otras incidencias..."></textarea>
+        </div>
+        <div class="action-buttons">
+          <button type="submit" class="btn-guardar">Guardar Registro</button>
+        </div>
+      </section>
+    </form>
+    <section class="panel panel-glass mt-4" id="panelResumenCIE" style="display:none;">
+      <h3>Resumen del día</h3>
+      <div id="resumenCIE"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    SIREX · UCRIF · Grupo CIE &copy; 2025
+  </footer>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="cie.js"></script>
+</body>
+</html>
