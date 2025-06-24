@@ -1,4 +1,4 @@
-// Inicialización de Firebase
+// ====== Inicialización de Firebase ======
 const firebaseConfig = {
     apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
     authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -8,13 +8,12 @@ const firebaseConfig = {
     appId: "1:241698436443:web:1f333b3ae3f813b755167e",
     measurementId: "G-S2VPQNWZ21"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ====== Utilidades ======
-
+// ====== Utilidades generales ======
 function showToast(mensaje, tipo = "info") {
+    // Reemplazable por un toast animado (Bootstrap o personalizado)
     alert(mensaje);
 }
 
@@ -34,7 +33,6 @@ function scrollVentana(idVentana) {
 }
 
 // ====== Referencias DOM ======
-
 const fechaDiaInput = document.getElementById('fechaDia');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNuevo = document.getElementById('btnNuevo');
@@ -84,23 +82,19 @@ const generarResumenBtn = document.getElementById('generarResumenBtn');
 const resumenVentana = document.getElementById('resumenVentana');
 
 // ====== Estado ======
-
 let fechaActual = null;
 
 // ====== Helpers Firestore ======
-
 function getDocIdDia(fecha) {
     if (!fecha) return null;
     const fechaISO = new Date(fecha).toISOString().slice(0, 10);
     return `expulsiones_${fechaISO}`;
 }
-
 function getDocRefDia(fecha) {
     return db.collection("grupo1_expulsiones").doc(getDocIdDia(fecha));
 }
 
 // ====== Cargar y mostrar datos de un día ======
-
 async function cargarDia(fecha) {
     if (!fecha) return;
     fechaActual = fecha;
@@ -108,7 +102,7 @@ async function cargarDia(fecha) {
     const ref = getDocRefDia(fecha);
     const docSnap = await ref.get();
     if (!docSnap.exists) {
-        showToast("No hay datos grabados en esta fecha.");
+        // No mostrar alerta si es un nuevo registro, solo si se pulsa Buscar
         return;
     }
     const datos = docSnap.data();
@@ -116,8 +110,8 @@ async function cargarDia(fecha) {
     mostrarListaVentana(expulsadosVentana, datos.expulsados || [], 'expulsado', true);
     mostrarListaVentana(fletadosVentana, datos.fletados || [], 'fletado', true);
     mostrarListaVentana(fletadosFuturosVentana, datos.fletadosFuturos || [], 'fletadoFuturo', true);
-    mostrarListaVentana(conduccionesPosVentana, datos.conduccionesPositivas || [], 'conduccionPositiva', false);
-    mostrarListaVentana(conduccionesNegVentana, datos.conduccionesNegativas || [], 'conduccionNegativa', false);
+    mostrarListaVentana(conduccionesPosVentana, datos.conduccionesPositivas || [], 'conduccionPositiva', true);
+    mostrarListaVentana(conduccionesNegVentana, datos.conduccionesNegativas || [], 'conduccionNegativa', true);
     mostrarListaVentana(pendientesVentana, datos.pendientes || [], 'pendiente', true);
 }
 
@@ -131,7 +125,6 @@ function limpiarTodo() {
 }
 
 // ====== Mostrar listados ======
-
 function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     if (!Array.isArray(lista) || lista.length === 0) {
         ventana.innerHTML = "<span class='text-muted'>Sin datos</span>";
@@ -142,11 +135,9 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
         let texto = "";
         switch (tipo) {
             case "expulsado":
-                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
+                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}] Pos: ${item.nConduccionesPos || 0}`;
                 break;
             case "fletado":
-                texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
-                break;
             case "fletadoFuturo":
                 texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
                 break;
@@ -177,20 +168,17 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
 }
 
 // ====== Añadir datos ======
-
 async function añadirExpulsado(e) {
     e.preventDefault();
     if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
     const nombre = nombreExpulsado.value.trim();
     const nacionalidad = nacionalidadExpulsado.value.trim();
     const diligencias = diligenciasExpulsado.value.trim();
-    const ncondu = parseInt(nConduccionesPos.value) || 0;
-    if (!nombre) { showToast("Introduce nombre."); return; }
-    if (!nacionalidad) { showToast("Introduce nacionalidad."); return; }
+    const nConducciones = parseInt(nConduccionesPos.value) || 0;
+    if (!nombre || !nacionalidad) { showToast("Introduce nombre y nacionalidad."); return; }
 
-    const expulsado = { nombre, nacionalidad, diligencias, nConduccionesPos: ncondu };
+    const expulsado = { nombre, nacionalidad, diligencias, nConduccionesPos: nConducciones };
     const ref = getDocRefDia(fechaActual);
-
     await ref.set({
         expulsados: firebase.firestore.FieldValue.arrayUnion(expulsado)
     }, { merge: true });
@@ -204,8 +192,7 @@ async function añadirFletado(e) {
     const destino = destinoFletado.value.trim();
     const pax = parseInt(paxFletado.value) || 0;
     const fecha = fechaFletado.value;
-    if (!destino) { showToast("Introduce destino."); return; }
-    if (!fecha) { showToast("Selecciona fecha."); return; }
+    if (!destino || !fecha) { showToast("Introduce destino y fecha."); return; }
     const fletado = { destino, pax, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -221,8 +208,7 @@ async function añadirFletadoFuturo(e) {
     const destino = destinoFletadoFuturo.value.trim();
     const pax = parseInt(paxFletadoFuturo.value) || 0;
     const fecha = fechaFletadoFuturo.value;
-    if (!destino) { showToast("Introduce destino."); return; }
-    if (!fecha) { showToast("Selecciona fecha."); return; }
+    if (!destino || !fecha) { showToast("Introduce destino y fecha."); return; }
     const fletado = { destino, pax, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -236,8 +222,7 @@ async function añadirConduccionPositiva(e) {
     e.preventDefault();
     if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
     const numero = parseInt(conduccionPositiva.value) || 0;
-    const fecha = fechaActual;
-    const dato = { numero, fecha };
+    const dato = { numero, fecha: fechaActual };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
         conduccionesPositivas: firebase.firestore.FieldValue.arrayUnion(dato)
@@ -250,8 +235,7 @@ async function añadirConduccionNegativa(e) {
     e.preventDefault();
     if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
     const numero = parseInt(conduccionNegativa.value) || 0;
-    const fecha = fechaActual;
-    const dato = { numero, fecha };
+    const dato = { numero, fecha: fechaActual };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
         conduccionesNegativas: firebase.firestore.FieldValue.arrayUnion(dato)
@@ -265,8 +249,7 @@ async function añadirPendiente(e) {
     if (!fechaActual) { showToast("Selecciona una fecha de trabajo."); return; }
     const descripcion = descPendiente.value.trim();
     const fecha = fechaPendiente.value;
-    if (!descripcion) { showToast("Introduce descripción."); return; }
-    if (!fecha) { showToast("Selecciona fecha."); return; }
+    if (!descripcion || !fecha) { showToast("Introduce descripción y fecha."); return; }
     const pendiente = { descripcion, fecha };
     const ref = getDocRefDia(fechaActual);
     await ref.set({
@@ -277,24 +260,32 @@ async function añadirPendiente(e) {
 }
 
 // ====== Eliminar dato ======
-
 async function eliminarDato(tipo, idx) {
     if (!fechaActual) return;
     const ref = getDocRefDia(fechaActual);
     const docSnap = await ref.get();
     if (!docSnap.exists) return;
     const datos = docSnap.data();
-    let lista = datos[tipo + (tipo.endsWith('a') ? 's' : '')] || [];
+    let clave;
+    switch (tipo) {
+        case "expulsado": clave = "expulsados"; break;
+        case "fletado": clave = "fletados"; break;
+        case "fletadoFuturo": clave = "fletadosFuturos"; break;
+        case "conduccionPositiva": clave = "conduccionesPositivas"; break;
+        case "conduccionNegativa": clave = "conduccionesNegativas"; break;
+        case "pendiente": clave = "pendientes"; break;
+        default: return;
+    }
+    let lista = datos[clave] || [];
     if (idx < 0 || idx >= lista.length) return;
     lista.splice(idx, 1);
     await ref.set({
-        [tipo + (tipo.endsWith('a') ? 's' : '')]: lista
+        [clave]: lista
     }, { merge: true });
     cargarDia(fechaActual);
 }
 
 // ====== Buscar y nuevo registro ======
-
 btnBuscar.addEventListener('click', () => {
     const fecha = fechaDiaInput.value;
     if (!fecha) { showToast("Introduce una fecha para buscar."); return; }
@@ -309,7 +300,6 @@ btnNuevo.addEventListener('click', () => {
 });
 
 // ====== Formularios: eventos ======
-
 expulsadoForm.addEventListener('submit', añadirExpulsado);
 fletadoForm.addEventListener('submit', añadirFletado);
 fletadoFuturoForm.addEventListener('submit', añadirFletadoFuturo);
@@ -318,7 +308,6 @@ conduccionNegForm.addEventListener('submit', añadirConduccionNegativa);
 pendienteForm.addEventListener('submit', añadirPendiente);
 
 // ====== Generar resumen ======
-
 generarResumenBtn.addEventListener('click', async () => {
     const desde = desdeResumen.value;
     const hasta = hastaResumen.value;
@@ -371,7 +360,6 @@ function mostrarResumen(resumen) {
 }
 
 // ====== Inicialización automática ======
-
 window.addEventListener('DOMContentLoaded', () => {
     const hoy = new Date().toISOString().slice(0, 10);
     fechaDiaInput.value = hoy;
