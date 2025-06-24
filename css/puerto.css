@@ -9,41 +9,58 @@ html, body {
 .puerto-header {
   display: flex;
   align-items: center;
-  gap: 1.7rem;
-  padding: 1.3rem 2.3rem 0.6rem 2.3rem;
+  gap: 1.2rem;
+  padding: 1rem 1rem 0.7rem 1rem;
   background: transparent;
 }
+.btn-menu {
+  background: #079cd8;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 4px 16px #079cd840;
+  cursor: pointer;
+  margin-right: 0.7rem;
+  transition: background .16s, box-shadow .16s;
+}
+.btn-menu:hover { background: #18509e; }
+
 .puerto-logo img, .puerto-logo span {
-  width: 64px; height: 64px;
+  width: 56px; height: 56px;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 2px 18px #26bbec3b;
+  box-shadow: 0 2px 16px #26bbec3b;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .puerto-title {
   display: flex;
   flex-direction: column;
 }
 .title-main {
-  font-size: 2rem;
+  font-size: 2.3rem;
   font-weight: 900;
   color: #079cd8;
-  letter-spacing: 1.1px;
+  letter-spacing: 1.2px;
 }
 .title-desc {
-  font-size: 1.03rem;
+  font-size: 1.06rem;
   color: #155475;
   font-weight: 600;
 }
+
 .main-container {
-  max-width: 660px;
+  max-width: 670px;
   margin: 0 auto;
   padding: 10px 0 70px 0;
 }
 .panel.panel-glass {
-  background: rgba(255,255,255,0.97);
+  background: rgba(255,255,255,0.98);
   border-radius: 2rem;
   box-shadow: 0 7px 28px #079cd82a, 0 1px 1.5px #fff9 inset;
   padding: 2rem 2.2rem 1.5rem 2.2rem;
@@ -52,28 +69,39 @@ html, body {
 }
 .row-cols { margin-bottom: 1.05rem; }
 .form-control, .input-date, select {
-  font-size: 1.1rem;
+  font-size: 1.11rem;
   border-radius: 1rem;
   border: 1.2px solid #b9e9f8;
   padding: 10px 15px;
-  outline: none;
-  margin-bottom: 0;
   background: #f6fdff;
   color: #15498e;
   transition: border .12s;
 }
 .form-control:focus, .input-date:focus, select:focus { border-color: #079cd8; }
-.control-group {
-  margin-bottom: 1.12rem;
-}
-.control-group label {
+label {
   font-weight: bold;
   color: #268fc5;
-  font-size: 1.06rem;
-  margin-bottom: 0.3rem;
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
   display: block;
 }
-textarea.form-control { min-height: 48px; }
+.control-group {
+  margin-bottom: 1.1rem;
+}
+.control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr 1.2fr;
+  gap: 10px 12px;
+  align-items: end;
+  margin-bottom: 0.7rem;
+}
+@media (max-width: 650px) {
+  .control-grid {
+    grid-template-columns: 1fr 1.2fr;
+  }
+  .main-container { max-width: 99vw; }
+}
+textarea.form-control { min-height: 44px; }
 .action-buttons {
   display: flex;
   gap: 1.2rem;
@@ -85,7 +113,7 @@ textarea.form-control { min-height: 48px; }
   color: #fff;
   border: none;
   border-radius: 1rem;
-  font-size: 1.13rem;
+  font-size: 1.17rem;
   font-weight: bold;
   padding: 11px 30px;
   box-shadow: 0 4px 18px #079cd824;
@@ -112,16 +140,17 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   border-radius: 1rem;
   min-height: 40px;
   padding: 15px 16px;
-  font-size: 1.09rem;
+  font-size: 1.11rem;
   color: #1d355e;
   box-shadow: 0 1px 8px #079cd817;
+  word-break: break-word;
 }
 .footer {
   width: 100%;
   background: #18509e;
   color: #fff;
   text-align: right;
-  font-size: 1.05rem;
+  font-size: 1.09rem;
   padding: 17px 32px 13px 0;
   border-top-left-radius: 2.3rem;
   letter-spacing: 0.08em;

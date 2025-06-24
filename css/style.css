@@ -92,6 +92,27 @@ body {
   transition: transform .13s;
 }
 
+/* Botones 3D para menú principal */
+.grupo-card {
+  box-shadow: 0 6px 24px #075aaf33, 0 1.5px 2.5px #fff9 inset;
+  border-radius: 2rem;
+  background: linear-gradient(120deg, #eaf3fc 70%, #dbedfa 100%);
+  transition: box-shadow .16s, transform .12s;
+  border: 2px solid #0459ad15;
+  min-height: 170px;
+}
+.grupo-card:hover {
+  box-shadow: 0 16px 40px #156be430, 0 2px 8px #fff9 inset;
+  transform: scale(1.04) translateY(-5px);
+  background: linear-gradient(120deg, #eaf6ff 0%, #c3e1ff 100%);
+  border-color: #0b59bb60;
+}
+.grupo-card .display-4 {
+  font-size: 3.7rem;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 4px 8px #3c8be860);
+}
+
 .grupo-btn:hover .grupo-ico img, .grupo-btn:focus .grupo-ico img {
   transform: scale(1.1) rotate(-2deg);
 }
@@ -140,10 +161,15 @@ body {
   margin-top: 2rem;
 }
 
-@media (max-width: 750px) {
-  .sirex-title { font-size: 2.3rem; }
-  .grupos-menu { gap: 1.2rem 1rem; }
-  .grupo-btn { width: 94vw; max-width: 330px; height: 110px;}
-  .grupo-ico { width: 48px; height: 48px;}
-  .grupo-ico img { width: 45px; height: 45px;}
+/* Aumenta tamaño logos en móvil */
+@media (max-width: 650px) {
+  .grupo-card .display-4 {
+    font-size: 4.7rem;
+    margin-bottom: 0.6rem;
+  }
+  .grupo-card {
+    min-height: 130px;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
 }
