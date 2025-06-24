@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SIREX · Gestión Avanzada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- ICONS & FONTS -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- SheetJS para Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="../css/gestion.css">
+</head>
+<body class="gestion-bg">
+  <!-- CABECERA -->
+  <header class="gestion-header">
+    <img src="../img/logo_cnp.png" alt="Logo CNP" class="logo">
+    <span class="gestion-title">SIREX · GESTIÓN</span>
+    <button class="btn-menu" onclick="window.location.href='../index.html'">
+      <i class="bi bi-house-door"></i> Menú
+    </button>
+  </header>
+
+  <main class="container-gestion">
+    <!-- Panel principal -->
+    <div class="gestion-card">
+      <h2><i class="bi bi-clipboard-data"></i> Gestión avanzada de trámites</h2>
+      <form id="formGestion" autocomplete="off">
+
+        <!-- Fila 1: Selector, búsqueda, nuevo, guardar -->
+        <div class="gestion-toolbar">
+          <select id="selectRegistros" class="gestion-select"></select>
+          <button type="button" class="btn-azul" id="btnBuscar"><i class="bi bi-search"></i> Cargar</button>
+          <button type="button" class="btn-gris" id="btnNuevo"><i class="bi bi-file-earmark-plus"></i> Nuevo</button>
+          <button type="submit" class="btn-verde" id="btnGuardar"><i class="bi bi-cloud-upload"></i> Guardar</button>
+        </div>
+        
+        <!-- Fila 2: Datos principales -->
+        <div class="gestion-fields-grid">
+          <div>
+            <label for="fechaGestion">Fecha</label>
+            <input type="date" id="fechaGestion" class="gestion-input" required>
+          </div>
+          <div>
+            <label for="tipoTramite">Tipo de trámite</label>
+            <input type="text" id="tipoTramite" class="gestion-input" placeholder="Asilo, Carta Invitación, etc.">
+          </div>
+          <div>
+            <label for="datosGestionado">Datos del gestionado</label>
+            <textarea id="datosGestionado" class="gestion-textarea" rows="2"></textarea>
+          </div>
+          <div>
+            <label for="descripcionTramite">Descripción del trámite</label>
+            <textarea id="descripcionTramite" class="gestion-textarea" rows="2"></textarea>
+          </div>
+        </div>
+        
+        <!-- Fila 3: Resumen rápido numérico -->
+        <div class="gestion-stats-row">
+          <div>
+            <label for="menas">MENAs</label>
+            <input type="number" min="0" id="menas" class="gestion-input-n">
+          </div>
+          <div>
+            <label for="asilos">Asilos</label>
+            <input type="number" min="0" id="asilos" class="gestion-input-n">
+          </div>
+          <div>
+            <label for="citas">Citas ofertadas</label>
+            <input type="number" min="0" id="citas" class="gestion-input-n">
+          </div>
+          <div>
+            <label for="cues">CUEs</label>
+            <input type="number" min="0" id="cues" class="gestion-input-n">
+          </div>
+          <div>
+            <label for="asignaciones">Asignaciones</label>
+            <input type="number" min="0" id="asignaciones" class="gestion-input-n">
+          </div>
+          <div>
+            <label for="protecciones">Protecciones</label>
+            <input type="number" min="0" id="protecciones" class="gestion-input-n">
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <label for="observaciones">Observaciones</label>
+        <textarea id="observaciones" class="gestion-textarea" rows="2"></textarea>
+      </form>
+      <!-- Botón rápido resumen y export -->
+      <div class="gestion-resumen-bar">
+        <button class="btn-azul" id="btnResumen"><i class="bi bi-table"></i> Resumen por fechas</button>
+        <button class="btn-verde" id="btnExportarExcel"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</button>
+        <button class="btn-rojo" id="btnExportarPDF"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+      </div>
+      <div id="resumenGestion"></div>
+    </div>
+
+    <!-- Panel lateral histórico animado -->
+    <aside class="gestion-sidebar" id="historialGestion">
+      <h3><i class="bi bi-clock-history"></i> Histórico rápido</h3>
+      <div id="historialLista"></div>
+    </aside>
+  </main>
+
+  <footer class="gestion-footer">
+    <span>SIREX &copy; 2025 · Plataforma profesional UCRIF · Benito Dev.</span>
+  </footer>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="gestion.js"></script>
+</body>
+</html>
