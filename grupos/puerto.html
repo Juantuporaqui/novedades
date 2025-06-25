@@ -6,8 +6,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="../css/puerto.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../img/logo_cnp.png">
+  <style>
+    body.dark-mode { background: #111d2e !important; color: #e4f0fa; }
+    body.dark-mode .panel-glass { background: #1d2a3a !important; color: #fff !important; }
+    body.dark-mode .footer, body.dark-mode .puerto-header { background: #144e8e !important; color: #fff !important;}
+    .modo-oscuro-btn {
+      border: none; background: transparent; color: #ffd94a; font-size: 1.7em; margin-left: 10px; cursor: pointer;
+      transition: filter .15s;
+    }
+    .modo-oscuro-btn:hover { filter: brightness(1.6);}
+    .ayuda-btn {
+      border: none; background: #ffd94a; color: #24385d; border-radius: 50%; width: 1.7em; height: 1.7em; font-weight: bold;
+      margin-left: 6px; transition: filter .14s; cursor: pointer;}
+    .ayuda-btn:hover { filter: brightness(1.2);}
+    .export-btns .btn { min-width: 130px; margin-bottom: 4px;}
+    .observaciones-box textarea { width: 99%; min-height: 85px; font-size:1.15rem; border-radius: 1em;}
+    @media (max-width:700px){ .observaciones-box textarea { width: 98vw; } }
+  </style>
 </head>
 <body class="bg-puerto">
+  <!-- HEADER -->
   <header class="puerto-header">
     <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
     <div class="puerto-logo"><span style="font-size:48px; display:inline-block;">⚓️</span></div>
@@ -15,6 +34,7 @@
       <span class="title-main">GRUPO PUERTO</span>
       <span class="title-desc">Control y Estadística Portuaria</span>
     </div>
+    <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
   </header>
 
   <main class="main-container">
@@ -27,87 +47,84 @@
           <button type="button" class="btn-cargar" id="btnCargar">Cargar</button>
           <button type="button" class="btn-nuevo" id="btnNuevo">Nuevo</button>
         </div>
-        <div class="row-cols">
-          <label for="tipoControl">Tipo de control</label>
-          <select id="tipoControl" class="form-control" required>
-            <option value="">--Seleccione--</option>
-            <option>General</option>
-            <option>Cruceros</option>
-            <option>Ferry</option>
-            <option>Puerto deportivo</option>
-            <option>Visados</option>
-            <option>Especial</option>
-          </select>
-        </div>
-        <!-- Campos compactos en grid -->
-        <div id="camposPuerto">
-          <!-- ...cabecera y fecha igual... -->
-<div class="form-grid">
-  <label for="marinosArgos">Marinos Argos</label>
-  <input type="number" min="0" id="marinosArgos" placeholder="Argos">
-  
-  <label for="controlPasaportes">Pasaportes Marinos</label>
-  <input type="number" min="0" id="controlPasaportes" placeholder="Pasaportes">
-  
-  <label for="cruceros">Cruceros</label>
-  <input type="number" min="0" id="cruceros" placeholder="Cruceros">
-  
-  <label for="cruceristas">Cruceristas</label>
-  <input type="number" min="0" id="cruceristas" placeholder="Pasajeros">
-  
-  <label for="visadosValencia">Visados Valencia</label>
-  <input type="number" min="0" id="visadosValencia" placeholder="Valencia">
-  
-  <label for="visadosCG">Visados CG</label>
-  <input type="number" min="0" id="visadosCG" placeholder="CG">
-  
-  <label for="ferryEntradas">Ferry Entradas</label>
-  <input type="number" min="0" id="ferryEntradas" placeholder="Entradas">
-  
-  <label for="ferrySalidas">Ferry Salidas</label>
-  <input type="number" min="0" id="ferrySalidas" placeholder="Salidas">
-  
-  <label for="ferryVehiculos">Vehículos</label>
-  <input type="number" min="0" id="ferryVehiculos" placeholder="Vehículos">
-  
-  <label for="ferryPasajeros">Pasajeros</label>
-  <input type="number" min="0" id="ferryPasajeros" placeholder="Pasajeros">
-  
-  <label for="ferryCulminados">Culminados EISICS</label>
-  <input type="number" min="0" id="ferryCulminados" placeholder="Culminados">
-  
-  <label for="ferryExcepcionales">Entradas excepcionales</label>
-  <input type="number" min="0" id="ferryExcepcionales" placeholder="Excepcionales">
-  
-  <label for="denegaciones">Denegaciones</label>
-  <input type="number" min="0" id="denegaciones" placeholder="Denegaciones">
-  
-  <label for="puertoDeportivo">Puerto Deportivo</label>
-  <input type="number" min="0" id="puertoDeportivo" placeholder="Registros">
-</div>
 
+        <!-- Marinos/Cruceros/Visados -->
+        <div class="row-cols">
+          <div class="form-grid">
+            <label for="marinosArgos">Marinos Argos</label>
+            <input type="number" min="0" id="marinosArgos" placeholder="Argos">
+            <label for="controlPasaportes">Pasaportes Marinos</label>
+            <input type="number" min="0" id="controlPasaportes" placeholder="Pasaportes">
+            <label for="cruceros">Cruceros</label>
+            <input type="number" min="0" id="cruceros" placeholder="Cruceros">
+            <label for="cruceristas">Cruceristas</label>
+            <input type="number" min="0" id="cruceristas" placeholder="Pasajeros">
+            <label for="visadosValencia">Visados Valencia</label>
+            <input type="number" min="0" id="visadosValencia" placeholder="Valencia">
+            <label for="visadosCG">Visados CG</label>
+            <input type="number" min="0" id="visadosCG" placeholder="CG">
+            <label for="puertoDeportivo">Puerto Deportivo</label>
+            <input type="number" min="0" id="puertoDeportivo" placeholder="Registros">
+            <label for="denegaciones">Denegaciones</label>
+            <input type="number" min="0" id="denegaciones" placeholder="Denegaciones">
+            <label for="certificadosEixics">Certificados EIXICS</label>
+            <input type="number" min="0" id="certificadosEixics" placeholder="EIXICS">
+          </div>
         </div>
-        <div class="control-group">
-          <label>Observaciones</label>
+
+        <!-- FERRYS DINÁMICOS -->
+        <div class="mb-3">
+          <h4>FERRYS <button class="ayuda-btn" type="button" title="Añade entradas/salidas de cada ferry (fecha, hora, pasajeros, vehículos)" onclick="alert('Puedes registrar cada operación de ferry: entrada o salida, con fecha, hora, pasajeros y vehículos. Al final tendrás el total de ferrys, pasajeros y vehículos.')">?</button></h4>
+          <div id="ferrysContainer">
+            <!-- Aquí se añaden los bloques de ferry -->
+          </div>
+          <button type="button" class="btn-pdf" id="btnAddFerry"><i class="bi bi-plus"></i> Añadir ferry</button>
+          <div class="mt-3">
+            <b>Total ferrys:</b> <span id="totalFerrys">0</span> |
+            <b>Total pasajeros:</b> <span id="totalPasajeros">0</span> |
+            <b>Total vehículos:</b> <span id="totalVehiculos">0</span>
+          </div>
+        </div>
+
+
+        <!-- OBSERVACIONES -->
+        <div class="control-group observaciones-box">
+          <label for="observaciones">Observaciones
+            <button class="ayuda-btn" type="button" title="Añade cualquier nota relevante, incidencias, etc." onclick="alert('Aquí puedes anotar cualquier observación relevante, incidencias, etc.')">?</button>
+          </label>
           <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
         </div>
+
+        <!-- Adjuntos -->
         <div class="control-group">
           <label>Adjuntar documentos/imágenes</label>
           <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
         </div>
-        <div class="row-cols align-center">
-          <label>¿Queda alguna tarea pendiente?</label>
-          <select id="tareaPendiente" class="form-control">
-            <option>No</option>
-            <option>Sí</option>
-          </select>
-        </div>
+
         <div class="action-buttons">
           <button type="submit" class="btn-guardar">Guardar Registro</button>
           <button type="button" class="btn-pdf" id="btnPDF">Imprimir / PDF</button>
         </div>
       </section>
     </form>
+
+    <!-- RESUMEN AVANZADO / EXPORTACIÓN -->
+    <section class="panel panel-glass mt-4" id="panelResumenAvanzado">
+      <h3>Resumen avanzado <button class="ayuda-btn" type="button" title="Resumen y exportación" onclick="alert('Puedes generar un resumen por rango de fechas y exportar los datos en PDF, CSV o copiar para WhatsApp.')">?</button></h3>
+      <div class="row-cols mb-2">
+        <label for="desdeResumen">Desde</label>
+        <input type="date" id="desdeResumen" class="form-control input-date">
+        <label for="hastaResumen">Hasta</label>
+        <input type="date" id="hastaResumen" class="form-control input-date">
+        <button type="button" class="btn-guardar" id="btnGenerarResumen"><i class="bi bi-clipboard-data"></i> Generar resumen</button>
+      </div>
+      <div class="export-btns d-flex flex-wrap gap-2 mb-3">
+        <button id="btnExportarPDF" class="btn btn-pdf" type="button"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+        <button id="btnExportarCSV" class="btn btn-guardar" type="button"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+        <button id="btnWhatsapp" class="btn btn-menu" type="button"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+      </div>
+      <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
+    </section>
 
     <section class="panel panel-glass mt-4" id="panelResumenPuerto" style="display:none;">
       <h3>Resumen del día</h3>
@@ -122,5 +139,20 @@
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-storage-compat.js"></script>
   <script src="puerto.js"></script>
+  <script>
+    // =========== MODO OSCURO ===========
+    const darkBtn = document.getElementById("darkModeBtn");
+    if (darkBtn) {
+      darkBtn.onclick = function() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+      };
+      if (localStorage.getItem("sirex_darkmode") === "1") {
+        document.body.classList.add("dark-mode");
+      }
+    }
+    // =========== FERRYS DINÁMICOS ===========
+    // (Solo la estructura HTML aquí, la lógica está en puerto.js)
+  </script>
 </body>
 </html>
