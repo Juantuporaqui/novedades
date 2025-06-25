@@ -21,6 +21,7 @@ function showToast(mensaje, tipo = "info") {
 function formatoFecha(fecha) {
     if (!fecha) return "";
     const f = new Date(fecha);
+    if (isNaN(f.getTime())) return fecha;
     return f.toLocaleDateString("es-ES");
 }
 
@@ -77,11 +78,16 @@ const descPendiente = document.getElementById('descPendiente');
 const fechaPendiente = document.getElementById('fechaPendiente');
 const pendientesVentana = document.getElementById('pendientesVentana');
 
-// Resumen
+// Resumen avanzado
 const desdeResumen = document.getElementById('desdeResumen');
 const hastaResumen = document.getElementById('hastaResumen');
 const generarResumenBtn = document.getElementById('generarResumenBtn');
 const resumenVentana = document.getElementById('resumenVentana');
+
+// NUEVOS: Botones exportación
+const btnExportarPDF = document.getElementById('btnExportarPDF');
+const btnExportarCSV = document.getElementById('btnExportarCSV');
+const btnWhatsapp = document.getElementById('btnWhatsapp');
 
 // ====== Estado ======
 let fechaActual = null;
@@ -116,6 +122,7 @@ async function cargarDia(fecha) {
     mostrarListaVentana(conduccionesNegVentana, datos.conduccionesNegativas || [], 'conduccionNegativa', false);
     mostrarListaVentana(pendientesVentana, datos.pendientes || [], 'pendiente', true);
 }
+
 function limpiarTodo() {
     expulsadosVentana.innerHTML = "";
     fletadosVentana.innerHTML = "";
@@ -175,7 +182,7 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     scrollVentana(ventana.id);
 }
 
-// ====== Añadir datos (asegúrate de usar siempre la fecha seleccionada) ======
+// ====== Añadir datos ======
 async function añadirExpulsado(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -317,7 +324,9 @@ conduccionPosForm.addEventListener('submit', añadirConduccionPositiva);
 conduccionNegForm.addEventListener('submit', añadirConduccionNegativa);
 pendienteForm.addEventListener('submit', añadirPendiente);
 
-// ====== Generar resumen ======
+// ====== Generar resumen avanzado ======
+let resumenFiltrado = []; // para exportación
+
 generarResumenBtn.addEventListener('click', async () => {
     const desde = desdeResumen.value;
     const hasta = hastaResumen.value;
@@ -336,6 +345,7 @@ generarResumenBtn.addEventListener('click', async () => {
         }
     });
 
+    resumenFiltrado = resumen;
     mostrarResumen(resumen);
 });
 
@@ -369,10 +379,101 @@ function mostrarResumen(resumen) {
     resumenVentana.innerHTML = html;
 }
 
+// ====== Exportar PDF ======
+if (btnExportarPDF) {
+    btnExportarPDF.onclick = function () {
+        if (!resumenFiltrado || resumenFiltrado.length === 0) {
+            showToast("Primero genera un resumen.");
+            return;
+        }
+        let html = `<h2>Resumen de Gestión</h2>
+        <h4>Del ${desdeResumen.value} al ${hastaResumen.value}</h4>
+        <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Expulsados</th>
+          <th>Fletados</th>
+          <th>Fletados Futuros</th>
+          <th>Conducciones +</th>
+          <th>Conducciones -</th>
+          <th>Pendientes</th>
+        </tr>
+        </thead><tbody>`;
+        resumenFiltrado.forEach(item => {
+            html += `<tr>
+              <td>${formatoFecha(item.fecha)}</td>
+              <td>${(item.expulsados||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
+              <td>${(item.fletados||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
+              <td>${(item.fletadosFuturos||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
+              <td>${(item.conduccionesPositivas||[]).map(x => x.numero).reduce((a,b)=>a+b,0)}</td>
+              <td>${(item.conduccionesNegativas||[]).map(x => x.numero).reduce((a,b)=>a+b,0)}</td>
+              <td>${(item.pendientes||[]).map(x=>x.descripcion).join(" | ")}</td>
+            </tr>`;
+        });
+        html += "</tbody></table>";
+        const w = window.open("", "_blank");
+        w.document.write(`<html><head><title>Resumen Gestión</title></head><body>${html}</body></html>`);
+        w.print();
+    }
+}
+
+// ====== Exportar CSV ======
+if (btnExportarCSV) {
+    btnExportarCSV.onclick = function () {
+        if (!resumenFiltrado || resumenFiltrado.length === 0) {
+            showToast("Primero genera un resumen.");
+            return;
+        }
+        let csv = "Fecha,Expulsados,Fletados,FletadosFuturos,ConduccionesPos,ConduccionesNeg,Pendientes\n";
+        resumenFiltrado.forEach(item => {
+            csv += [
+                item.fecha,
+                (item.expulsados||[]).map(x => x.nombre).join("|"),
+                (item.fletados||[]).map(x => x.destino).join("|"),
+                (item.fletadosFuturos||[]).map(x => x.destino).join("|"),
+                (item.conduccionesPositivas||[]).map(x => x.numero).reduce((a,b)=>a+b,0),
+                (item.conduccionesNegativas||[]).map(x => x.numero).reduce((a,b)=>a+b,0),
+                (item.pendientes||[]).map(x=>x.descripcion).join("|")
+            ].join(",") + "\n";
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "resumen_grupo1.csv";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+    }
+}
+
+// ====== Exportar resumen a WhatsApp ======
+if (btnWhatsapp) {
+    btnWhatsapp.onclick = function () {
+        if (!resumenFiltrado || resumenFiltrado.length === 0) {
+            showToast("Primero genera un resumen.");
+            return;
+        }
+        let resumen = `Resumen Gestión SIREX\n${desdeResumen.value} al ${hastaResumen.value}:\n`;
+        resumenFiltrado.forEach(item => {
+            resumen += `${formatoFecha(item.fecha)} - Exp: ${(item.expulsados||[]).length}, Flet: ${(item.fletados||[]).length}, FletF: ${(item.fletadosFuturos||[]).length}, C+: ${(item.conduccionesPositivas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, C-: ${(item.conduccionesNegativas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, Pend: ${(item.pendientes||[]).length}\n`;
+        });
+        navigator.clipboard.writeText(resumen)
+            .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
+            .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
+    }
+}
+
 // ====== Inicialización automática ======
 window.addEventListener('DOMContentLoaded', () => {
     const hoy = new Date().toISOString().slice(0, 10);
     fechaDiaInput.value = hoy;
     fechaActual = hoy;
     cargarDia(hoy);
+
+    // Modo oscuro persistente
+    if (localStorage.getItem("sirex_darkmode") === "1") {
+        document.body.classList.add("dark-mode");
+    }
 });
