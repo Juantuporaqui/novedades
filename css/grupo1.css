@@ -225,3 +225,71 @@ input:disabled, .form-control:disabled {
   .btn { font-size: 1.01rem; padding: .7em 1.2em; }
   .footer.bg-police-blue { font-size: 0.98rem; }
 }
+/* ======= MODO OSCURO ======= */
+body.dark-mode {
+  background: #17233a !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .card,
+body.dark-mode .bg-police-light {
+  background: #222e49 !important;
+  color: #fff !important;
+}
+body.dark-mode .navbar,
+body.dark-mode .footer.bg-police-blue {
+  background: #151e34 !important;
+  color: #fff !important;
+}
+body.dark-mode label,
+body.dark-mode .form-label,
+body.dark-mode .text-police-blue,
+body.dark-mode .navbar-brand {
+  color: #ffd94a !important;
+}
+body.dark-mode .form-control,
+body.dark-mode input,
+body.dark-mode textarea {
+  background: #212b48 !important;
+  color: #fff !important;
+  border-color: #ffd94a !important;
+}
+body.dark-mode .btn,
+body.dark-mode .btn-police-blue,
+body.dark-mode .btn-police-green,
+body.dark-mode .btn-police-yellow,
+body.dark-mode .btn-police-red {
+  filter: brightness(1.1);
+}
+
+/* ======= BOTONES DE AYUDA Y EXPORTACIÓN ======= */
+.ayuda-btn {
+  border: none;
+  background: #ffd94a;
+  color: #24385d;
+  border-radius: 50%;
+  width: 1.9em;
+  height: 1.9em;
+  font-weight: bold;
+  margin-left: 6px;
+  transition: filter .14s;
+  cursor: pointer;
+}
+.ayuda-btn:hover {
+  filter: brightness(1.2);
+}
+.modo-oscuro-btn {
+  border: none;
+  background: transparent;
+  color: #ffd94a;
+  font-size: 1.5em;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.modo-oscuro-btn:hover {
+  filter: brightness(1.6);
+}
+.export-btns .btn {
+  min-width: 130px;
+  margin-bottom: 4px;
+}
