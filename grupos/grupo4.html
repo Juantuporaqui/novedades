@@ -8,129 +8,158 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="header">
-    <div class="header-icon"><span>📁</span></div>
+  <header class="header" role="banner">
+    <div class="header-icon" aria-hidden="true"><span>📁</span></div>
     <div class="header-title">
       <span class="brand">SIREX</span>
       <span class="subtitle">· Operativo</span>
     </div>
-    <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
+    <nav>
+      <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal" aria-label="Volver al menú principal">🏠</button>
+    </nav>
   </header>
   <main>
-    <section class="registro-bar">
+    <!-- Barra de registro -->
+    <section class="registro-bar" aria-label="Registro de operaciones">
       <label for="fechaRegistro">Fecha del registro</label>
-      <input type="date" id="fechaRegistro" required>
-      <button type="button" class="btn-secundario" id="btnCargar">Cargar</button>
-      <button type="button" class="btn-secundario" id="btnNuevo">Nuevo</button>
-      <button type="button" class="btn-principal" id="btnGuardar">Guardar</button>
-      <button type="button" class="btn-eliminar" id="btnEliminar">Eliminar</button>
+      <input type="date" id="fechaRegistro" required aria-required="true">
+      <button type="button" class="btn-secundario" id="btnCargar" title="Cargar registro existente">Cargar</button>
+      <button type="button" class="btn-secundario" id="btnNuevo" title="Nuevo registro">Nuevo</button>
+      <button type="button" class="btn-principal" id="btnGuardar" title="Guardar registro">Guardar</button>
+      <button type="button" class="btn-eliminar" id="btnEliminar" title="Eliminar registro">Eliminar</button>
     </section>
 
-    <form id="formOperativo" autocomplete="off">
+    <form id="formOperativo" autocomplete="off" aria-label="Formulario operativo">
       <!-- Colaboraciones -->
-      <section class="panel-seccion">
-        <h2>Colaboraciones</h2>
+      <section class="panel-seccion" aria-labelledby="colaboraciones-title">
+        <h2 id="colaboraciones-title">Colaboraciones</h2>
         <div class="input-row">
-          <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración">
-          <input type="number" id="colaboracionCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddColaboracion">+</button>
+          <label for="colaboracionDesc" class="sr-only">Descripción colaboración</label>
+          <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
+          <label for="colaboracionCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="colaboracionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
         </div>
-        <ul id="listaColaboraciones" class="lista"></ul>
+        <ul id="listaColaboraciones" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Detenidos -->
-      <section class="panel-seccion">
-        <h2>Detenidos</h2>
+      <section class="panel-seccion" aria-labelledby="detenidos-title">
+        <h2 id="detenidos-title">Detenidos</h2>
         <div class="input-row">
-          <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia">
-          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad">
-          <input type="number" id="detenidoCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddDetenido">+</button>
+          <label for="detenidoMotivo" class="sr-only">Motivo/diligencia</label>
+          <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
+          <label for="detenidoNacionalidad" class="sr-only">Nacionalidad</label>
+          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
+          <label for="detenidoCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="detenidoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido" aria-label="Agregar detenido">+</button>
         </div>
-        <ul id="listaDetenidos" class="lista"></ul>
+        <ul id="listaDetenidos" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Citados -->
-      <section class="panel-seccion">
-        <h2>Citados</h2>
+      <section class="panel-seccion" aria-labelledby="citados-title">
+        <h2 id="citados-title">Citados</h2>
         <div class="input-row">
-          <input type="text" id="citadoDesc" placeholder="Descripción citado">
-          <input type="number" id="citadoCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddCitado">+</button>
+          <label for="citadoDesc" class="sr-only">Descripción citado</label>
+          <input type="text" id="citadoDesc" placeholder="Descripción citado" autocomplete="off">
+          <label for="citadoCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="citadoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddCitado" title="Agregar citado" aria-label="Agregar citado">+</button>
         </div>
-        <ul id="listaCitados" class="lista"></ul>
+        <ul id="listaCitados" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Otras gestiones -->
-      <section class="panel-seccion">
-        <h2>Otras gestiones</h2>
+      <section class="panel-seccion" aria-labelledby="gestiones-title">
+        <h2 id="gestiones-title">Otras gestiones</h2>
         <div class="input-row">
-          <input type="text" id="gestionDesc" placeholder="Gestión/tarea">
-          <input type="number" id="gestionCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddGestion">+</button>
+          <label for="gestionDesc" class="sr-only">Gestión/tarea</label>
+          <input type="text" id="gestionDesc" placeholder="Gestión/tarea" autocomplete="off">
+          <label for="gestionCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="gestionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
         </div>
-        <ul id="listaGestiones" class="lista"></ul>
+        <ul id="listaGestiones" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Inspecciones trabajo -->
-      <section class="panel-seccion">
-        <h2>Inspecciones Trabajo</h2>
+      <section class="panel-seccion" aria-labelledby="inspecciones-trabajo-title">
+        <h2 id="inspecciones-trabajo-title">Inspecciones Trabajo</h2>
         <div class="input-row">
-          <input type="text" id="inspeccionTrabajoDesc" placeholder="Descripción">
-          <input type="number" id="inspeccionTrabajoCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddInspeccionTrabajo">+</button>
+          <label for="inspeccionTrabajoDesc" class="sr-only">Descripción</label>
+          <input type="text" id="inspeccionTrabajoDesc" placeholder="Descripción" autocomplete="off">
+          <label for="inspeccionTrabajoCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="inspeccionTrabajoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddInspeccionTrabajo" title="Agregar inspección de trabajo" aria-label="Agregar inspección de trabajo">+</button>
         </div>
-        <ul id="listaInspeccionesTrabajo" class="lista"></ul>
+        <ul id="listaInspeccionesTrabajo" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Otras inspecciones -->
-      <section class="panel-seccion">
-        <h2>Otras inspecciones</h2>
+      <section class="panel-seccion" aria-labelledby="otras-inspecciones-title">
+        <h2 id="otras-inspecciones-title">Otras inspecciones</h2>
         <div class="input-row">
-          <input type="text" id="otraInspeccionDesc" placeholder="Descripción">
-          <input type="number" id="otraInspeccionCantidad" placeholder="Cantidad" min="1">
-          <button type="button" class="btn-add" id="btnAddOtraInspeccion">+</button>
+          <label for="otraInspeccionDesc" class="sr-only">Descripción</label>
+          <input type="text" id="otraInspeccionDesc" placeholder="Descripción" autocomplete="off">
+          <label for="otraInspeccionCantidad" class="sr-only">Cantidad</label>
+          <input type="number" id="otraInspeccionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddOtraInspeccion" title="Agregar otra inspección" aria-label="Agregar otra inspección">+</button>
         </div>
-        <ul id="listaOtrasInspecciones" class="lista"></ul>
+        <ul id="listaOtrasInspecciones" class="lista" aria-live="polite"></ul>
       </section>
 
       <!-- Observaciones -->
-      <section class="panel-seccion">
-        <h2>Observaciones</h2>
-        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..."></textarea>
+      <section class="panel-seccion" aria-labelledby="observaciones-title">
+        <h2 id="observaciones-title">Observaciones</h2>
+        <label for="observaciones" class="sr-only">Observaciones, incidencias...</label>
+        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
       </section>
     </form>
 
     <!-- Resumen dinámico -->
-    <section id="panelResumen" style="display:none;" class="panel-seccion">
-      <h2>Resumen del registro</h2>
+    <section id="panelResumen" style="display:none;" class="panel-seccion" aria-labelledby="resumen-title">
+      <h2 id="resumen-title">Resumen del registro</h2>
       <div id="resumenRegistro"></div>
     </section>
 
     <!-- RESUMEN POR RANGO DE FECHAS -->
-    <section class="panel panel-glass mt-4">
-      <h3>Resumen por rango de fechas</h3>
+    <section class="panel panel-glass mt-4" aria-labelledby="resumen-fechas-title">
+      <h3 id="resumen-fechas-title">Resumen por rango de fechas</h3>
       <div class="row-cols">
-        <label>Desde</label>
+        <label for="resumenDesde">Desde</label>
         <input type="date" id="resumenDesde" class="form-control input-date" style="max-width:140px">
-        <label>Hasta</label>
+        <label for="resumenHasta">Hasta</label>
         <input type="date" id="resumenHasta" class="form-control input-date" style="max-width:140px">
-        <button type="button" class="btn-guardar" id="btnResumenFechas">Mostrar Resumen</button>
+        <button type="button" class="btn-guardar" id="btnResumenFechas" title="Mostrar resumen por fechas">Mostrar Resumen</button>
       </div>
-      <div id="divResumenFechas" style="margin-top:18px; font-size:1.11rem;"></div>
+      <div id="divResumenFechas" style="margin-top:18px; font-size:1.11rem;" aria-live="polite"></div>
       <div style="margin-top: 12px; display: flex; gap: 14px;">
-        <button type="button" class="btn-pdf" id="btnExportarPDF">Exportar PDF</button>
-        <button type="button" class="btn-guardar" id="btnWhatsapp">Resumen WhatsApp</button>
+        <button type="button" class="btn-pdf" id="btnExportarPDF" title="Exportar resumen como PDF">Exportar PDF</button>
+        <button type="button" class="btn-guardar" id="btnWhatsapp" title="Compartir resumen por WhatsApp">Resumen WhatsApp</button>
       </div>
     </section>
-
   </main>
-  <footer>
+  <footer role="contentinfo">
     SIREX · Gestión Avanzada &copy; 2025
   </footer>
   <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
-  <script src="../js/grupo4.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js" defer></script>
+  <script src="../js/grupo4.js" defer></script>
+  <!-- Accesibilidad: clase sr-only -->
+  <style>
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      border: 0 !important;
+    }
+  </style>
 </body>
 </html>
