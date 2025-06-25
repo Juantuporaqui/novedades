@@ -3,7 +3,7 @@
 // Incluye: validación, historial, búsqueda, exportación, autoguardado, estadísticas, ayuda y mucho más.
 
 // ---- CONFIGURACIÓN GENERAL ----
-const NOMBRE_GRUPO = "grupo4_operativo";
+const NOMBRE_GRUPO = "grupo4_gestion";
 const NOMBRE_LOCALSTORE = "sirex_g4_autosave";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
