@@ -11,6 +11,74 @@
   <!-- Estilos propios -->
   <link rel="stylesheet" href="../css/grupo1.css">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
+  <style>
+    /* Modo oscuro extra */
+    body.dark-mode {
+      background: #17233a !important;
+      color: #f8fafc !important;
+    }
+    body.dark-mode .card,
+    body.dark-mode .bg-police-light {
+      background: #222e49 !important;
+      color: #fff !important;
+    }
+    body.dark-mode .navbar,
+    body.dark-mode .footer.bg-police-blue {
+      background: #151e34 !important;
+      color: #fff !important;
+    }
+    body.dark-mode label,
+    body.dark-mode .form-label,
+    body.dark-mode .text-police-blue,
+    body.dark-mode .navbar-brand {
+      color: #ffd94a !important;
+    }
+    body.dark-mode .form-control,
+    body.dark-mode input,
+    body.dark-mode textarea {
+      background: #212b48 !important;
+      color: #fff !important;
+      border-color: #ffd94a !important;
+    }
+    body.dark-mode .btn,
+    body.dark-mode .btn-police-blue,
+    body.dark-mode .btn-police-green,
+    body.dark-mode .btn-police-yellow,
+    body.dark-mode .btn-police-red {
+      filter: brightness(1.1);
+    }
+    .ayuda-btn {
+      border: none;
+      background: #ffd94a;
+      color: #24385d;
+      border-radius: 50%;
+      width: 1.9em;
+      height: 1.9em;
+      font-weight: bold;
+      margin-left: 6px;
+      transition: filter .14s;
+      cursor: pointer;
+    }
+    .ayuda-btn:hover {
+      filter: brightness(1.2);
+    }
+    .modo-oscuro-btn {
+      border: none;
+      background: transparent;
+      color: #ffd94a;
+      font-size: 1.5em;
+      margin-left: 10px;
+      cursor: pointer;
+      transition: filter .15s;
+    }
+    .modo-oscuro-btn:hover {
+      filter: brightness(1.6);
+    }
+    .export-btns .btn {
+      min-width: 130px;
+      margin-bottom: 4px;
+    }
+  </style>
 </head>
 <body class="bg-police">
   <!-- NAVBAR -->
@@ -18,6 +86,7 @@
     <div class="container">
       <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
       <span class="navbar-brand fs-3 fw-bold">SIREX · G1 Expulsiones</span>
+      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
       <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
   </nav>
@@ -56,11 +125,15 @@
     <div class="row justify-content-center">
       <div class="col-lg-10">
         <div class="card shadow-lg p-4">
-          <h2 class="mb-4 text-police-blue"><i class="bi bi-person-fill-lock"></i> Gestión de expulsados y novedades</h2>
+          <h2 class="mb-4 text-police-blue">
+            <i class="bi bi-person-fill-lock"></i> Gestión de expulsados y novedades
+          </h2>
 
           <!-- SECCIÓN EXPULSADOS -->
           <div class="mb-4">
-            <h4 class="mb-2">Expulsados</h4>
+            <h4 class="mb-2">Expulsados
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Añade aquí los datos de cada persona expulsada, por ejemplo: nombre, nacionalidad y diligencias asociadas.')">?</button>
+            </h4>
             <form id="expulsadoForm" class="row g-2 align-items-end">
               <div class="col-12 col-md-3">
                 <input type="text" id="nombreExpulsado" class="form-control" placeholder="Nombre" maxlength="60">
@@ -86,7 +159,9 @@
 
           <!-- FLETADOS -->
           <div class="mb-4">
-            <h4 class="mb-2">Fletados</h4>
+            <h4 class="mb-2">Fletados
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Registra aquí los traslados realizados (fletados) a otras provincias, su destino y número de personas.')">?</button>
+            </h4>
             <form id="fletadoForm" class="row g-2 align-items-end">
               <div class="col-12 col-md-6">
                 <input type="text" id="destinoFletado" class="form-control" placeholder="Destino" maxlength="60">
@@ -109,7 +184,9 @@
 
           <!-- FLETADOS FUTUROS -->
           <div class="mb-4">
-            <h4 class="mb-2">Fletados Futuros</h4>
+            <h4 class="mb-2">Fletados Futuros
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Añade traslados previstos a futuro. Registra destino y número de personas para cada fecha futura.')">?</button>
+            </h4>
             <form id="fletadoFuturoForm" class="row g-2 align-items-end">
               <div class="col-12 col-md-4">
                 <input type="text" id="destinoFletadoFuturo" class="form-control" placeholder="Destino futuro" maxlength="60">
@@ -133,7 +210,9 @@
           <!-- CONDUCCIONES POSITIVAS Y NEGATIVAS -->
           <div class="mb-4 row">
             <div class="col-md-6">
-              <h4 class="mb-2">Conducciones Positivas</h4>
+              <h4 class="mb-2">Conducciones Positivas
+                <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Registra el número de conducciones positivas (traslados realizados con éxito) para la fecha de trabajo.')">?</button>
+              </h4>
               <form id="conduccionPosForm" class="row g-2 align-items-end">
                 <div class="col-9">
                   <input type="number" id="conduccionPositiva" class="form-control" placeholder="Número de conducciones positivas" min="0">
@@ -148,7 +227,9 @@
               </div>
             </div>
             <div class="col-md-6">
-              <h4 class="mb-2">Conducciones Negativas</h4>
+              <h4 class="mb-2">Conducciones Negativas
+                <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Registra el número de conducciones negativas (no realizadas o fallidas) para la fecha de trabajo.')">?</button>
+              </h4>
               <form id="conduccionNegForm" class="row g-2 align-items-end">
                 <div class="col-9">
                   <input type="number" id="conduccionNegativa" class="form-control" placeholder="Número de conducciones negativas" min="0">
@@ -166,7 +247,9 @@
 
           <!-- PENDIENTES DE GESTIÓN -->
           <div class="mb-4">
-            <h4 class="mb-2">Pendientes de Gestión</h4>
+            <h4 class="mb-2">Pendientes de Gestión
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Registra aquí tareas o asuntos pendientes, con su fecha asociada.')">?</button>
+            </h4>
             <form id="pendienteForm" class="row g-2 align-items-end">
               <div class="col-8 col-md-8">
                 <input type="text" id="descPendiente" class="form-control" placeholder="Descripción pendiente" maxlength="120">
@@ -184,9 +267,9 @@
             </div>
           </div>
 
-          <!-- RESUMEN PDF -->
+          <!-- RESUMEN PDF Y EXPORTACIÓN AVANZADA -->
           <div class="bg-police-light rounded-3 p-4 mt-5">
-            <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen</h4>
+            <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen avanzado</h4>
             <div class="row g-3 align-items-end">
               <div class="col-12 col-md-5">
                 <label for="desdeResumen" class="form-label">Desde</label>
@@ -197,8 +280,15 @@
                 <input type="date" id="hastaResumen" class="form-control">
               </div>
               <div class="col-12 col-md-2 d-grid">
-                <button id="generarResumenBtn" class="btn btn-police-blue w-100" type="button"><i class="bi bi-file-earmark-bar-graph"></i> Resumen PDF</button>
+                <button id="generarResumenBtn" class="btn btn-police-blue w-100" type="button">
+                  <i class="bi bi-file-earmark-bar-graph"></i> Resumen
+                </button>
               </div>
+            </div>
+            <div class="export-btns d-flex flex-wrap gap-2 mt-3">
+              <button id="btnExportarPDF" class="btn btn-police-yellow" type="button"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+              <button id="btnExportarCSV" class="btn btn-police-green" type="button"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+              <button id="btnWhatsapp" class="btn btn-police-blue" type="button"><i class="bi bi-whatsapp"></i> WhatsApp</button>
             </div>
             <div id="resumenVentana" class="ventana-datos mt-4"></div>
           </div>
@@ -224,6 +314,21 @@
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <!-- JS Grupo 1 -->
-<script src="../js/grupo1.js"></script>
+  <script src="../js/grupo1.js"></script>
+  <script>
+    // =========== MODO OSCURO ===========
+    const darkBtn = document.getElementById("darkModeBtn");
+    if (darkBtn) {
+      darkBtn.onclick = function() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+      };
+      if (localStorage.getItem("sirex_darkmode") === "1") {
+        document.body.classList.add("dark-mode");
+      }
+    }
+    // ========= BOTÓN "?" ayuda contextual ya está en cada sección =========
+    // ========= Botones de exportación avanzada se gestionan en grupo1.js =========
+  </script>
 </body>
 </html>
