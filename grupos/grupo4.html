@@ -8,8 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Encabezado moderno y flexible -->
-  <header class="header" role="banner">
+  <header class="header">
     <div class="header-icon" aria-hidden="true"><span>📁</span></div>
     <div class="header-title">
       <span class="brand">SIREX</span>
@@ -22,12 +21,10 @@
     </div>
   </header>
 
-  <!-- Mensaje de estado Firebase, feedback visual, etc. -->
-  <section id="statusFirebase" aria-live="polite" style="margin:10px 0 0 18px; font-weight:bold; font-size:1.05em;"></section>
+  <section id="statusFirebase" aria-live="polite"></section>
 
   <main>
-    <!-- Barra de registro superior con acciones rápidas -->
-    <section class="registro-bar" aria-label="Registro rápido de operaciones">
+    <section class="registro-bar">
       <label for="fechaRegistro">Fecha del registro</label>
       <input type="date" id="fechaRegistro" required>
       <button type="button" class="btn-secundario" id="btnCargar" title="Cargar registro">Cargar</button>
@@ -36,130 +33,111 @@
       <button type="button" class="btn-eliminar" id="btnEliminar" title="Eliminar registro">Eliminar</button>
     </section>
 
-    <!-- Historial de fechas recientes cargables -->
-    <section id="historialFechas" aria-label="Historial de registros recientes"></section>
+    <section id="historialFechas"></section>
 
-    <!-- Formulario principal ultra completo -->
-    <form id="formOperativo" autocomplete="off" aria-label="Formulario operativo">
+    <form id="formOperativo" autocomplete="off">
       <!-- Panel: Colaboraciones -->
-      <section class="panel-seccion" aria-labelledby="colaboraciones-title">
-        <h2 id="colaboraciones-title">Colaboraciones
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('colaboracion')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
           <input type="number" id="colaboracionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
         </div>
-        <ul id="listaColaboraciones" class="lista" aria-live="polite"></ul>
+        <ul id="listaColaboraciones" class="lista"></ul>
       </section>
 
       <!-- Panel: Detenidos -->
-      <section class="panel-seccion" aria-labelledby="detenidos-title">
-        <h2 id="detenidos-title">Detenidos
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('detenido')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
           <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
           <input type="number" id="detenidoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido" aria-label="Agregar detenido">+</button>
         </div>
-        <ul id="listaDetenidos" class="lista" aria-live="polite"></ul>
+        <ul id="listaDetenidos" class="lista"></ul>
       </section>
 
       <!-- Panel: Citados -->
-      <section class="panel-seccion" aria-labelledby="citados-title">
-        <h2 id="citados-title">Citados
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('citado')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Citados <button type="button" class="btn-secundario ayuda-btn" data-seccion="citado" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="citadoDesc" placeholder="Descripción citado" autocomplete="off">
           <input type="number" id="citadoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddCitado" title="Agregar citado" aria-label="Agregar citado">+</button>
         </div>
-        <ul id="listaCitados" class="lista" aria-live="polite"></ul>
+        <ul id="listaCitados" class="lista"></ul>
       </section>
 
       <!-- Panel: Otras gestiones -->
-      <section class="panel-seccion" aria-labelledby="gestiones-title">
-        <h2 id="gestiones-title">Otras gestiones
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('gestion')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Otras gestiones <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="gestionDesc" placeholder="Gestión/tarea" autocomplete="off">
           <input type="number" id="gestionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
         </div>
-        <ul id="listaGestiones" class="lista" aria-live="polite"></ul>
+        <ul id="listaGestiones" class="lista"></ul>
       </section>
 
       <!-- Panel: Inspecciones Trabajo -->
-      <section class="panel-seccion" aria-labelledby="inspecciones-trabajo-title">
-        <h2 id="inspecciones-trabajo-title">Inspecciones Trabajo
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('inspeccionTrabajo')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Inspecciones Trabajo <button type="button" class="btn-secundario ayuda-btn" data-seccion="inspeccionTrabajo" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="inspeccionTrabajoDesc" placeholder="Descripción" autocomplete="off">
           <input type="number" id="inspeccionTrabajoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddInspeccionTrabajo" title="Agregar inspección de trabajo" aria-label="Agregar inspección de trabajo">+</button>
         </div>
-        <ul id="listaInspeccionesTrabajo" class="lista" aria-live="polite"></ul>
+        <ul id="listaInspeccionesTrabajo" class="lista"></ul>
       </section>
 
       <!-- Panel: Otras inspecciones -->
-      <section class="panel-seccion" aria-labelledby="otras-inspecciones-title">
-        <h2 id="otras-inspecciones-title">Otras inspecciones
-          <button type="button" class="btn-secundario" onclick="mostrarAyuda('otraInspeccion')" title="¿Qué es esto?">?</button>
-        </h2>
+      <section class="panel-seccion">
+        <h2>Otras inspecciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="otraInspeccion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
           <input type="text" id="otraInspeccionDesc" placeholder="Descripción" autocomplete="off">
           <input type="number" id="otraInspeccionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddOtraInspeccion" title="Agregar otra inspección" aria-label="Agregar otra inspección">+</button>
         </div>
-        <ul id="listaOtrasInspecciones" class="lista" aria-live="polite"></ul>
+        <ul id="listaOtrasInspecciones" class="lista"></ul>
       </section>
 
-      <!-- Panel: Observaciones -->
-      <section class="panel-seccion" aria-labelledby="observaciones-title">
-        <h2 id="observaciones-title">Observaciones</h2>
+      <!-- Observaciones -->
+      <section class="panel-seccion">
+        <h2>Observaciones</h2>
         <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
       </section>
     </form>
 
-    <!-- Resumen dinámico -->
-    <section id="panelResumen" style="display:none;" class="panel-seccion" aria-labelledby="resumen-title">
-      <h2 id="resumen-title">Resumen del registro</h2>
+    <section id="panelResumen" class="panel-seccion" style="display:none;">
+      <h2>Resumen del registro</h2>
       <div id="resumenRegistro"></div>
     </section>
 
-    <!-- Resumen por rango de fechas + espacio para gráficos -->
     <section class="panel panel-glass mt-4">
       <h3>Resumen por rango de fechas</h3>
       <div class="row-cols">
         <label for="resumenDesde">Desde</label>
-        <input type="date" id="resumenDesde" class="form-control input-date" style="max-width:140px">
+        <input type="date" id="resumenDesde" class="form-control input-date">
         <label for="resumenHasta">Hasta</label>
-        <input type="date" id="resumenHasta" class="form-control input-date" style="max-width:140px">
+        <input type="date" id="resumenHasta" class="form-control input-date">
         <button type="button" class="btn-guardar" id="btnResumenFechas">Mostrar Resumen</button>
       </div>
-      <div id="divResumenFechas" style="margin-top:18px; font-size:1.11rem;"></div>
+      <div id="divResumenFechas"></div>
       <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px;">
         <button type="button" class="btn-pdf" id="btnExportarPDF">Exportar PDF</button>
         <button type="button" class="btn-pdf" id="btnExportarCSV">Exportar CSV</button>
         <button type="button" class="btn-guardar" id="btnWhatsapp">Resumen WhatsApp</button>
       </div>
-      <!-- Aquí puede aparecer el gráfico de resumen generado dinámicamente -->
     </section>
   </main>
 
-  <footer role="contentinfo">
+  <footer>
     SIREX · Grupo 4 Operativo &copy; 2025
   </footer>
-
-  <!-- Firebase y JS principal -->
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js" defer></script>
-  <script src="../js/grupo4.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="../js/grupo4.js"></script>
 </body>
 </html>
