@@ -1,222 +1,378 @@
-/* =================================================================
-   SIREX GRUPO 4 - SCRIPT V2.0 ("SORPRENDENTE")
-   ================================================================= */
-document.addEventListener('DOMContentLoaded', () => {
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+  authDomain: "ucrif-5bb75.firebaseapp.com",
+  projectId: "ucrif-5bb75",
+  storageBucket: "ucrif-5bb75.appspot.com",
+  messagingSenderId: "241698436443",
+  appId: "1:241698436443:web:1f333b3ae3f813b755167e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    const App = {
-        // --- CONFIGURACIÓN Y ESTADO ---
-        firebaseConfig: {
-            apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-            authDomain: "ucrif-5bb75.firebaseapp.com",
-            projectId: "ucrif-5bb75",
-        },
-        db: null,
-        state: {
-            isDarkMode: false,
-            currentChartInstance: null,
-            resumenData: null
-        },
-        // --- ELEMENTOS DEL DOM ---
-        dom: {
-            html: document.documentElement,
-            themeToggle: document.getElementById('theme-toggle'),
-            fechaInput: document.getElementById('fechaRegistroG4'),
-            btnCargar: document.getElementById('btnCargarG4'),
-            btnGuardar: document.getElementById('btnGuardarG4'),
-            btnEliminar: document.getElementById('btnEliminarG4'),
-            btnLimpiar: document.getElementById('btnLimpiarG4'),
-            resumenDesde: document.getElementById('resumenDesdeG4'),
-            resumenHasta: document.getElementById('resumenHastaG4'),
-            btnResumen: document.getElementById('btnGenerarResumenG4'),
-            resumenContenido: document.getElementById('resumenContenidoG4'),
-            chartCanvas: document.getElementById('summaryChart'),
-            notificationArea: document.getElementById('notification-area'),
-            btnExportarPdf: document.getElementById('btnExportarPdf'),
-            btnCompartirWhatsapp: document.getElementById('btnCompartirWhatsapp'),
-        },
-        // --- CAMPOS DINÁMICOS ---
-        campos: [
-            { id: 'Colab', nombre: 'colaboraciones', cuantia: 'cuantiaColab', inputs: ['colabInputG4'], list: 'colabListG4', titulo: 'Colaboraciones' },
-            { id: 'Detenido', nombre: 'detenidos', cuantia: 'cuantiaDetenidos', inputs: ['detenidoMotivoG4', 'detenidoNacionalidadG4'], list: 'detenidosListG4', titulo: 'Detenidos' },
-            { id: 'Citados', nombre: 'citados', cuantia: 'cuantiaCitados', inputs: ['citadosInputG4'], list: 'citadosListG4', titulo: 'Citados' },
-            { id: 'Gestiones', nombre: 'otrasGestiones', cuantia: 'cuantiaGestiones', inputs: ['gestionesInputG4'], list: 'gestionesListG4', titulo: 'Otras Gestiones' },
-            { id: 'InspeccionTrabajo', nombre: 'inspeccionesTrabajo', cuantia: 'cuantiaInspeccion', inputs: ['inspeccionTrabajoInputG4'], list: 'inspeccionTrabajoListG4', titulo: 'Inspecciones de Trabajo' },
-            { id: 'OtrasInspecciones', nombre: 'otrasInspecciones', cuantia: 'cuantiaOtrasInspecciones', inputs: ['otrasInspeccionesInputG4'], list: 'otrasInspeccionesListG4', titulo: 'Otras Inspecciones' }
-        ],
+// === Arrays en memoria ===
+let colaboraciones = [], detenidos = [], citados = [],
+    gestiones = [], inspeccionesTrabajo = [], otrasInspecciones = [];
 
-        // --- MÉTODO DE INICIALIZACIÓN ---
-        init() {
-            // Firebase
-            firebase.initializeApp(this.firebaseConfig);
-            this.db = firebase.firestore();
+let idActual = null; // fechaISO para el documento actual
 
-            // Tema (Modo Oscuro/Claro)
-            this.initTheme();
-            
-            // Fecha por defecto
-            this.dom.fechaInput.valueAsDate = new Date();
-            this.dom.resumenDesde.valueAsDate = new Date();
-            this.dom.resumenHasta.valueAsDate = new Date();
+// === Helpers DOM ===
+function $(id) { return document.getElementById(id); }
+function limpiarInputs() {
+  $('colaboracionDesc').value = '';
+  $('colaboracionCantidad').value = '';
+  $('detenidoMotivo').value = '';
+  $('detenidoNacionalidad').value = '';
+  $('detenidoCantidad').value = '';
+  $('citadoDesc').value = '';
+  $('citadoCantidad').value = '';
+  $('gestionDesc').value = '';
+  $('gestionCantidad').value = '';
+  $('inspeccionTrabajoDesc').value = '';
+  $('inspeccionTrabajoCantidad').value = '';
+  $('otraInspeccionDesc').value = '';
+  $('otraInspeccionCantidad').value = '';
+}
+function limpiarListas() {
+  $('listaColaboraciones').innerHTML = '';
+  $('listaDetenidos').innerHTML = '';
+  $('listaCitados').innerHTML = '';
+  $('listaGestiones').innerHTML = '';
+  $('listaInspeccionesTrabajo').innerHTML = '';
+  $('listaOtrasInspecciones').innerHTML = '';
+}
+function limpiarTodo() {
+  limpiarInputs();
+  limpiarListas();
+  $('observaciones').value = '';
+  colaboraciones = [];
+  detenidos = [];
+  citados = [];
+  gestiones = [];
+  inspeccionesTrabajo = [];
+  otrasInspecciones = [];
+  idActual = null;
+  $('panelResumen').style.display = "none";
+}
 
-            // Listeners
-            this.addEventListeners();
-        },
+// === Listados dinámicos ===
+function renderListas() {
+  // Colaboraciones
+  let lista = $('listaColaboraciones');
+  lista.innerHTML = '';
+  colaboraciones.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.descripcion} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('colaboracion',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
 
-        // --- MANEJO DE EVENTOS ---
-        addEventListeners() {
-            this.dom.themeToggle.addEventListener('change', () => this.toggleTheme());
-            this.dom.btnCargar.addEventListener('click', () => this.cargarRegistro());
-            this.dom.btnGuardar.addEventListener('click', () => this.guardarRegistro());
-            this.dom.btnEliminar.addEventListener('click', () => this.eliminarRegistro());
-            this.dom.btnLimpiar.addEventListener('click', () => this.limpiarFormularioCompleto());
-            this.dom.btnResumen.addEventListener('click', () => this.generarResumen());
-            this.dom.btnExportarPdf.addEventListener('click', () => this.exportToPdf());
-            this.dom.btnCompartirWhatsapp.addEventListener('click', () => this.shareToWhatsApp());
+  // Detenidos
+  lista = $('listaDetenidos');
+  lista.innerHTML = '';
+  detenidos.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.motivo} - ${item.nacionalidad} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('detenido',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
 
-            this.campos.forEach(c => {
-                document.getElementById(`btnAdd${c.id}G4`).onclick = () => this.addItemCampo(c);
-            });
-        },
+  // Citados
+  lista = $('listaCitados');
+  lista.innerHTML = '';
+  citados.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.descripcion} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('citado',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
 
-        // --- LÓGICA DEL TEMA (MODO OSCURO) ---
-        initTheme() {
-            const savedTheme = localStorage.getItem('sirex_theme') || 'light';
-            this.state.isDarkMode = savedTheme === 'dark';
-            this.dom.html.setAttribute('data-theme', savedTheme);
-            this.dom.themeToggle.checked = this.state.isDarkMode;
-        },
-        toggleTheme() {
-            this.state.isDarkMode = !this.state.isDarkMode;
-            const newTheme = this.state.isDarkMode ? 'dark' : 'light';
-            this.dom.html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('sirex_theme', newTheme);
-            if (this.state.currentChartInstance) {
-                this.renderSummaryChart(this.state.resumenData); // Re-renderizar gráfico con nuevos colores
-            }
-        },
+  // Gestiones
+  lista = $('listaGestiones');
+  lista.innerHTML = '';
+  gestiones.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.descripcion} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('gestion',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
 
-        // --- LÓGICA DE LA INTERFAZ (UI/UX) ---
-        showNotification(message, type = 'info') { /* ... (sin cambios, ya era bueno) ... */ },
-        toggleButtonLoading(button, isLoading) {
-            if (isLoading) {
-                button.disabled = true;
-                button.dataset.originalContent = button.innerHTML;
-                button.innerHTML = '<div class="spinner"></div>';
-            } else {
-                button.disabled = false;
-                button.innerHTML = button.dataset.originalContent;
-            }
-        },
-        addItemCampo(campoConfig) { /* ... (sin cambios, ya era bueno) ... */ },
-        renderItem(text, listId) { /* ... (sin cambios, ya era bueno) ... */ },
-        limpiarFormularioCompleto() {
-            this.campos.forEach(c => {
-                document.getElementById(c.list).innerHTML = '';
-                document.getElementById(c.cuantia).value = '';
-                c.inputs.forEach(id => { document.getElementById(id).value = ''; });
-            });
-            this.showNotification('Formulario limpiado.', 'info');
-        },
+  // Inspecciones Trabajo
+  lista = $('listaInspeccionesTrabajo');
+  lista.innerHTML = '';
+  inspeccionesTrabajo.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.descripcion} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('inspeccionTrabajo',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
 
-        // --- LÓGICA DE DATOS (FIREBASE) ---
-        async cargarRegistro() { /* ... (lógica casi idéntica, solo adaptar toggleButtonLoading) ... */ },
-        async guardarRegistro() { /* ... (lógica casi idéntica, solo adaptar toggleButtonLoading) ... */ },
-        async eliminarRegistro() { /* ... (lógica casi idéntica, solo adaptar toggleButtonLoading) ... */ },
+  // Otras Inspecciones
+  lista = $('listaOtrasInspecciones');
+  lista.innerHTML = '';
+  otrasInspecciones.forEach((item, idx) => {
+    let li = document.createElement('li');
+    li.innerHTML = `<span>${item.descripcion} (${item.cantidad})</span>
+      <button class="del-btn" onclick="eliminarItem('otraInspeccion',${idx})">✖</button>`;
+    lista.appendChild(li);
+  });
+}
 
-        // --- LÓGICA DE RESUMEN Y GRÁFICOS ---
-        async generarResumen() {
-            const desde = this.dom.resumenDesde.value;
-            const hasta = this.dom.resumenHasta.value;
-            if (!desde || !hasta || hasta < desde) {
-                this.showNotification('Rango de fechas inválido.', 'error');
-                return;
-            }
-            
-            this.toggleButtonLoading(this.dom.btnResumen, true);
-            this.dom.resumenContenido.innerHTML = 'Consultando...';
-            this.toggleExportButtons(false);
-            if(this.state.currentChartInstance) this.state.currentChartInstance.destroy();
+// Eliminar un elemento de una lista
+window.eliminarItem = function(tipo, idx) {
+  switch(tipo) {
+    case 'colaboracion': colaboraciones.splice(idx,1); break;
+    case 'detenido': detenidos.splice(idx,1); break;
+    case 'citado': citados.splice(idx,1); break;
+    case 'gestion': gestiones.splice(idx,1); break;
+    case 'inspeccionTrabajo': inspeccionesTrabajo.splice(idx,1); break;
+    case 'otraInspeccion': otrasInspecciones.splice(idx,1); break;
+  }
+  renderListas();
+}
 
-            try {
-                const snapshot = await this.db.collection('grupo4_operativo').where('fecha', '>=', desde).where('fecha', '<=', hasta).orderBy('fecha').get();
+// Añadir elementos
+$('btnAddColaboracion').onclick = function() {
+  const desc = $('colaboracionDesc').value.trim();
+  const cantidad = parseInt($('colaboracionCantidad').value);
+  if(desc && cantidad>0) {
+    colaboraciones.push({descripcion: desc, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
+$('btnAddDetenido').onclick = function() {
+  const motivo = $('detenidoMotivo').value.trim();
+  const nacionalidad = $('detenidoNacionalidad').value.trim();
+  const cantidad = parseInt($('detenidoCantidad').value);
+  if(motivo && nacionalidad && cantidad>0) {
+    detenidos.push({motivo, nacionalidad, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
+$('btnAddCitado').onclick = function() {
+  const desc = $('citadoDesc').value.trim();
+  const cantidad = parseInt($('citadoCantidad').value);
+  if(desc && cantidad>0) {
+    citados.push({descripcion: desc, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
+$('btnAddGestion').onclick = function() {
+  const desc = $('gestionDesc').value.trim();
+  const cantidad = parseInt($('gestionCantidad').value);
+  if(desc && cantidad>0) {
+    gestiones.push({descripcion: desc, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
+$('btnAddInspeccionTrabajo').onclick = function() {
+  const desc = $('inspeccionTrabajoDesc').value.trim();
+  const cantidad = parseInt($('inspeccionTrabajoCantidad').value);
+  if(desc && cantidad>0) {
+    inspeccionesTrabajo.push({descripcion: desc, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
+$('btnAddOtraInspeccion').onclick = function() {
+  const desc = $('otraInspeccionDesc').value.trim();
+  const cantidad = parseInt($('otraInspeccionCantidad').value);
+  if(desc && cantidad>0) {
+    otrasInspecciones.push({descripcion: desc, cantidad});
+    renderListas(); limpiarInputs();
+  }
+};
 
-                if (snapshot.empty) {
-                    this.dom.resumenContenido.innerHTML = '<em>No se encontraron registros.</em>';
-                    return;
-                }
+// --- Helpers para fechas ---
+function fechaToId(fecha) {
+  if(!fecha) return null;
+  return "gestion_" + fecha.replace(/-/g,"");
+}
 
-                const totales = {};
-                this.campos.forEach(c => {
-                    totales[c.nombre] = [];
-                    totales[c.cuantia] = 0;
-                });
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    this.campos.forEach(c => {
-                        if (data[c.nombre]) totales[c.nombre].push(...data[c.nombre]);
-                        if (data[c.cuantia]) totales[c.cuantia] += data[c.cuantia];
-                    });
-                });
-                
-                this.state.resumenData = totales;
-                this.renderResumenHtml();
-                this.renderSummaryChart();
-                this.toggleExportButtons(true);
+// === Guardar ===
+$('btnGuardar').onclick = async function() {
+  const fecha = $('fechaRegistro').value;
+  if(!fecha) { alert("Selecciona la fecha del registro"); return; }
+  const docId = fechaToId(fecha);
+  idActual = docId;
+  const obs = $('observaciones').value.trim();
+  await db.collection('grupo4_oper').doc(docId).set({
+    fecha, colaboraciones, detenidos, citados,
+    gestiones, inspeccionesTrabajo, otrasInspecciones, observaciones: obs
+  });
+  mostrarResumen();
+  alert("¡Registro guardado correctamente!");
+}
 
-            } catch (error) {
-                this.showNotification('Error al generar resumen.', 'error');
-                console.error(error);
-            } finally {
-                this.toggleButtonLoading(this.dom.btnResumen, false);
-            }
-        },
-        renderResumenHtml() {
-            // ... (código existente para generar el HTML de la lista) ...
-        },
-        renderSummaryChart() {
-            if (this.state.currentChartInstance) {
-                this.state.currentChartInstance.destroy();
-            }
-            
-            const labels = this.campos.map(c => c.titulo);
-            const data = this.campos.map(c => this.state.resumenData[c.cuantia]);
-            
-            const chartColors = this.state.isDarkMode 
-              ? { bg: 'rgba(0, 123, 255, 0.6)', border: '#007BFF', text: '#F0F4F9' }
-              : { bg: 'rgba(0, 123, 255, 0.6)', border: '#007BFF', text: '#1D2433' };
+// === Cargar ===
+$('btnCargar').onclick = async function() {
+  const fecha = $('fechaRegistro').value;
+  if(!fecha) { alert("Selecciona la fecha del registro"); return; }
+  const docId = fechaToId(fecha);
+  const doc = await db.collection('grupo4_gestion').doc(docId).get();
+  if(!doc.exists) {
+    alert("No hay registro en esa fecha."); limpiarTodo();
+    return;
+  }
+  idActual = docId;
+  const data = doc.data();
+  colaboraciones = data.colaboraciones || [];
+  detenidos = data.detenidos || [];
+  citados = data.citados || [];
+  gestiones = data.gestiones || [];
+  inspeccionesTrabajo = data.inspeccionesTrabajo || [];
+  otrasInspecciones = data.otrasInspecciones || [];
+  $('observaciones').value = data.observaciones || '';
+  renderListas();
+  mostrarResumen();
+}
 
-            this.state.currentChartInstance = new Chart(this.dom.chartCanvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total Registros',
-                        data: data,
-                        backgroundColor: chartColors.bg,
-                        borderColor: chartColors.border,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, title: { display: true, text: 'Resumen Visual de Actividad', color: chartColors.text, font: { size: 16 } } },
-                    scales: {
-                        y: { ticks: { color: chartColors.text, stepSize: 1 } },
-                        x: { ticks: { color: chartColors.text } }
-                    }
-                }
-            });
-        },
-        toggleExportButtons(enabled) {
-            this.dom.btnExportarPdf.disabled = !enabled;
-            this.dom.btnCompartirWhatsapp.disabled = !enabled;
-        },
+// === Eliminar ===
+$('btnEliminar').onclick = async function() {
+  const fecha = $('fechaRegistro').value;
+  if(!fecha) { alert("Selecciona la fecha"); return; }
+  const docId = fechaToId(fecha);
+  if(confirm("¿Eliminar el registro de esta fecha?")) {
+    await db.collection('grupo4_gestion').doc(docId).delete();
+    limpiarTodo();
+    alert("Registro eliminado.");
+  }
+}
 
-        // --- LÓGICA DE EXPORTACIÓN ---
-        async exportToPdf() { /* ... (código casi idéntico, ya era bueno) ... */ },
-        shareToWhatsApp() { /* ... (código casi idéntico, ya era bueno) ... */ }
-    };
+// === Nuevo ===
+$('btnNuevo').onclick = function() {
+  limpiarTodo();
+  $('fechaRegistro').value = "";
+}
 
-    App.init();
-});
+// === Mostrar resumen ===
+function mostrarResumen() {
+  const div = $('resumenRegistro');
+  div.innerHTML = `
+    <b>Colaboraciones:</b> ${colaboraciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Detenidos:</b> ${detenidos.map(e=>`${e.motivo} - ${e.nacionalidad} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Citados:</b> ${citados.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Otras gestiones:</b> ${gestiones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Inspecciones trabajo:</b> ${inspeccionesTrabajo.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Otras inspecciones:</b> ${otrasInspecciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Observaciones:</b> ${$('observaciones').value || "—"}
+  `;
+  $('panelResumen').style.display = "block";
+}
+
+function formatoFechaCorta(fecha) {
+  if (!fecha) return "";
+  const f = new Date(fecha);
+  return `${f.getDate().toString().padStart(2,"0")}/${
+    (f.getMonth()+1).toString().padStart(2,"0")}/${
+    f.getFullYear().toString().slice(-2)}`;  // <-- así te queda solo '25'
+}
+
+
+// === Resumen por rango de fechas ===
+
+$('btnResumenFechas').onclick = async function() {
+  const desde = $('resumenDesde').value;
+  const hasta = $('resumenHasta').value;
+  if (!desde || !hasta) {
+    alert("Selecciona ambas fechas");
+    return;
+  }
+  const col = db.collection("grupo4_gestion");
+  const snapshot = await col.get();
+  let resumenes = [];
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    if (data.fecha >= desde && data.fecha <= hasta) resumenes.push(data);
+  });
+  if (resumenes.length === 0) {
+    $('divResumenFechas').innerHTML = "<i>No hay registros en este rango de fechas</i>";
+    return;
+  }
+  // Resumen numérico agrupado
+  const agg = {
+    colaboraciones: 0, detenidos: 0, citados: 0, gestiones: 0, inspeccionesTrabajo: 0, otrasInspecciones: 0
+  };
+  let detalle = "";
+  resumenes.forEach(r => {
+    agg.colaboraciones += (r.colaboraciones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    agg.detenidos += (r.detenidos||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    agg.citados += (r.citados||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    agg.gestiones += (r.gestiones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    agg.inspeccionesTrabajo += (r.inspeccionesTrabajo||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    agg.otrasInspecciones += (r.otrasInspecciones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0);
+    detalle += `<li><b>${r.fecha}</b>: 
+      Colaboraciones: ${(r.colaboraciones||[]).length}, 
+      Detenidos: ${(r.detenidos||[]).length}, 
+      Citados: ${(r.citados||[]).length}, 
+      Gestiones: ${(r.gestiones||[]).length}, 
+      Insp. Trabajo: ${(r.inspeccionesTrabajo||[]).length}, 
+      Otras Insp.: ${(r.otrasInspecciones||[]).length}
+      </li>`;
+  });
+  $('divResumenFechas').innerHTML = `
+    <b>Resumen total del ${desde} al ${hasta}:</b><br>
+    <ul>
+      <li><b>Colaboraciones</b>: ${agg.colaboraciones}</li>
+      <li><b>Detenidos</b>: ${agg.detenidos}</li>
+      <li><b>Citados</b>: ${agg.citados}</li>
+      <li><b>Otras gestiones</b>: ${agg.gestiones}</li>
+      <li><b>Inspecciones trabajo</b>: ${agg.inspeccionesTrabajo}</li>
+      <li><b>Otras inspecciones</b>: ${agg.otrasInspecciones}</li>
+    </ul>
+    <details><summary>Ver detalle diario</summary><ul>${detalle}</ul></details>
+  `;
+  window._resumenesFiltrados = resumenes; // Para PDF/WhatsApp
+};
+
+// === Exportar PDF ===
+$('btnExportarPDF').onclick = function() {
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let html = `<h2>Resumen de Gestión</h2>
+  <h4>Del ${$('resumenDesde').value} al ${$('resumenHasta').value}</h4>`;
+  window._resumenesFiltrados.forEach(r=>{
+    html += `<hr><b>${r.fecha}</b><ul>`;
+    if(r.colaboraciones && r.colaboraciones.length)
+      html += `<li><b>Colaboraciones:</b> ${r.colaboraciones.map(x=>`${x.descripcion} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.detenidos && r.detenidos.length)
+      html += `<li><b>Detenidos:</b> ${r.detenidos.map(x=>`${x.motivo} - ${x.nacionalidad} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.citados && r.citados.length)
+      html += `<li><b>Citados:</b> ${r.citados.map(x=>`${x.descripcion} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.gestiones && r.gestiones.length)
+      html += `<li><b>Otras gestiones:</b> ${r.gestiones.map(x=>`${x.descripcion} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.inspeccionesTrabajo && r.inspeccionesTrabajo.length)
+      html += `<li><b>Inspecciones trabajo:</b> ${r.inspeccionesTrabajo.map(x=>`${x.descripcion} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.otrasInspecciones && r.otrasInspecciones.length)
+      html += `<li><b>Otras inspecciones:</b> ${r.otrasInspecciones.map(x=>`${x.descripcion} (${x.cantidad})`).join(", ")}</li>`;
+    if(r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
+    html += "</ul>";
+  });
+  // Abre en ventana e imprime PDF
+  const w = window.open("", "_blank");
+  w.document.write(`<html><head><title>Resumen Gestión</title></head><body>${html}</body></html>`);
+  w.print();
+};
+
+// === WhatsApp resumen abreviado ===
+$('btnWhatsapp').onclick = function() {
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let resumen = `Resumen Gestión SIREX\n${$('resumenDesde').value} al ${$('resumenHasta').value}:\n`;
+  window._resumenesFiltrados.forEach(r=>{
+    resumen += `${r.fecha} - Colb: ${(r.colaboraciones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}, Det: ${(r.detenidos||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}, Cit: ${(r.citados||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}, Gest: ${(r.gestiones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}, Insp: ${(r.inspeccionesTrabajo||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}, Otras: ${(r.otrasInspecciones||[]).map(x=>x.cantidad).reduce((a,b)=>a+b,0)}\n`;
+  });
+  navigator.clipboard.writeText(resumen)
+    .then(()=>alert("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
+    .catch(()=>alert("No se pudo copiar. Actualiza el navegador."));
+};
+
+
+// --- Inicialización automática ---
+window.onload = () => {
+  limpiarTodo();
+  renderListas();
+};
