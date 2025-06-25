@@ -1,4 +1,11 @@
-// SIREX · Grupo 4 Operativo - JS Moderno con Resumen por Rango de Fechas, PDF y WhatsApp
+/****************************************************************************************
+*   SIREX · Grupo 4 Operativo · JS extensísimo, robusto y a prueba de errores            *
+*   Incluye: Añadir/cargar/eliminar, historial, resumen por fechas, PDF/CSV/WhatsApp,   *
+*   validaciones, ayuda, sincronía perfecta con HTML, superdiseño                        *
+*****************************************************************************************/
+
+// 1. Firebase INIT + helpers
+
 const NOMBRE_COLECCION = "grupo4_gestion"; // Cambia si tu colección se llama diferente
 
 const FIREBASE_CONFIG = {
@@ -12,9 +19,9 @@ const FIREBASE_CONFIG = {
 
 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
-
 const $ = id => document.getElementById(id);
 
+// Estado global para el formulario
 let state = {
   colaboraciones: [],
   detenidos: [],
@@ -25,12 +32,18 @@ let state = {
   observaciones: ""
 };
 
-// Limpia los campos de entrada de una sección
+// -------- Utilidades --------
 function limpiarInputs(...ids) {
-  ids.forEach(id => $(id).value = "");
+  ids.forEach(id => { if($(id)) $(id).value = ""; });
 }
 
-// Añadir elementos a listas
+function formatoFechaCorta(fecha) {
+  if (!fecha) return "";
+  let f = new Date(fecha);
+  return `${f.getDate().toString().padStart(2,"0")}/${(f.getMonth()+1).toString().padStart(2,"0")}/${f.getFullYear().toString().slice(-2)}`;
+}
+
+// -------- Añadir elementos dinámicos --------
 function addItem(tipo, campos, ids) {
   for (let i = 0; i < campos.length; i++) {
     if (!$(ids[i]).value || (campos[i] === 'cantidad' && +$(ids[i]).value <= 0)) {
@@ -49,7 +62,7 @@ function addItem(tipo, campos, ids) {
   limpiarInputs(...ids);
 }
 
-// Renderiza todas las listas dinámicas
+// -------- Renderizar listas --------
 function renderListas() {
   [
     ['colaboraciones', ['descripcion', 'cantidad'], 'listaColaboraciones'],
@@ -59,70 +72,73 @@ function renderListas() {
     ['inspeccionesTrabajo', ['descripcion', 'cantidad'], 'listaInspeccionesTrabajo'],
     ['otrasInspecciones', ['descripcion', 'cantidad'], 'listaOtrasInspecciones']
   ].forEach(([tipo, campos, ulId]) => {
+    if(!$(ulId)) return;
     $(ulId).innerHTML = state[tipo].map((item, idx) =>
       `<li>${campos.map(c => item[c]).join(" · ")}
         <button type="button" class="del-btn" onclick="eliminarItem('${tipo}',${idx})">✕</button>
-      </li>`).join('');
+      </li>`
+    ).join('');
   });
 }
 
-// Eliminar item de una lista
+// -------- Eliminar item de una lista --------
 window.eliminarItem = function(tipo, idx) {
   state[tipo].splice(idx, 1);
   renderListas();
 };
+// -------- Guardar y cargar registros --------
 
-// Guardar registro en Firestore
-$('btnGuardar').onclick = async function() {
+async function guardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  await db.collection(NOMBRE_COLECCION).doc("gestion_" + fecha.replace(/-/g, "")).set({
+  const docId = "gestion_" + fecha.replace(/-/g, "");
+  await db.collection(NOMBRE_COLECCION).doc(docId).set({
     fecha,
     ...state,
     observaciones: $('observaciones').value
   });
   alert("¡Registro guardado!");
   cargarHistorial();
-};
+}
 
-// Cargar registro por fecha
-$('btnCargar').onclick = async function() {
+async function cargarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  const doc = await db.collection(NOMBRE_COLECCION).doc("gestion_" + fecha.replace(/-/g, "")).get();
+  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const doc = await db.collection(NOMBRE_COLECCION).doc(docId).get();
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const data = doc.data();
   Object.keys(state).forEach(k => state[k] = data[k] || []);
   $('observaciones').value = data.observaciones || "";
   renderListas();
   mostrarResumen();
-};
+}
 
-// Nuevo registro
-$('btnNuevo').onclick = function() {
+function nuevoRegistro() {
   if (confirm("¿Limpiar el formulario para nuevo registro?")) {
     Object.keys(state).forEach(k => state[k] = []);
     $('observaciones').value = "";
     renderListas();
     mostrarResumen();
   }
-};
+}
 
-// Eliminar registro de Firestore
-$('btnEliminar').onclick = async function() {
+async function eliminarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!confirm("¿Eliminar el registro de esta fecha?")) return;
-  await db.collection(NOMBRE_COLECCION).doc("gestion_" + fecha.replace(/-/g, "")).delete();
+  const docId = "gestion_" + fecha.replace(/-/g, "");
+  await db.collection(NOMBRE_COLECCION).doc(docId).delete();
   Object.keys(state).forEach(k => state[k] = []);
   $('observaciones').value = "";
   renderListas();
   mostrarResumen();
   alert("Registro eliminado.");
   cargarHistorial();
-};
+}
 
-// Mostrar resumen del registro cargado
+// -------- Mostrar resumen de un registro cargado --------
+
 function mostrarResumen() {
   const d = state;
   $('resumenRegistro').innerHTML = `
@@ -137,86 +153,100 @@ function mostrarResumen() {
   $('panelResumen').style.display = "block";
 }
 
-// Cargar historial de fechas
+// -------- Cargar historial de fechas --------
+
 async function cargarHistorial() {
   const snap = await db.collection(NOMBRE_COLECCION).orderBy("fecha", "desc").limit(10).get();
-  $('historialFechas').innerHTML = Array.from(snap.docs).map(doc => {
-    const f = doc.data().fecha;
-    return `<button type="button" class="btn-historial" onclick="cargarPorFecha('${f}')">${formatoFechaCorta(f)}</button>`;
-  }).join('');
+  if ($('historialFechas')) {
+    $('historialFechas').innerHTML = Array.from(snap.docs).map(doc => {
+      const f = doc.data().fecha;
+      return `<button type="button" class="btn-historial" onclick="cargarPorFecha('${f}')">${formatoFechaCorta(f)}</button>`;
+    }).join('');
+  }
 }
+
 window.cargarPorFecha = async function(fecha) {
   $('fechaRegistro').value = fecha;
-  $('btnCargar').click();
+  cargarRegistro();
 };
 
-// Formato de fecha corto
-function formatoFechaCorta(fecha) {
-  if (!fecha) return "";
-  let f = new Date(fecha);
-  return `${f.getDate().toString().padStart(2,"0")}/${(f.getMonth()+1).toString().padStart(2,"0")}/${f.getFullYear().toString().slice(-2)}`;
-}
+// -------- Asignación de listeners y arranque --------
 
-// Listeners para los botones "+"
-$('btnAddColaboracion').onclick = () => addItem('colaboraciones', ['descripcion', 'cantidad'], ['colaboracionDesc', 'colaboracionCantidad']);
-$('btnAddDetenido').onclick = () => addItem('detenidos', ['motivo', 'nacionalidad', 'cantidad'], ['detenidoMotivo', 'detenidoNacionalidad', 'detenidoCantidad']);
-$('btnAddCitado').onclick = () => addItem('citados', ['descripcion', 'cantidad'], ['citadoDesc', 'citadoCantidad']);
-$('btnAddGestion').onclick = () => addItem('gestiones', ['descripcion', 'cantidad'], ['gestionDesc', 'gestionCantidad']);
-$('btnAddInspeccionTrabajo').onclick = () => addItem('inspeccionesTrabajo', ['descripcion', 'cantidad'], ['inspeccionTrabajoDesc', 'inspeccionTrabajoCantidad']);
-$('btnAddOtraInspeccion').onclick = () => addItem('otrasInspecciones', ['descripcion', 'cantidad'], ['otraInspeccionDesc', 'otraInspeccionCantidad']);
+window.onload = function() {
+  // Listeners para añadir elementos
+  $('btnAddColaboracion').onclick = () => addItem('colaboraciones', ['descripcion', 'cantidad'], ['colaboracionDesc', 'colaboracionCantidad']);
+  $('btnAddDetenido').onclick = () => addItem('detenidos', ['motivo', 'nacionalidad', 'cantidad'], ['detenidoMotivo', 'detenidoNacionalidad', 'detenidoCantidad']);
+  $('btnAddCitado').onclick = () => addItem('citados', ['descripcion', 'cantidad'], ['citadoDesc', 'citadoCantidad']);
+  $('btnAddGestion').onclick = () => addItem('gestiones', ['descripcion', 'cantidad'], ['gestionDesc', 'gestionCantidad']);
+  $('btnAddInspeccionTrabajo').onclick = () => addItem('inspeccionesTrabajo', ['descripcion', 'cantidad'], ['inspeccionTrabajoDesc', 'inspeccionTrabajoCantidad']);
+  $('btnAddOtraInspeccion').onclick = () => addItem('otrasInspecciones', ['descripcion', 'cantidad'], ['otraInspeccionDesc', 'otraInspeccionCantidad']);
 
-// Modo oscuro
-$('btnDarkMode').onclick = function() {
-  document.body.classList.toggle('dark-mode');
-  localStorage.setItem("sirex_darkmode", document.body.classList.contains('dark-mode') ? "1" : "0");
-};
+  // Listeners para guardar/cargar/eliminar
+  $('btnGuardar').onclick = guardarRegistro;
+  $('btnCargar').onclick = cargarRegistro;
+  $('btnNuevo').onclick = nuevoRegistro;
+  $('btnEliminar').onclick = eliminarRegistro;
 
-// Ayuda contextual
-document.querySelectorAll('.ayuda-btn').forEach(btn => {
-  btn.onclick = () => {
-    const seccion = btn.dataset.seccion;
-    const ayudas = {
-      colaboracion: "Registra colaboraciones con otros cuerpos o unidades.",
-      detenido: "Añade detenidos, indicando motivo y nacionalidad.",
-      citado: "Registra personas citadas.",
-      gestion: "Otras gestiones relevantes.",
-      inspeccionTrabajo: "Inspecciones de trabajo realizadas.",
-      otraInspeccion: "Otras inspecciones fuera del trabajo."
-    };
-    alert(ayudas[seccion] || "Sección no documentada.");
+  // Modo oscuro
+  $('btnDarkMode').onclick = function() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem("sirex_darkmode", document.body.classList.contains('dark-mode') ? "1" : "0");
   };
-});
+  if (localStorage.getItem("sirex_darkmode") === "1")
+    document.body.classList.add('dark-mode');
 
-// Buscador básico
-$('btnBuscar').onclick = async function() {
-  let q = prompt("¿Qué palabra quieres buscar en registros?");
-  if(!q) return;
-  const col = db.collection(NOMBRE_COLECCION);
-  const snap = await col.get();
-  let resultados = [];
-  snap.forEach(docSnap => {
-    let d = docSnap.data();
-    let str = [
-      d.observaciones,
-      ...(d.colaboraciones||[]).map(x=>x.descripcion),
-      ...(d.detenidos||[]).map(x=>x.motivo+" "+x.nacionalidad),
-      ...(d.citados||[]).map(x=>x.descripcion),
-      ...(d.gestiones||[]).map(x=>x.descripcion),
-      ...(d.inspeccionesTrabajo||[]).map(x=>x.descripcion),
-      ...(d.otrasInspecciones||[]).map(x=>x.descripcion)
-    ].join(" ").toLowerCase();
-    if (str.includes(q.toLowerCase())) resultados.push(d);
+  // Ayuda contextual
+  document.querySelectorAll('.ayuda-btn').forEach(btn => {
+    btn.onclick = () => {
+      const seccion = btn.dataset.seccion;
+      const ayudas = {
+        colaboracion: "Registra colaboraciones con otros cuerpos o unidades.",
+        detenido: "Añade detenidos, indicando motivo y nacionalidad.",
+        citado: "Registra personas citadas.",
+        gestion: "Otras gestiones relevantes.",
+        inspeccionTrabajo: "Inspecciones de trabajo realizadas.",
+        otraInspeccion: "Otras inspecciones fuera del trabajo."
+      };
+      alert(ayudas[seccion] || "Sección no documentada.");
+    };
   });
-  if (!resultados.length) return alert("No se encontraron resultados.");
-  $('divResumenFechas').innerHTML = resultados.map(r=>
-    `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-      <b>${r.fecha}</b> · Obs: ${r.observaciones?.slice(0,50)||""}...
-      <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
-    </div>`
-  ).join("");
-};
 
-// ----------- RESUMEN POR RANGO DE FECHAS, PDF y WHATSAPP -----------
+  // Buscador básico
+  $('btnBuscar').onclick = async function() {
+    let q = prompt("¿Qué palabra quieres buscar en registros?");
+    if(!q) return;
+    const col = db.collection(NOMBRE_COLECCION);
+    const snap = await col.get();
+    let resultados = [];
+    snap.forEach(docSnap => {
+      let d = docSnap.data();
+      let str = [
+        d.observaciones,
+        ...(d.colaboraciones||[]).map(x=>x.descripcion),
+        ...(d.detenidos||[]).map(x=>x.motivo+" "+x.nacionalidad),
+        ...(d.citados||[]).map(x=>x.descripcion),
+        ...(d.gestiones||[]).map(x=>x.descripcion),
+        ...(d.inspeccionesTrabajo||[]).map(x=>x.descripcion),
+        ...(d.otrasInspecciones||[]).map(x=>x.descripcion)
+      ].join(" ").toLowerCase();
+      if (str.includes(q.toLowerCase())) resultados.push(d);
+    });
+    if (!resultados.length) return alert("No se encontraron resultados.");
+    $('divResumenFechas').innerHTML = resultados.map(r=>
+      `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
+        <b>${r.fecha}</b> · Obs: ${r.observaciones?.slice(0,50)||""}...
+        <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
+      </div>`
+    ).join("");
+  };
+
+  cargarHistorial();
+  renderListas();
+};
+// ----------- RESUMEN POR RANGO DE FECHAS, PDF, WHATSAPP, CSV -----------
+
+// Estado para los registros filtrados por rango
+window._resumenesFiltrados = [];
 
 // Botón de resumen por rango
 $('btnResumenFechas').onclick = async function() {
@@ -317,9 +347,119 @@ $('btnWhatsapp').onclick = function() {
     .catch(()=>alert("No se pudo copiar. Actualiza el navegador."));
 };
 
-// Iniciar al cargar la página
-window.onload = function() {
-  if (localStorage.getItem("sirex_darkmode") === "1") document.body.classList.add('dark-mode');
-  cargarHistorial();
-  renderListas();
+// Botón CSV
+$('btnExportarCSV').onclick = function() {
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let csv = "Fecha,Colaboraciones,Detenidos,Citados,Gestiones,InspeccionesTrabajo,OtrasInspecciones,Observaciones\n";
+  window._resumenesFiltrados.forEach(r => {
+    csv += [
+      r.fecha,
+      (r.colaboraciones||[]).map(x=>`${x.descripcion} (${x.cantidad})`).join(" | "),
+      (r.detenidos||[]).map(x=>`${x.motivo} - ${x.nacionalidad} (${x.cantidad})`).join(" | "),
+      (r.citados||[]).map(x=>`${x.descripcion} (${x.cantidad})`).join(" | "),
+      (r.gestiones||[]).map(x=>`${x.descripcion} (${x.cantidad})`).join(" | "),
+      (r.inspeccionesTrabajo||[]).map(x=>`${x.descripcion} (${x.cantidad})`).join(" | "),
+      (r.otrasInspecciones||[]).map(x=>`${x.descripcion} (${x.cantidad})`).join(" | "),
+      JSON.stringify(r.observaciones||"")
+    ].join(",") + "\n";
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "resumen_grupo4.csv";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 };
+// --------- Extras y helpers ---------
+
+// Mensaje de estado de Firebase
+window.addEventListener('load', function() {
+  const statusDiv = $('statusFirebase');
+  if (!statusDiv) return;
+  try {
+    if (firebase && firebase.apps.length) {
+      statusDiv.innerHTML = '<span style="color: #388e3c;">✔️ Conectado a Firebase</span>';
+    } else {
+      statusDiv.innerHTML = '<span style="color: #e53935;">❌ No conectado a Firebase</span>';
+    }
+  } catch {
+    statusDiv.innerHTML = '<span style="color: #e53935;">❌ Error de conexión Firebase</span>';
+  }
+});
+
+// Validación extra para evitar entradas vacías en guardado
+function validateBeforeSave() {
+  if (
+    state.colaboraciones.length === 0 &&
+    state.detenidos.length === 0 &&
+    state.citados.length === 0 &&
+    state.gestiones.length === 0 &&
+    state.inspeccionesTrabajo.length === 0 &&
+    state.otrasInspecciones.length === 0 &&
+    !$('observaciones').value.trim()
+  ) {
+    alert("El registro está vacío, añade al menos un dato o una observación.");
+    return false;
+  }
+  return true;
+}
+
+// Reemplazar guardarRegistro por esta versión más robusta
+async function robustGuardarRegistro() {
+  const fecha = $('fechaRegistro').value;
+  if (!fecha) return alert("Selecciona la fecha");
+  if (!validateBeforeSave()) return;
+  const docId = "gestion_" + fecha.replace(/-/g, "");
+  await db.collection(NOMBRE_COLECCION).doc(docId).set({
+    fecha,
+    ...state,
+    observaciones: $('observaciones').value
+  });
+  alert("¡Registro guardado!");
+  cargarHistorial();
+}
+
+// Asignar la función robusta al botón guardar (sobrescribe anterior)
+window.onload = (function(origOnload){
+  return function() {
+    if(origOnload) origOnload();
+    $('btnGuardar').onclick = robustGuardarRegistro;
+  }
+})(window.onload);
+
+// Ayuda accesible en resumen fechas y exportar
+if ($('btnExportarPDF')) $('btnExportarPDF').title = "Exportar el resumen a PDF (abre ventana de impresión)";
+if ($('btnExportarCSV')) $('btnExportarCSV').title = "Exportar el resumen a hoja de cálculo CSV";
+if ($('btnWhatsapp')) $('btnWhatsapp').title = "Copiar resumen al portapapeles para WhatsApp (pega en la app)";
+
+// Pequeña mejora para mostrar/ocultar resumen de registro si no hay datos
+function mostrarResumen() {
+  const d = state;
+  if (
+    d.colaboraciones.length === 0 &&
+    d.detenidos.length === 0 &&
+    d.citados.length === 0 &&
+    d.gestiones.length === 0 &&
+    d.inspeccionesTrabajo.length === 0 &&
+    d.otrasInspecciones.length === 0 &&
+    !$('observaciones').value.trim()
+  ) {
+    $('panelResumen').style.display = "none";
+    return;
+  }
+  $('resumenRegistro').innerHTML = `
+    <b>Colaboraciones:</b> ${d.colaboraciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Detenidos:</b> ${d.detenidos.map(e=>`${e.motivo} - ${e.nacionalidad} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Citados:</b> ${d.citados.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Otras gestiones:</b> ${d.gestiones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Inspecciones trabajo:</b> ${d.inspeccionesTrabajo.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Otras inspecciones:</b> ${d.otrasInspecciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
+    <b>Observaciones:</b> ${$('observaciones').value || "—"}
+  `;
+  $('panelResumen').style.display = "block";
+}
