@@ -1,3 +1,4 @@
+// js/consulta.js
 // SIREX · Consulta Global / Resúmenes
 
 // --- CONFIGURACIÓN FIREBASE ---
@@ -50,21 +51,15 @@ form.addEventListener('submit', async function(e) {
     }
 
     try {
-        // Consulta todos los grupos en paralelo
-        const gruposDatos = await Promise.all(GRUPOS.map(g =>
-            getDatosGrupo(g.id, desde, hasta)
-        ));
-        // Estructura resultado
+        const gruposDatos = await Promise.all(GRUPOS.map(g => getDatosGrupo(g.id, desde, hasta)));
         const resumen = {};
         GRUPOS.forEach((g, idx) => {
             resumen[g.id] = gruposDatos[idx];
         });
 
-        // Renderiza resumen visual
         resumenVentana.innerHTML = renderizarResumenHTML(resumen, desde, hasta);
         mostrarSpinner(false);
         exportBtns.classList.remove('d-none');
-        // Guarda para exportación
         window._ultimoResumen = { resumen, desde, hasta };
     } catch (err) {
         console.error("Error al generar resumen:", err);
@@ -74,11 +69,11 @@ form.addEventListener('submit', async function(e) {
 });
 
 // --- CONSULTA FIRESTORE DE UN GRUPO ---
+// CORRECCIÓN: Esta función ahora actúa como un "router", aplicando la lógica de consulta correcta para cada grupo.
 async function getDatosGrupo(grupo, desde, hasta) {
-    // CORRECCIÓN: Lógica específica para Grupo 1 para desglosar los datos diarios.
+    // Lógica para Grupo 1 (Expulsiones)
     if (grupo === "grupo1") {
         const col = db.collection("grupo1_expulsiones");
-        // Filtramos por el ID del documento que contiene la fecha.
         const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`)
                                 .where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`)
                                 .get();
@@ -86,10 +81,8 @@ async function getDatosGrupo(grupo, desde, hasta) {
         snap.forEach(doc => {
             const data = doc.data();
             const fechaDia = doc.id.replace("expulsiones_", "");
-
             if (data.expulsados) data.expulsados.forEach(item => datosAplanados.push({ ...item, tipo: 'expulsado', fecha: fechaDia }));
-            if (data.fletados) data.fletados.forEach(item => datosAplanados.push({ ...item, tipo: 'fletado' })); // Ya tiene su propia fecha
-            if (data.fletadosFuturos) data.fletadosFuturos.forEach(item => datosAplanados.push({ ...item, tipo: 'fletadoFuturo' }));
+            if (data.fletados) data.fletados.forEach(item => datosAplanados.push({ ...item, tipo: 'fletado' }));
             if (data.conduccionesPositivas) data.conduccionesPositivas.forEach(item => datosAplanados.push({ ...item, tipo: 'conduccionPositiva', fecha: fechaDia }));
             if (data.conduccionesNegativas) data.conduccionesNegativas.forEach(item => datosAplanados.push({ ...item, tipo: 'conduccionNegativa', fecha: fechaDia }));
             if (data.pendientes) data.pendientes.forEach(item => datosAplanados.push({ ...item, tipo: 'pendiente' }));
@@ -97,102 +90,37 @@ async function getDatosGrupo(grupo, desde, hasta) {
         return datosAplanados;
     }
 
-    // grupo4: grupo4_gestion (docId: gestion_YYYYMMDD)
-    if (grupo === "grupo4") {
-        let col = db.collection("grupo4_gestion");
-        let snap = await col.get();
-        let datos = [];
-        snap.forEach(doc => {
-            const docId = doc.id;
-            let fechaStr = docId.replace("gestion_", "");
-            if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
-            if (fechaStr >= desde && fechaStr <= hasta) {
-                datos.push({ fecha: fechaStr, ...doc.data() });
-            }
-        });
-        return datos;
-    }
-
-    // puerto: grupoPuerto_registros (docId: puerto_YYYY-MM-DD)
-    if (grupo === "puerto") {
-        const col = db.collection("grupoPuerto_registros");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`)
-                                .where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`)
-                                .get();
-        let datos = [];
-        snap.forEach(doc => {
-            datos.push({ fecha: doc.id.replace("puerto_", ""), ...doc.data() });
-        });
-        return datos;
-    }
-
-    // cie: grupo_cie (docId: YYYY-MM-DD)
-    if (grupo === "cie") {
-        const col = db.collection("grupo_cie");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', desde)
-                                .where(firebase.firestore.FieldPath.documentId(), '<=', hasta)
-                                .get();
-        let datos = [];
-        snap.forEach(doc => {
-            datos.push({ fecha: doc.id, ...doc.data() });
-        });
-        return datos;
-    }
-
-    // grupo2 y grupo3: solo detenidos e inspecciones
+    // Lógica para Grupo 2 y 3 (Investigación)
     if (grupo === "grupo2" || grupo === "grupo3") {
         const nombreColeccion = grupo + "_operaciones";
         let operacionesSnap = await db.collection(nombreColeccion).get();
         let resultado = [];
-
         for (const opDoc of operacionesSnap.docs) {
             const opId = opDoc.id;
             const opData = opDoc.data();
-
-            // --- DETENIDOS ---
-            const detenidosSnap = await db.collection(nombreColeccion).doc(opId)
-                .collection("detenidos")
-                .where("fechaDetenido", ">=", desde)
-                .where("fechaDetenido", "<=", hasta)
-                .get();
-            detenidosSnap.forEach(det => {
-                resultado.push({
-                    tipo: "detenido",
-                    operacion: opData.nombreOperacion || opId,
-                    ...det.data()
-                });
-            });
-
-            // --- INSPECCIONES (solo grupo3) ---
+            const detenidosSnap = await db.collection(nombreColeccion).doc(opId).collection("detenidos")
+                .where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
+            detenidosSnap.forEach(det => resultado.push({ tipo: "detenido", operacion: opData.nombreOperacion || opId, ...det.data() }));
+            
             if (grupo === "grupo3") {
-                const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId)
-                    .collection("inspecciones")
-                    .where("fechaInspeccion", ">=", desde)
-                    .where("fechaInspeccion", "<=", hasta)
-                    .get();
-                inspeccionesSnap.forEach(ins => {
-                    resultado.push({
-                        tipo: "inspeccion",
-                        operacion: opData.nombreOperacion || opId,
-                        ...ins.data()
-                    });
-                });
+                const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId).collection("inspecciones")
+                    .where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
+                inspeccionesSnap.forEach(ins => resultado.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opId, ...ins.data() }));
             }
         }
         return resultado;
     }
 
-    // Resto de grupos: filtro estándar por campo 'fecha'
+    // Lógica para otros grupos con estructuras simples
     try {
-        let col = db.collection(grupo);
-        let q = col.where('fecha', '>=', desde).where('fecha', '<=', hasta);
-        let snap = await q.get();
+        const snap = await db.collection(grupo).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
         return snap.docs.map(doc => doc.data());
-    } catch(e) {
-        console.warn(`El grupo '${grupo}' no tiene un campo 'fecha' o no existe. Devolviendo 0 resultados.`);
-        return []; // Devuelve vacío si la colección no se puede consultar por fecha
+    } catch (e) {
+        console.warn(`El grupo '${grupo}' no tiene una estructura estándar o no existe. Devolviendo 0 resultados.`);
+        return []; // Devuelve un array vacío si la consulta falla para evitar errores.
     }
 }
+
 
 // --- RENDER HTML DEL RESUMEN ---
 function renderizarResumenHTML(resumen, desde, hasta) {
@@ -207,12 +135,12 @@ function renderizarResumenHTML(resumen, desde, hasta) {
     });
     html += `<tr class="table-info"><td><b>Total general</b></td><td class="text-end"><b>${total}</b></td></tr>`;
     html += `</tbody></table></div>`;
-    
     html += `<details class="mt-3"><summary>Ver detalle por grupo</summary>`;
     GRUPOS.forEach(g => {
         if (resumen[g.id].length > 0) {
             html += `<h6 class="mt-3">${g.icon} ${g.label}</h6><ul>`;
             resumen[g.id].forEach((item) => {
+                // CORRECCIÓN: Pasamos el ID del grupo para aplicar el formato correcto.
                 html += `<li>${formatearItem(item, g.id)}</li>`;
             });
             html += `</ul>`;
@@ -222,51 +150,41 @@ function renderizarResumenHTML(resumen, desde, hasta) {
     return html;
 }
 
-// --- FORMATEA ITEM (ajusta según tus campos por grupo) ---
+// --- FORMATEA ITEM ---
+// CORRECCIÓN: La función ahora recibe el ID del grupo para saber cómo formatear cada item.
 function formatearItem(item, grupoId) {
-    // CORRECCIÓN: Casos específicos para cada tipo de dato del Grupo 1
     if (grupoId === "grupo1") {
         switch (item.tipo) {
-            case 'expulsado':
-                return `Expulsado: <b>${item.nombre || ''}</b> (${item.nacionalidad || '-'}) [Diligencias: ${item.diligencias || '-'}]`;
-            case 'fletado':
-                return `Fletado: <b>${item.destino || ''}</b> (${item.pax || 0} pax) - Fecha: ${item.fecha || '-'}`;
-            case 'fletadoFuturo':
-                return `Fletado Futuro: <b>${item.destino || ''}</b> (${item.pax || 0} pax) - Fecha: ${item.fecha || '-'}`;
-            case 'conduccionPositiva':
-                return `Conducción Positiva: <b>${item.numero || 0}</b> - Fecha: ${item.fecha || '-'}`;
-            case 'conduccionNegativa':
-                return `Conducción Negativa: <b>${item.numero || 0}</b> - Fecha: ${item.fecha || '-'}`;
-            case 'pendiente':
-                 return `Pendiente: <b>${item.descripcion || ''}</b> (Para el: ${item.fecha || '-'})`;
-            default:
-                return `Dato de Grupo 1: ${JSON.stringify(item)}`;
+            case 'expulsado': return `Expulsado: <b>${item.nombre||''}</b> (${item.nacionalidad||'-'}) [Diligencias: ${item.diligencias||'-'}]`;
+            case 'fletado': return `Fletado: <b>${item.destino||''}</b> (${item.pax||0} pax) - Fecha: ${item.fecha||'-'}`;
+            case 'conduccionPositiva': return `Conducción Positiva: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
+            case 'conduccionNegativa': return `Conducción Negativa: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
+            case 'pendiente': return `Pendiente: <b>${item.descripcion||''}</b> (Para el: ${item.fecha||'-'})`;
         }
     }
 
-    // CORRECCIÓN: Formato para Grupo 2 y 3, compatible con varios nombres de campo.
-    if ((grupoId === "grupo2" || grupoId === "grupo3") && item.tipo === "detenido") {
-        const nombre = item.nombreDetenido || item.filiacionDelito || '';
-        const motivo = item.delitoDetenido || item.motivo || '-';
-        return `Detenido: <b>${nombre}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${motivo} - Fecha: ${item.fechaDetenido||'-'} [Op: ${item.operacion}]`;
+    if (grupoId === "grupo2" || grupoId === "grupo3") {
+        if (item.tipo === "detenido") {
+            const nombre = item.nombreDetenido || '';
+            const motivo = item.delitoDetenido || '-';
+            return `Detenido: <b>${nombre}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${motivo} - Fecha: ${item.fechaDetenido||'-'} [Op: ${item.operacion}]`;
+        }
+        if (item.tipo === "inspeccion") {
+            return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
+        }
     }
-    if (grupoId === "grupo3" && item.tipo === "inspeccion") {
-        return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
-    }
-
-    // Otros grupos, genérico
+    
+    // Formato por defecto para otros grupos
     if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
     if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
-    
-    // Fallback para cualquier otra estructura no reconocida.
-    return `Dato genérico: ${JSON.stringify(item)}`;
+    return `Dato no reconocido: ${JSON.stringify(item)}`;
 }
+
 
 // --- SPINNER Y ERROR ---
 function mostrarSpinner(mostrar) {
     spinner.classList.toggle('d-none', !mostrar);
 }
-
 function mostrarError(msg) {
     resumenVentana.innerHTML = `<div class="alert alert-danger">${msg}</div>`;
 }
@@ -286,7 +204,6 @@ function exportarPDF(resumen, desde, hasta) {
     doc.text(`SIREX - Resumen Global`, 10, 18);
     doc.setFontSize(12);
     doc.text(`Periodo: ${desde} al ${hasta}`, 10, 28);
-
     let y = 40;
     GRUPOS.forEach(g => {
         if (y > 270) { doc.addPage(); y = 20; }
@@ -299,12 +216,11 @@ function exportarPDF(resumen, desde, hasta) {
             doc.setFontSize(9);
             resumen[g.id].forEach(item => {
                 if (y > 280) { doc.addPage(); y = 20; }
-                // Eliminar etiquetas HTML para el PDF
-                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, ""); 
+                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, "");
                 doc.text(`- ${textoItem}`, 15, y, { maxWidth: 180 });
                 y += 5;
             });
-            y += 4; // Espacio extra entre grupos
+            y += 4;
             doc.setFontSize(12);
         }
     });
@@ -312,6 +228,7 @@ function exportarPDF(resumen, desde, hasta) {
 }
 
 // --- EXPORTAR WHATSAPP ---
+// CORRECCIÓN: Función actualizada para crear el mensaje detallado.
 btnWhatsapp.addEventListener('click', () => {
     if (!window._ultimoResumen) return;
     const { resumen, desde, hasta } = window._ultimoResumen;
@@ -321,19 +238,34 @@ btnWhatsapp.addEventListener('click', () => {
 });
 
 function crearMensajeWhatsapp(resumen, desde, hasta) {
-    let msg = `*SIREX Resumen Global*\n(${desde} a ${hasta})\n`;
+    let msg = `*SIREX Resumen Global*\n(del ${desde} al ${hasta})\n`;
     let total = 0;
+    
+    // Primero, un resumen de totales
+    let totalesMsg = "\n*Totales por grupo:*\n";
     GRUPOS.forEach(g => {
         const cantidad = resumen[g.id].length;
         total += cantidad;
         if (cantidad > 0) {
-            msg += `\n*${g.icon} ${g.label}: ${cantidad}*`;
+            totalesMsg += `${g.icon} ${g.label}: ${cantidad}\n`;
+        }
+    });
+    totalesMsg += `*Total general: ${total}*\n`;
+    
+    msg += totalesMsg;
+
+    // Segundo, el detalle
+    let detalleMsg = "\n*Detalle:*\n";
+    GRUPOS.forEach(g => {
+        const cantidad = resumen[g.id].length;
+        if (cantidad > 0) {
+            detalleMsg += `\n*${g.icon} ${g.label}:*\n`;
             resumen[g.id].forEach(item => {
                 const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, ""); // Sin HTML
-                msg += `\n- ${textoItem}`;
+                detalleMsg += `- ${textoItem}\n`;
             });
         }
     });
-    msg += `\n\n*Total general: ${total}*`;
-    return msg;
+
+    return msg + detalleMsg;
 }
