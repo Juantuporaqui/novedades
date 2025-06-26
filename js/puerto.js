@@ -27,54 +27,17 @@ function formatoHora(h) {
   return h;
 }
 
-// ========== Referencias DOM ==========
-const form = document.getElementById('formPuerto');
-const fechaInput = document.getElementById('fechaPuerto');
-const btnCargar = document.getElementById('btnCargar');
-const btnNuevo = document.getElementById('btnNuevo');
-const btnGuardarRegistro = document.getElementById('btnGuardarRegistro');
-const adjuntosInput = document.getElementById('adjuntos');
-const observacionesInput = document.getElementById('observaciones');
-
-// Ferry mini-formulario (robusto)
-const ferryTipo = document.getElementById('ferryTipo');
-const ferryFecha = document.getElementById('ferryFecha');
-const ferryHora = document.getElementById('ferryHora');
-const ferryPasajeros = document.getElementById('ferryPasajeros');
-const ferryVehiculos = document.getElementById('ferryVehiculos');
-const btnAddFerry = document.getElementById('btnAddFerry');
-const ferrysListWindow = document.getElementById('ferrysListWindow');
-
-const totalFerrysSpan = document.getElementById('totalFerrys');
-const totalPasajerosSpan = document.getElementById('totalPasajeros');
-const totalVehiculosSpan = document.getElementById('totalVehiculos');
-
-// Resumen avanzado
-const desdeResumen = document.getElementById('desdeResumen');
-const hastaResumen = document.getElementById('hastaResumen');
-const btnGenerarResumen = document.getElementById('btnGenerarResumen');
-const btnExportarPDF = document.getElementById('btnExportarPDF');
-const btnExportarCSV = document.getElementById('btnExportarCSV');
-const btnWhatsapp = document.getElementById('btnWhatsapp');
-const resumenAvanzadoVentana = document.getElementById('resumenAvanzadoVentana');
-
-// Resumen del día
-const panelResumen = document.getElementById('panelResumenPuerto');
-const resumenDiv = document.getElementById('resumenPuerto');
-
-// ========== Helpers Firestore ==========
-function getDocIdDia(fecha) {
-  if (!fecha) return null;
-  const fechaISO = new Date(fecha).toISOString().slice(0, 10);
-  return `puerto_${fechaISO}`;
-}
-function getDocRefDia(fecha) {
-  return db.collection("grupoPuerto_registros").doc(getDocIdDia(fecha));
-}
-
 // ========== FERRYS DINÁMICOS Y GESTIÓN VISUAL ==========
 let ferrys = [];
 
+// Referencias DOM (deben existir después del DOMContentLoaded)
+let form, fechaInput, btnCargar, btnNuevo, btnGuardarRegistro, adjuntosInput, observacionesInput;
+let ferryTipo, ferryFecha, ferryHora, ferryPasajeros, ferryVehiculos, btnAddFerry, ferrysListWindow;
+let totalFerrysSpan, totalPasajerosSpan, totalVehiculosSpan;
+let desdeResumen, hastaResumen, btnGenerarResumen, btnExportarPDF, btnExportarCSV, btnWhatsapp, resumenAvanzadoVentana;
+let panelResumen, resumenDiv;
+
+// ========== FUNCIONES FERRYS ==========
 function limpiarFerrys() {
   ferrys = [];
   renderFerrysList();
@@ -82,6 +45,7 @@ function limpiarFerrys() {
 }
 
 function renderFerrysList() {
+  if (!ferrysListWindow) return;
   ferrysListWindow.innerHTML = "";
   if (!ferrys.length) {
     ferrysListWindow.innerHTML = `<div class="ferry-empty">No hay ferrys añadidos.</div>`;
@@ -115,12 +79,12 @@ function renderFerrysList() {
 }
 
 function actualizarTotalesFerrys() {
+  if (!totalFerrysSpan || !totalPasajerosSpan || !totalVehiculosSpan) return;
   totalFerrysSpan.textContent = ferrys.length;
   totalPasajerosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.pasajeros)||0), 0);
   totalVehiculosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.vehiculos)||0), 0);
 }
 
-// ==== MINI-FORMULARIO FERRY: SIEMPRE FUNCIONA ====
 function addFerry() {
   // Asegúrate de que todos los campos existen y están accesibles
   if (!ferryTipo || !ferryFecha || !ferryHora || !ferryPasajeros || !ferryVehiculos) {
@@ -146,26 +110,329 @@ function addFerry() {
   ferryVehiculos.value = "";
 }
 
-// Siempre asigna el evento en DOMContentLoaded
+// ========== Helpers Firestore ==========
+function getDocIdDia(fecha) {
+  if (!fecha) return null;
+  const fechaISO = new Date(fecha).toISOString().slice(0, 10);
+  return `puerto_${fechaISO}`;
+}
+function getDocRefDia(fecha) {
+  return db.collection("grupoPuerto_registros").doc(getDocIdDia(fecha));
+}
+
+// ========== FUNCIONES DOMContentLoaded ==========
 window.addEventListener('DOMContentLoaded', () => {
+  // Obtener todas las referencias DOM aquí
+  form = document.getElementById('formPuerto');
+  fechaInput = document.getElementById('fechaPuerto');
+  btnCargar = document.getElementById('btnCargar');
+  btnNuevo = document.getElementById('btnNuevo');
+  btnGuardarRegistro = document.getElementById('btnGuardarRegistro');
+  adjuntosInput = document.getElementById('adjuntos');
+  observacionesInput = document.getElementById('observaciones');
+  ferryTipo = document.getElementById('ferryTipo');
+  ferryFecha = document.getElementById('ferryFecha');
+  ferryHora = document.getElementById('ferryHora');
+  ferryPasajeros = document.getElementById('ferryPasajeros');
+  ferryVehiculos = document.getElementById('ferryVehiculos');
+  btnAddFerry = document.getElementById('btnAddFerry');
+  ferrysListWindow = document.getElementById('ferrysListWindow');
+  totalFerrysSpan = document.getElementById('totalFerrys');
+  totalPasajerosSpan = document.getElementById('totalPasajeros');
+  totalVehiculosSpan = document.getElementById('totalVehiculos');
+  desdeResumen = document.getElementById('desdeResumen');
+  hastaResumen = document.getElementById('hastaResumen');
+  btnGenerarResumen = document.getElementById('btnGenerarResumen');
+  btnExportarPDF = document.getElementById('btnExportarPDF');
+  btnExportarCSV = document.getElementById('btnExportarCSV');
+  btnWhatsapp = document.getElementById('btnWhatsapp');
+  resumenAvanzadoVentana = document.getElementById('resumenAvanzadoVentana');
+  panelResumen = document.getElementById('panelResumenPuerto');
+  resumenDiv = document.getElementById('resumenPuerto');
+
   limpiarFerrys();
+
   // Asignar evento añadir ferry de forma robusta
   if (btnAddFerry) {
     btnAddFerry.onclick = addFerry;
+    // Depuración
+    console.log("Botón Añadir Ferry OK");
+  } else {
+    console.error("No se encuentra el botón Añadir Ferry");
   }
-});
 
-// ========== CARGAR REGISTRO ==========
-if (btnCargar) btnCargar.addEventListener('click', async () => {
-  if (!fechaInput.value) return showToast("Selecciona una fecha.");
-  const docSnap = await getDocRefDia(fechaInput.value).get();
-  if (!docSnap.exists) return showToast("No hay registro para ese día.");
-  cargarFormulario(docSnap.data());
-  mostrarResumen(docSnap.data());
-});
+  // ========== CARGAR REGISTRO ==========
+  if (btnCargar) btnCargar.addEventListener('click', async () => {
+    if (!fechaInput.value) return showToast("Selecciona una fecha.");
+    const docSnap = await getDocRefDia(fechaInput.value).get();
+    if (!docSnap.exists) return showToast("No hay registro para ese día.");
+    cargarFormulario(docSnap.data());
+    mostrarResumen(docSnap.data());
+  });
 
+  // ========== NUEVO REGISTRO ==========
+  if (btnNuevo) btnNuevo.addEventListener('click', () => {
+    limpiarFormulario();
+    if(panelResumen) panelResumen.style.display = 'none';
+    if(fechaInput) fechaInput.value = '';
+  });
+
+  // ========== GUARDAR REGISTRO ==========
+  if (form) form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (!fechaInput.value) return showToast("Selecciona una fecha.");
+    // Adjuntos
+    let adjuntos = [];
+    if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
+      for (const file of adjuntosInput.files) {
+        const ref = storage.ref().child(`grupoPuerto/${getDocIdDia(fechaInput.value)}/${file.name}`);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        adjuntos.push({ name: file.name, url });
+      }
+    }
+    // Datos
+    const datos = {
+      fecha: form.fechaPuerto.value,
+      marinosArgos: parseInt(form.marinosArgos.value) || 0,
+      controlPasaportes: parseInt(form.controlPasaportes.value) || 0,
+      cruceros: parseInt(form.cruceros.value) || 0,
+      cruceristas: parseInt(form.cruceristas.value) || 0,
+      visadosValencia: parseInt(form.visadosValencia.value) || 0,
+      visadosCG: parseInt(form.visadosCG.value) || 0,
+      puertoDeportivo: parseInt(form.puertoDeportivo.value) || 0,
+      denegaciones: parseInt(form.denegaciones.value) || 0,
+      certificadosEixics: parseInt(form.certificadosEixics.value) || 0,
+      observaciones: observacionesInput.value.trim(),
+      ferrys: ferrys,
+      adjuntos: adjuntos
+    };
+    await getDocRefDia(fechaInput.value).set(datos, { merge: true });
+    showToast("Registro guardado en la nube.");
+    mostrarResumen(datos);
+    if(panelResumen) panelResumen.style.display = 'block';
+    if (adjuntosInput) adjuntosInput.value = '';
+  });
+
+  // ========== BOTÓN PDF RESUMEN (DÍA) ==========
+  const btnPDF = document.getElementById('btnPDF');
+  if (btnPDF) {
+    btnPDF.addEventListener('click', () => {
+      if (!panelResumen.style.display || panelResumen.style.display === 'none') {
+        showToast("Guarda o carga un registro primero.");
+        return;
+      }
+      // Imprime solo el resumen del día, no el formulario
+      const win = window.open("", "Resumen", "width=800,height=700,scrollbars=yes");
+      win.document.write(`
+        <html>
+          <head>
+            <title>Resumen Grupo Puerto</title>
+            <meta charset="utf-8">
+            <style>
+              body { background: #eef7fa; font-family: 'Inter', Arial, sans-serif; padding: 24px;}
+              h3 { color: #079cd8; }
+              a { color: #114c75; text-decoration: underline;}
+            </style>
+          </head>
+          <body>
+            <h3>Resumen Grupo Puerto</h3>
+            ${resumenDiv.innerHTML}
+            <hr>
+            <div style="text-align:right; margin-top:28px">
+              <button onclick="window.print()" style="font-size:1.13rem; background:#079cd8; color:#fff; border:none; border-radius:7px; padding:9px 22px; font-weight:bold; box-shadow:0 1px 8px #079cd829;">Imprimir PDF</button>
+            </div>
+          </body>
+        </html>
+      `);
+      win.document.close();
+    });
+  }
+
+  // ========== RESUMEN AVANZADO Y EXPORTACIONES ==========
+  let resumenFiltrado = [];
+  function handleGenerarResumen() {
+    if (!desdeResumen || !hastaResumen) return;
+    const desde = desdeResumen.value;
+    const hasta = hastaResumen.value;
+    if (!desde || !hasta) {
+      showToast("Selecciona rango de fechas.");
+      return;
+    }
+    const col = db.collection("grupoPuerto_registros");
+    col.get().then(snapshot => {
+      let resumen = [];
+      snapshot.forEach(docSnap => {
+        const docId = docSnap.id;
+        const fechaStr = docId.replace("puerto_", "");
+        if (fechaStr >= desde && fechaStr <= hasta) {
+          resumen.push({ fecha: fechaStr, ...docSnap.data() });
+        }
+      });
+      resumenFiltrado = resumen;
+      mostrarResumenAvanzado(resumen);
+    });
+  }
+  if (btnGenerarResumen) btnGenerarResumen.addEventListener('click', handleGenerarResumen);
+
+  function mostrarResumenAvanzado(resumen) {
+    if (!Array.isArray(resumen) || resumen.length === 0) {
+      resumenAvanzadoVentana.innerHTML = "<span class='text-muted'>No hay datos en el rango seleccionado.</span>";
+      return;
+    }
+    let html = `<div class='table-responsive'><table class='table table-striped'>
+      <thead><tr>
+        <th>Fecha</th>
+        <th>Marinos</th>
+        <th>Pasap.</th>
+        <th>Cruc.</th>
+        <th>Crucer.</th>
+        <th>Vis.V</th>
+        <th>Vis.CG</th>
+        <th>PtoDep.</th>
+        <th>Deneg.</th>
+        <th>EIXICS</th>
+        <th>Ferrys</th>
+        <th>Pasaj.</th>
+        <th>Vehíc.</th>
+        <th>Obs.</th>
+      </tr></thead><tbody>`;
+    resumen.forEach(item => {
+      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+      html += `<tr>
+        <td>${formatoFecha(item.fecha)}</td>
+        <td>${item.marinosArgos||0}</td>
+        <td>${item.controlPasaportes||0}</td>
+        <td>${item.cruceros||0}</td>
+        <td>${item.cruceristas||0}</td>
+        <td>${item.visadosValencia||0}</td>
+        <td>${item.visadosCG||0}</td>
+        <td>${item.puertoDeportivo||0}</td>
+        <td>${item.denegaciones||0}</td>
+        <td>${item.certificadosEixics||0}</td>
+        <td>${(item.ferrys||[]).length}</td>
+        <td>${totalPasajeros}</td>
+        <td>${totalVehiculos}</td>
+        <td>${item.observaciones||""}</td>
+      </tr>`;
+    });
+    html += "</tbody></table></div>";
+    resumenAvanzadoVentana.innerHTML = html;
+  }
+
+  // ========== Exportar PDF (resumen avanzado) ==========
+  if (btnExportarPDF) btnExportarPDF.onclick = function () {
+    if (!resumenFiltrado || resumenFiltrado.length === 0) {
+      showToast("Primero genera un resumen.");
+      return;
+    }
+    let html = `<h2>Resumen Puerto</h2>
+    <h4>Del ${desdeResumen.value} al ${hastaResumen.value}</h4>
+    <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Marinos</th>
+        <th>Pasap.</th>
+        <th>Cruc.</th>
+        <th>Crucer.</th>
+        <th>Vis.V</th>
+        <th>Vis.CG</th>
+        <th>PtoDep.</th>
+        <th>Deneg.</th>
+        <th>EIXICS</th>
+        <th>Ferrys</th>
+        <th>Pasaj.</th>
+        <th>Vehíc.</th>
+        <th>Obs.</th>
+      </tr>
+    </thead><tbody>`;
+    resumenFiltrado.forEach(item => {
+      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+      html += `<tr>
+        <td>${formatoFecha(item.fecha)}</td>
+        <td>${item.marinosArgos||0}</td>
+        <td>${item.controlPasaportes||0}</td>
+        <td>${item.cruceros||0}</td>
+        <td>${item.cruceristas||0}</td>
+        <td>${item.visadosValencia||0}</td>
+        <td>${item.visadosCG||0}</td>
+        <td>${item.puertoDeportivo||0}</td>
+        <td>${item.denegaciones||0}</td>
+        <td>${item.certificadosEixics||0}</td>
+        <td>${(item.ferrys||[]).length}</td>
+        <td>${totalPasajeros}</td>
+        <td>${totalVehiculos}</td>
+        <td>${item.observaciones||""}</td>
+      </tr>`;
+    });
+    html += "</tbody></table>";
+    const w = window.open("", "_blank");
+    w.document.write(`<html><head><title>Resumen Puerto</title></head><body>${html}</body></html>`);
+    w.print();
+  };
+
+  // ========== Exportar CSV ==========
+  if (btnExportarCSV) btnExportarCSV.onclick = function () {
+    if (!resumenFiltrado || resumenFiltrado.length === 0) {
+      showToast("Primero genera un resumen.");
+      return;
+    }
+    let csv = "Fecha,Marinos,Pasap.,Cruc.,Crucer.,Vis.V,Vis.CG,PtoDep.,Deneg.,EIXICS,Ferrys,Pasaj.,Vehíc.,Obs.\n";
+    resumenFiltrado.forEach(item => {
+      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+      csv += [
+        item.fecha,
+        item.marinosArgos||0,
+        item.controlPasaportes||0,
+        item.cruceros||0,
+        item.cruceristas||0,
+        item.visadosValencia||0,
+        item.visadosCG||0,
+        item.puertoDeportivo||0,
+        item.denegaciones||0,
+        item.certificadosEixics||0,
+        (item.ferrys||[]).length,
+        totalPasajeros,
+        totalVehiculos,
+        (item.observaciones||"").replace(/(\r\n|\n|\r)/gm, " ")
+      ].join(",") + "\n";
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resumen_puerto.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+  };
+
+  // ========== Exportar resumen a WhatsApp ==========
+  if (btnWhatsapp) btnWhatsapp.onclick = function () {
+    if (!resumenFiltrado || resumenFiltrado.length === 0) {
+      showToast("Primero genera un resumen.");
+      return;
+    }
+    let resumen = `Puerto SIREX\n${desdeResumen.value} a ${hastaResumen.value}:\n`;
+    resumenFiltrado.forEach(item => {
+      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+      resumen += `${formatoFecha(item.fecha)}: F=${(item.ferrys||[]).length}, P=${totalPasajeros}, V=${totalVehiculos}, C=${item.cruceros||0}, CR=${item.cruceristas||0}, M=${item.marinosArgos||0}\n`;
+    });
+    navigator.clipboard.writeText(resumen)
+      .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
+      .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
+  };
+
+}); // FIN DOMContentLoaded
+
+// ========== CARGAR FORMULARIO ==========
 function cargarFormulario(datos) {
-  // Campos simples
+  if (!form) return;
   const campos = [
     "marinosArgos","controlPasaportes","cruceros","cruceristas","visadosValencia","visadosCG",
     "puertoDeportivo","denegaciones","certificadosEixics","observaciones"
@@ -173,57 +440,13 @@ function cargarFormulario(datos) {
   campos.forEach(k=>{
     if(form[k]) form[k].value = datos[k]||"";
   });
-  // Ferrys
   ferrys = Array.isArray(datos.ferrys) ? datos.ferrys : [];
   renderFerrysList();
 }
 
-// ========== NUEVO REGISTRO ==========
-if (btnNuevo) btnNuevo.addEventListener('click', () => {
-  limpiarFormulario();
-  panelResumen.style.display = 'none';
-  if(fechaInput) fechaInput.value = '';
-});
-
-// ========== GUARDAR REGISTRO ==========
-if (form) form.addEventListener('submit', async function (e) {
-  e.preventDefault();
-  if (!fechaInput.value) return showToast("Selecciona una fecha.");
-  // Adjuntos
-  let adjuntos = [];
-  if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
-    for (const file of adjuntosInput.files) {
-      const ref = storage.ref().child(`grupoPuerto/${getDocIdDia(fechaInput.value)}/${file.name}`);
-      await ref.put(file);
-      const url = await ref.getDownloadURL();
-      adjuntos.push({ name: file.name, url });
-    }
-  }
-  // Datos
-  const datos = {
-    fecha: form.fechaPuerto.value,
-    marinosArgos: parseInt(form.marinosArgos.value) || 0,
-    controlPasaportes: parseInt(form.controlPasaportes.value) || 0,
-    cruceros: parseInt(form.cruceros.value) || 0,
-    cruceristas: parseInt(form.cruceristas.value) || 0,
-    visadosValencia: parseInt(form.visadosValencia.value) || 0,
-    visadosCG: parseInt(form.visadosCG.value) || 0,
-    puertoDeportivo: parseInt(form.puertoDeportivo.value) || 0,
-    denegaciones: parseInt(form.denegaciones.value) || 0,
-    certificadosEixics: parseInt(form.certificadosEixics.value) || 0,
-    observaciones: observacionesInput.value.trim(),
-    ferrys: ferrys,
-    adjuntos: adjuntos
-  };
-  await getDocRefDia(fechaInput.value).set(datos, { merge: true });
-  showToast("Registro guardado en la nube.");
-  mostrarResumen(datos);
-  panelResumen.style.display = 'block';
-  if (adjuntosInput) adjuntosInput.value = '';
-});
-
 // ========== MOSTRAR RESUMEN DÍA ==========
 function mostrarResumen(datos) {
+  if (!panelResumen || !resumenDiv) return;
   panelResumen.style.display = 'block';
   resumenDiv.innerHTML = `
     <b>Fecha:</b> ${formatoFecha(datos.fecha)}<br>
@@ -256,216 +479,3 @@ function mostrarResumen(datos) {
     }
   `;
 }
-
-// ========== PDF/Impresión solo del resumen ==========
-const btnPDF = document.getElementById('btnPDF');
-if (btnPDF) {
-  btnPDF.addEventListener('click', () => {
-    if (!panelResumen.style.display || panelResumen.style.display === 'none') {
-      showToast("Guarda o carga un registro primero.");
-      return;
-    }
-    // Imprime solo el resumen del día, no el formulario
-    const win = window.open("", "Resumen", "width=800,height=700,scrollbars=yes");
-    win.document.write(`
-      <html>
-        <head>
-          <title>Resumen Grupo Puerto</title>
-          <meta charset="utf-8">
-          <style>
-            body { background: #eef7fa; font-family: 'Inter', Arial, sans-serif; padding: 24px;}
-            h3 { color: #079cd8; }
-            a { color: #114c75; text-decoration: underline;}
-          </style>
-        </head>
-        <body>
-          <h3>Resumen Grupo Puerto</h3>
-          ${resumenDiv.innerHTML}
-          <hr>
-          <div style="text-align:right; margin-top:28px">
-            <button onclick="window.print()" style="font-size:1.13rem; background:#079cd8; color:#fff; border:none; border-radius:7px; padding:9px 22px; font-weight:bold; box-shadow:0 1px 8px #079cd829;">Imprimir PDF</button>
-          </div>
-        </body>
-      </html>
-    `);
-    win.document.close();
-  });
-}
-
-// ========== RESUMEN AVANZADO (por rango de fechas) ==========
-let resumenFiltrado = [];
-function handleGenerarResumen() {
-  const desde = desdeResumen.value;
-  const hasta = hastaResumen.value;
-  if (!desde || !hasta) {
-    showToast("Selecciona rango de fechas.");
-    return;
-  }
-  const col = db.collection("grupoPuerto_registros");
-  col.get().then(snapshot => {
-    let resumen = [];
-    snapshot.forEach(docSnap => {
-      const docId = docSnap.id;
-      const fechaStr = docId.replace("puerto_", "");
-      if (fechaStr >= desde && fechaStr <= hasta) {
-        resumen.push({ fecha: fechaStr, ...docSnap.data() });
-      }
-    });
-    resumenFiltrado = resumen;
-    mostrarResumenAvanzado(resumen);
-  });
-}
-if (btnGenerarResumen) btnGenerarResumen.addEventListener('click', handleGenerarResumen);
-
-function mostrarResumenAvanzado(resumen) {
-  if (!Array.isArray(resumen) || resumen.length === 0) {
-    resumenAvanzadoVentana.innerHTML = "<span class='text-muted'>No hay datos en el rango seleccionado.</span>";
-    return;
-  }
-  let html = `<div class='table-responsive'><table class='table table-striped'>
-    <thead><tr>
-      <th>Fecha</th>
-      <th>Marinos</th>
-      <th>Pasap.</th>
-      <th>Cruc.</th>
-      <th>Crucer.</th>
-      <th>Vis.V</th>
-      <th>Vis.CG</th>
-      <th>PtoDep.</th>
-      <th>Deneg.</th>
-      <th>EIXICS</th>
-      <th>Ferrys</th>
-      <th>Pasaj.</th>
-      <th>Vehíc.</th>
-      <th>Obs.</th>
-    </tr></thead><tbody>`;
-  resumen.forEach(item => {
-    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-    html += `<tr>
-      <td>${formatoFecha(item.fecha)}</td>
-      <td>${item.marinosArgos||0}</td>
-      <td>${item.controlPasaportes||0}</td>
-      <td>${item.cruceros||0}</td>
-      <td>${item.cruceristas||0}</td>
-      <td>${item.visadosValencia||0}</td>
-      <td>${item.visadosCG||0}</td>
-      <td>${item.puertoDeportivo||0}</td>
-      <td>${item.denegaciones||0}</td>
-      <td>${item.certificadosEixics||0}</td>
-      <td>${(item.ferrys||[]).length}</td>
-      <td>${totalPasajeros}</td>
-      <td>${totalVehiculos}</td>
-      <td>${item.observaciones||""}</td>
-    </tr>`;
-  });
-  html += "</tbody></table></div>";
-  resumenAvanzadoVentana.innerHTML = html;
-}
-
-// ========== Exportar PDF (resumen avanzado) ==========
-if (btnExportarPDF) btnExportarPDF.onclick = function () {
-  if (!resumenFiltrado || resumenFiltrado.length === 0) {
-    showToast("Primero genera un resumen.");
-    return;
-  }
-  let html = `<h2>Resumen Puerto</h2>
-  <h4>Del ${desdeResumen.value} al ${hastaResumen.value}</h4>
-  <table border="1" cellpadding="5" cellspacing="0">
-  <thead>
-    <tr>
-      <th>Fecha</th>
-      <th>Marinos</th>
-      <th>Pasap.</th>
-      <th>Cruc.</th>
-      <th>Crucer.</th>
-      <th>Vis.V</th>
-      <th>Vis.CG</th>
-      <th>PtoDep.</th>
-      <th>Deneg.</th>
-      <th>EIXICS</th>
-      <th>Ferrys</th>
-      <th>Pasaj.</th>
-      <th>Vehíc.</th>
-      <th>Obs.</th>
-    </tr>
-  </thead><tbody>`;
-  resumenFiltrado.forEach(item => {
-    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-    html += `<tr>
-      <td>${formatoFecha(item.fecha)}</td>
-      <td>${item.marinosArgos||0}</td>
-      <td>${item.controlPasaportes||0}</td>
-      <td>${item.cruceros||0}</td>
-      <td>${item.cruceristas||0}</td>
-      <td>${item.visadosValencia||0}</td>
-      <td>${item.visadosCG||0}</td>
-      <td>${item.puertoDeportivo||0}</td>
-      <td>${item.denegaciones||0}</td>
-      <td>${item.certificadosEixics||0}</td>
-      <td>${(item.ferrys||[]).length}</td>
-      <td>${totalPasajeros}</td>
-      <td>${totalVehiculos}</td>
-      <td>${item.observaciones||""}</td>
-    </tr>`;
-  });
-  html += "</tbody></table>";
-  const w = window.open("", "_blank");
-  w.document.write(`<html><head><title>Resumen Puerto</title></head><body>${html}</body></html>`);
-  w.print();
-};
-
-// ========== Exportar CSV ==========
-if (btnExportarCSV) btnExportarCSV.onclick = function () {
-  if (!resumenFiltrado || resumenFiltrado.length === 0) {
-    showToast("Primero genera un resumen.");
-    return;
-  }
-  let csv = "Fecha,Marinos,Pasap.,Cruc.,Crucer.,Vis.V,Vis.CG,PtoDep.,Deneg.,EIXICS,Ferrys,Pasaj.,Vehíc.,Obs.\n";
-  resumenFiltrado.forEach(item => {
-    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-    csv += [
-      item.fecha,
-      item.marinosArgos||0,
-      item.controlPasaportes||0,
-      item.cruceros||0,
-      item.cruceristas||0,
-      item.visadosValencia||0,
-      item.visadosCG||0,
-      item.puertoDeportivo||0,
-      item.denegaciones||0,
-      item.certificadosEixics||0,
-      (item.ferrys||[]).length,
-      totalPasajeros,
-      totalVehiculos,
-      (item.observaciones||"").replace(/(\r\n|\n|\r)/gm, " ")
-    ].join(",") + "\n";
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "resumen_puerto.csv";
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-};
-
-// ========== Exportar resumen a WhatsApp ==========
-if (btnWhatsapp) btnWhatsapp.onclick = function () {
-  if (!resumenFiltrado || resumenFiltrado.length === 0) {
-    showToast("Primero genera un resumen.");
-    return;
-  }
-  let resumen = `Puerto SIREX\n${desdeResumen.value} a ${hastaResumen.value}:\n`;
-  resumenFiltrado.forEach(item => {
-    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-    resumen += `${formatoFecha(item.fecha)}: F=${(item.ferrys||[]).length}, P=${totalPasajeros}, V=${totalVehiculos}, C=${item.cruceros||0}, CR=${item.cruceristas||0}, M=${item.marinosArgos||0}\n`;
-  });
-  navigator.clipboard.writeText(resumen)
-    .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
-    .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
-};
