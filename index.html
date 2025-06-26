@@ -7,6 +7,35 @@
   <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <!-- Estilo para los nuevos botones globales -->
+  <style>
+    .global-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .btn-global {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: transform 0.2s;
+      text-align: center;
+    }
+    .btn-global:hover {
+      transform: translateY(-2px);
+    }
+    .btn-novedades {
+      background-color: #198754; /* Berde */
+    }
+    .btn-consulta {
+      background-color: #0d6efd; /* Asul */
+    }
+  </style>
 </head>
 <body>
   <!-- CABECERA GRANDE -->
@@ -74,10 +103,12 @@
         </span>
         <span class="grupo-label">CIE</span>
       </a>
-      
-    <!-- CONSULTA GLOBAL -->
-    <div class="text-center mt-4">
-      <a href="consulta.html" class="btn-consulta">Consulta Global / Resúmenes</a>
+    </div>
+    
+    <!-- FUNCIONES GLOBALES -->
+    <div class="text-center mt-4 global-actions">
+      <a href="novedades.html" class="btn-global btn-novedades">Cargar Novedades PDF</a>
+      <a href="consulta.html" class="btn-global btn-consulta">Consulta Global / Resúmenes</a>
     </div>
   </main>
 
