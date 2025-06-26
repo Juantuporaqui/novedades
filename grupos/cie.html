@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo CIE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Estilos modernos unificados (siguiendo grupo1/puerto) -->
   <link rel="stylesheet" href="../css/cie.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
@@ -28,10 +27,10 @@
     <form id="formCIE" autocomplete="off">
       <section class="panel panel-glass">
         <!-- Fecha y acciones -->
-        <div class="row-cols fecha-row" style="display:flex; align-items:center; gap:1em; flex-wrap:wrap;">
+        <div class="row-cols fecha-row flex-wrap-row">
           <label for="fechaCIE">Fecha</label>
           <input type="date" id="fechaCIE" required class="form-control input-date">
-          <div class="top-actions-bar-header" style="margin:0;gap:.5em;">
+          <div class="top-actions-bar-header">
             <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro">📂 Cargar</button>
             <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro">🆕 Nuevo</button>
             <button type="submit" class="btn-guardar" id="btnGuardarRegistro" title="Guardar">💾 Guardar</button>
@@ -45,7 +44,7 @@
         <!-- Desglose por nacionalidades -->
         <div class="subseccion">
           <label>Internos por nacionalidad</label>
-          <div class="input-row-multi">
+          <div class="input-row-multi responsive-input-row">
             <input type="text" id="nacionalidadInterno" placeholder="Nacionalidad" maxlength="30" class="form-control">
             <input type="number" min="0" id="numInternosNac" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddInternoNac">Añadir</button>
@@ -55,7 +54,7 @@
         <!-- Ingresos -->
         <div class="subseccion">
           <label>Ingresos</label>
-          <div class="input-row-multi">
+          <div class="input-row-multi responsive-input-row">
             <input type="text" id="nacionalidadIngreso" placeholder="Nacionalidad" maxlength="30" class="form-control">
             <input type="number" min="0" id="numIngresos" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddIngreso">Añadir</button>
@@ -65,7 +64,7 @@
         <!-- Salidas -->
         <div class="subseccion">
           <label>Salidas</label>
-          <div class="input-row-multi">
+          <div class="input-row-multi responsive-input-row">
             <input type="text" id="destinoSalida" placeholder="Destino" maxlength="30" class="form-control">
             <input type="number" min="0" id="numSalidas" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddSalida">Añadir</button>
@@ -91,7 +90,7 @@
       <h3>Resumen avanzado
         <button class="ayuda-btn" type="button" title="Resumen y exportación" onclick="alert('Puedes generar un resumen por rango de fechas y exportar los datos en PDF, CSV o copiar para WhatsApp.')">?</button>
       </h3>
-      <div class="row-cols mb-2 resumen-fechas-row" style="display:flex;align-items:center;gap:.7em;flex-wrap:wrap;">
+      <div class="row-cols mb-2 resumen-fechas-row flex-wrap-row">
         <label for="desdeResumen">Desde</label>
         <input type="date" id="desdeResumen" class="form-control input-date">
         <label for="hastaResumen">Hasta</label>
@@ -110,12 +109,10 @@
   <footer class="footer">
     SIREX · UCRIF · Grupo CIE &copy; 2025
   </footer>
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <script src="../js/cie.js"></script>
   <script>
-    // =========== MODO OSCURO ===========
     const darkBtn = document.getElementById("darkModeBtn");
     if (darkBtn) {
       darkBtn.onclick = function () {
