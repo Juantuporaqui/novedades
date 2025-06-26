@@ -23,7 +23,6 @@ const btnExportarPDF = document.getElementById('btnExportarPDF');
 const btnWhatsapp = document.getElementById('btnWhatsapp');
 
 // --- NOMBRES Y ETIQUETAS DE GRUPOS ---
-// Se mantiene la lista de grupos para la interfaz de usuario.
 const GRUPOS = [
     { id: 'grupo1', label: 'Expulsiones', icon: '🚔' },
     { id: 'grupo2', label: 'Investigación 1', icon: '🕵️' },
@@ -41,19 +40,13 @@ const GRUPOS = [
 // ====== ARQUITECTURA DE CONSULTA REFACTORIZADA ===================================
 // =================================================================================
 
-/**
- * Objeto de configuración central que define cómo consultar y formatear los datos para cada grupo.
- * Esto reemplaza la cadena de 'if/else if' por un sistema modular y escalable.
- */
 const GROUP_STRATEGIES = {
-    // Estrategia para Grupo 1: Los datos están anidados dentro de documentos diarios.
     grupo1: {
         query: async (desde, hasta) => {
             const snap = await db.collection("grupo1_expulsiones")
                 .where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`)
                 .where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`)
                 .get();
-            
             let results = [];
             snap.forEach(doc => {
                 const data = doc.data();
@@ -77,7 +70,6 @@ const GROUP_STRATEGIES = {
             }
         }
     },
-    // Estrategia para Grupos 2 y 3: Los datos están en subcolecciones de operaciones.
     investigacion: {
         query: async (desde, hasta, grupoId) => {
             const nombreColeccion = `${grupoId}_operaciones`;
@@ -87,7 +79,6 @@ const GROUP_STRATEGIES = {
                 const opData = opDoc.data();
                 const detenidosSnap = await opDoc.ref.collection("detenidos").where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
                 detenidosSnap.forEach(det => results.push({ tipo: "detenido", operacion: opData.nombreOperacion || opDoc.id, ...det.data() }));
-                
                 if (grupoId === "grupo3") {
                     const inspeccionesSnap = await opDoc.ref.collection("inspecciones").where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
                     inspeccionesSnap.forEach(ins => results.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opDoc.id, ...ins.data() }));
@@ -96,16 +87,11 @@ const GROUP_STRATEGIES = {
             return results;
         },
         formatter: (item) => {
-            if (item.tipo === "detenido") {
-                return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
-            }
-            if (item.tipo === "inspeccion") {
-                return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
-            }
+            if (item.tipo === "detenido") return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
+            if (item.tipo === "inspeccion") return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
             return JSON.stringify(item);
         }
     },
-    // Estrategia genérica para colecciones con un campo 'fecha'.
     default: {
         query: async (desde, hasta, grupoId) => {
             const snap = await db.collection(grupoId).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
@@ -113,7 +99,6 @@ const GROUP_STRATEGIES = {
         },
         formatter: (item) => `Fecha: ${item.fecha} - ${item.asunto || item.descripcion || 'Registro genérico'}`
     },
-    // Estrategias específicas para colecciones con estructuras únicas.
     grupo4: {
         query: async (desde, hasta) => {
             const snap = await db.collection("grupo4_gestion").get();
@@ -121,9 +106,7 @@ const GROUP_STRATEGIES = {
             snap.forEach(doc => {
                 let fechaStr = doc.id.replace("gestion_", "");
                 if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
-                if (fechaStr >= desde && fechaStr <= hasta) {
-                    results.push({ fecha: fechaStr, ...doc.data() });
-                }
+                if (fechaStr >= desde && fechaStr <= hasta) results.push({ fecha: fechaStr, ...doc.data() });
             });
             return results;
         },
@@ -149,36 +132,50 @@ const GROUP_STRATEGIES = {
             return snap.docs.map(doc => doc.data());
         },
         formatter: (item) => `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`
+    },
+    // CORRECCIÓN: Estrategia actualizada para el nuevo sistema de "Gestión"
+    gestion: {
+        query: async (desde, hasta) => {
+            // Apunta a la nueva colección y filtra por el campo 'fecha'
+            const snap = await db.collection("gestion_avanzada").where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
+            return snap.docs.map(doc => doc.data());
+        },
+        formatter: (item) => {
+            // Crea un resumen con los campos más relevantes del nuevo formulario
+            const resumen = [
+                `Trámite: <b>${item.tipoTramite || 'N/A'}</b>`,
+                `Citas: ${item.citas || 0}`,
+                `Entrevistas Asilo: ${item.entrevistasAsilo || 0}`,
+                `MENAs: ${item.menas || 0}`,
+                `Oficios: ${item.oficios || 0}`
+            ];
+            return `Fecha: ${item.fecha} - ${resumen.join(', ')}`;
+        }
     }
 };
 
 // Asignar estrategias a los grupos correspondientes
 GROUP_STRATEGIES.grupo2 = GROUP_STRATEGIES.investigacion;
 GROUP_STRATEGIES.grupo3 = GROUP_STRATEGIES.investigacion;
-GROUP_STRATEGIES.gestion = GROUP_STRATEGIES.default;
+// La estrategia 'gestion' ya está definida arriba, por lo que no necesita la 'default'.
 GROUP_STRATEGIES.estadistica = GROUP_STRATEGIES.default;
 
 
 // --- FUNCIÓN DE CONSULTA PRINCIPAL (AHORA MÁS LIMPIA) ---
 async function getDatosGrupo(grupo, desde, hasta) {
-    // Selecciona la estrategia adecuada para el grupo. Si no hay una específica, usa la 'default'.
     const strategy = GROUP_STRATEGIES[grupo] || GROUP_STRATEGIES.default;
     try {
-        // Ejecuta la función de consulta de la estrategia.
         return await strategy.query(desde, hasta, grupo);
     } catch (e) {
         console.warn(`Error al consultar el grupo '${grupo}':`, e.message);
-        // Devuelve un array vacío si la consulta falla para no romper la aplicación.
         return [];
     }
 }
 
 // --- FUNCIÓN DE FORMATO PRINCIPAL (AHORA MÁS LIMPIA) ---
 function formatearItem(item, grupoId) {
-    // Selecciona el formateador adecuado para el grupo.
     const strategy = GROUP_STRATEGIES[grupoId] || GROUP_STRATEGIES.default;
     try {
-        // Ejecuta la función de formato de la estrategia.
         return strategy.formatter(item, grupoId);
     } catch (e) {
         console.error(`Error al formatear item para el grupo '${grupoId}':`, e);
@@ -186,12 +183,10 @@ function formatearItem(item, grupoId) {
     }
 }
 
-
 // =================================================================================
 // ====== SECCIÓN DE RENDERIZADO Y EXPORTACIÓN (SIN CAMBIOS) =======================
 // =================================================================================
 
-// --- GESTIÓN DEL FORMULARIO ---
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
     resumenVentana.innerHTML = '';
@@ -224,7 +219,6 @@ form.addEventListener('submit', async function(e) {
     }
 });
 
-// --- RENDER HTML DEL RESUMEN ---
 function renderizarResumenHTML(resumen, desde, hasta) {
     let html = `<h4 class="mb-3">Resumen global del <b>${desde}</b> al <b>${hasta}</b></h4>`;
     html += `<div class="table-responsive"><table class="table table-striped align-middle">
@@ -251,7 +245,6 @@ function renderizarResumenHTML(resumen, desde, hasta) {
     return html;
 }
 
-// --- SPINNER Y ERROR ---
 function mostrarSpinner(mostrar) {
     spinner.classList.toggle('d-none', !mostrar);
 }
@@ -259,7 +252,6 @@ function mostrarError(msg) {
     resumenVentana.innerHTML = `<div class="alert alert-danger">${msg}</div>`;
 }
 
-// --- EXPORTAR PDF ---
 btnExportarPDF.addEventListener('click', () => {
     if (!window._ultimoResumen) return;
     const { resumen, desde, hasta } = window._ultimoResumen;
@@ -297,7 +289,6 @@ function exportarPDF(resumen, desde, hasta) {
     doc.save(`SIREX-Resumen_${desde}_a_${hasta}.pdf`);
 }
 
-// --- EXPORTAR WHATSAPP ---
 btnWhatsapp.addEventListener('click', () => {
     if (!window._ultimoResumen) return;
     const { resumen, desde, hasta } = window._ultimoResumen;
