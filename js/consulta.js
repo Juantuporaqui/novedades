@@ -70,12 +70,9 @@ form.addEventListener('submit', async function(e) {
 
 // --- CONSULTA FIRESTORE DE UN GRUPO ---
 async function getDatosGrupo(grupo, desde, hasta) {
-    // Lógica para Grupo 1 (Expulsiones)
     if (grupo === "grupo1") {
         const col = db.collection("grupo1_expulsiones");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`)
-                                .where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`)
-                                .get();
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`).get();
         let datosAplanados = [];
         snap.forEach(doc => {
             const data = doc.data();
@@ -88,8 +85,6 @@ async function getDatosGrupo(grupo, desde, hasta) {
         });
         return datosAplanados;
     }
-
-    // Lógica para Grupo 2 y 3 (Investigación)
     if (grupo === "grupo2" || grupo === "grupo3") {
         const nombreColeccion = grupo + "_operaciones";
         let operacionesSnap = await db.collection(nombreColeccion).get();
@@ -97,23 +92,18 @@ async function getDatosGrupo(grupo, desde, hasta) {
         for (const opDoc of operacionesSnap.docs) {
             const opId = opDoc.id;
             const opData = opDoc.data();
-            const detenidosSnap = await db.collection(nombreColeccion).doc(opId).collection("detenidos")
-                .where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
+            const detenidosSnap = await db.collection(nombreColeccion).doc(opId).collection("detenidos").where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
             detenidosSnap.forEach(det => resultado.push({ tipo: "detenido", operacion: opData.nombreOperacion || opId, ...det.data() }));
-            
             if (grupo === "grupo3") {
-                const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId).collection("inspecciones")
-                    .where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
+                const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId).collection("inspecciones").where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
                 inspeccionesSnap.forEach(ins => resultado.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opId, ...ins.data() }));
             }
         }
         return resultado;
     }
-    
-    // CORRECCIÓN: Lógica para Grupo 4 (Operativo)
     if (grupo === "grupo4") {
         let col = db.collection("grupo4_gestion");
-        let snap = await col.get(); // No se puede filtrar por ID YYYYMMDD, obtenemos todo y filtramos en cliente
+        let snap = await col.get();
         let datos = [];
         snap.forEach(doc => {
             const docId = doc.id;
@@ -125,35 +115,42 @@ async function getDatosGrupo(grupo, desde, hasta) {
         });
         return datos;
     }
-
-    // CORRECCIÓN: Lógica para Puerto
     if (grupo === "puerto") {
         const col = db.collection("grupoPuerto_registros");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`)
-                                .where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`)
-                                .get();
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`).get();
         let datos = [];
         snap.forEach(doc => {
             datos.push({ tipo: 'registro_puerto', fecha: doc.id.replace("puerto_", ""), ...doc.data() });
         });
         return datos;
     }
-
-    // CORRECCIÓN: Lógica para CIE
     if (grupo === "cie") {
         const col = db.collection("grupo_cie");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', desde)
-                                .where(firebase.firestore.FieldPath.documentId(), '<=', hasta)
-                                .get();
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', desde).where(firebase.firestore.FieldPath.documentId(), '<=', hasta).get();
         let datos = [];
         snap.forEach(doc => {
             datos.push({ tipo: 'registro_cie', fecha: doc.id, ...doc.data() });
         });
         return datos;
     }
-
-
-    // Lógica genérica para el resto de grupos (Gestión, Cecorex, Estadística)
+    // Lógica específica para CECOREX
+    if (grupo === "cecorex") {
+        const col = db.collection("cecorex");
+        // CORRECCIÓN: Se añade el prefijo al filtro por ID
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `cecorex_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `cecorex_${hasta}`).get();
+        let datos = [];
+        snap.forEach(doc => {
+            datos.push({ tipo: 'registro_cecorex', ...doc.data() });
+        });
+        return datos;
+    }
+    // Lógica específica para GESTION
+    if (grupo === "gestion") {
+        const col = db.collection("gestion");
+        const snap = await col.where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
+        return snap.docs.map(doc => ({tipo: 'registro_gestion', ...doc.data()}));
+    }
+    // Lógica genérica para el resto de grupos (Estadística)
     try {
         const snap = await db.collection(grupo).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
         return snap.docs.map(doc => ({tipo: 'generico', ...doc.data()}));
@@ -202,19 +199,14 @@ function formatearItem(item, grupoId) {
             case 'pendiente': return `Pendiente: <b>${item.descripcion||''}</b> (Para el: ${item.fecha||'-'})`;
         }
     }
-
     if (grupoId === "grupo2" || grupoId === "grupo3") {
         if (item.tipo === "detenido") {
-            const nombre = item.nombreDetenido || '';
-            const motivo = item.delitoDetenido || '-';
-            return `Detenido: <b>${nombre}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${motivo} - Fecha: ${item.fechaDetenido||'-'} [Op: ${item.operacion}]`;
+            return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
         }
         if (item.tipo === "inspeccion") {
             return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
         }
     }
-    
-    // CORRECCIÓN: Formato para los grupos que se rompieron
     if (grupoId === "grupo4" && item.tipo === "registro_operativo") {
         return `Fecha: ${item.fecha} - Gestiones: ${item.gestiones||0}, Citados: ${item.citados||0}, Colaboraciones: ${item.colaboraciones||0}`;
     }
@@ -224,13 +216,17 @@ function formatearItem(item, grupoId) {
     if (grupoId === "cie" && item.tipo === "registro_cie") {
         return `Fecha: ${item.fecha} - Internos: ${item.internosNac||0}, Salidas: ${item.salidas||0}`;
     }
-
-    // Formato por defecto para otros grupos (Gestión, Cecorex, etc.)
+    // CORRECCIÓN: Formato para CECOREX basado en el JS que me pasaste
+    if (grupoId === "cecorex" && item.tipo === "registro_cecorex") {
+        return `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`;
+    }
+    if (grupoId === "gestion" && item.tipo === "registro_gestion") {
+        return `Fecha: ${item.fecha} - Asunto: ${item.asunto||'N/A'}, Descripción: ${item.descripcion||'N/A'}`;
+    }
     if (item.tipo === "generico") {
         if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
         if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
     }
-
     return `Dato no reconocido: ${JSON.stringify(item)}`;
 }
 
@@ -293,7 +289,6 @@ btnWhatsapp.addEventListener('click', () => {
 function crearMensajeWhatsapp(resumen, desde, hasta) {
     let msg = `*SIREX Resumen Global*\n(del ${desde} al ${hasta})\n`;
     let total = 0;
-    
     let totalesMsg = "\n*Totales por grupo:*\n";
     GRUPOS.forEach(g => {
         const cantidad = resumen[g.id].length;
@@ -303,9 +298,7 @@ function crearMensajeWhatsapp(resumen, desde, hasta) {
         }
     });
     totalesMsg += `*Total general: ${total}*\n`;
-    
     msg += totalesMsg;
-
     let detalleMsg = "\n*Detalle:*\n";
     GRUPOS.forEach(g => {
         const cantidad = resumen[g.id].length;
@@ -317,6 +310,5 @@ function crearMensajeWhatsapp(resumen, desde, hasta) {
             });
         }
     });
-
     return msg + detalleMsg;
 }
