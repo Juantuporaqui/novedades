@@ -35,72 +35,58 @@
 
     <section id="historialFechas"></section>
 
-    <form id="formOperativo" autocomplete="off">
-      <!-- Panel: Colaboraciones -->
+    <form id="formGestion" autocomplete="off">
       <section class="panel-seccion">
-        <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
-          <input type="number" id="colaboracionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
+          <label for="tipoTramite">Tipo de trámite</label>
+          <input type="text" id="tipoTramite" placeholder="Asilo, Carta Invitación, etc.">
+          <button type="button" class="ayuda-btn" data-seccion="tipoTramite" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaColaboraciones" class="lista"></ul>
-      </section>
-      <!-- Panel: Detenidos -->
-      <section class="panel-seccion">
-        <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
-          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
-          <input type="number" id="detenidoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido" aria-label="Agregar detenido">+</button>
+          <label for="datosGestionado">Datos del gestionado</label>
+          <textarea id="datosGestionado" rows="2" placeholder="Nombre, NIE, etc."></textarea>
+          <button type="button" class="ayuda-btn" data-seccion="datosGestionado" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaDetenidos" class="lista"></ul>
-      </section>
-      <!-- Panel: Citados -->
-      <section class="panel-seccion">
-        <h2>Citados <button type="button" class="btn-secundario ayuda-btn" data-seccion="citado" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="citadoDesc" placeholder="Descripción citado" autocomplete="off">
-          <input type="number" id="citadoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddCitado" title="Agregar citado" aria-label="Agregar citado">+</button>
+          <label for="descripcionTramite">Descripción del trámite</label>
+          <textarea id="descripcionTramite" rows="2" placeholder="Detalles del trámite"></textarea>
+          <button type="button" class="ayuda-btn" data-seccion="descripcionTramite" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaCitados" class="lista"></ul>
-      </section>
-      <!-- Panel: Otras gestiones -->
-      <section class="panel-seccion">
-        <h2>Otras gestiones <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="gestionDesc" placeholder="Gestión/tarea" autocomplete="off">
-          <input type="number" id="gestionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
+          <label for="menas">MENAs</label>
+          <input type="number" min="0" id="menas" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="menas" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaGestiones" class="lista"></ul>
-      </section>
-      <!-- Panel: Inspecciones Trabajo -->
-      <section class="panel-seccion">
-        <h2>Inspecciones Trabajo <button type="button" class="btn-secundario ayuda-btn" data-seccion="inspeccionTrabajo" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="inspeccionTrabajoDesc" placeholder="Descripción" autocomplete="off">
-          <input type="number" id="inspeccionTrabajoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddInspeccionTrabajo" title="Agregar inspección de trabajo" aria-label="Agregar inspección de trabajo">+</button>
+          <label for="asilos">Asilos</label>
+          <input type="number" min="0" id="asilos" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="asilos" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaInspeccionesTrabajo" class="lista"></ul>
-      </section>
-      <!-- Panel: Otras inspecciones -->
-      <section class="panel-seccion">
-        <h2>Otras inspecciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="otraInspeccion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="otraInspeccionDesc" placeholder="Descripción" autocomplete="off">
-          <input type="number" id="otraInspeccionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddOtraInspeccion" title="Agregar otra inspección" aria-label="Agregar otra inspección">+</button>
+          <label for="citas">Citas ofertadas</label>
+          <input type="number" min="0" id="citas" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="citas" title="¿Qué es esto?">?</button>
         </div>
-        <ul id="listaOtrasInspecciones" class="lista"></ul>
-      </section>
-      <!-- Observaciones -->
-      <section class="panel-seccion">
-        <h2>Observaciones</h2>
-        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
+        <div class="input-row">
+          <label for="cues">CUEs</label>
+          <input type="number" min="0" id="cues" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="cues" title="¿Qué es esto?">?</button>
+        </div>
+        <div class="input-row">
+          <label for="asignaciones">Asignaciones</label>
+          <input type="number" min="0" id="asignaciones" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="asignaciones" title="¿Qué es esto?">?</button>
+        </div>
+        <div class="input-row">
+          <label for="protecciones">Protecciones</label>
+          <input type="number" min="0" id="protecciones" placeholder="0">
+          <button type="button" class="ayuda-btn" data-seccion="protecciones" title="¿Qué es esto?">?</button>
+        </div>
+        <div class="input-row">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..."></textarea>
+          <button type="button" class="ayuda-btn" data-seccion="observaciones" title="¿Qué es esto?">?</button>
+        </div>
       </section>
     </form>
 
