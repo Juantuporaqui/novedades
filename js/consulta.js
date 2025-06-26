@@ -73,9 +73,9 @@ form.addEventListener('submit', async function (e) {
   }
 });
 
-// --- CONSULTA FIRESTORE DE UN GRUPO (adaptado para grupo1) ---
+// --- CONSULTA FIRESTORE DE UN GRUPO (adaptado para los nombres correctos) ---
 async function getDatosGrupo(grupo, desde, hasta) {
-  // Para grupo1, sigue la lógica de su propio resumen avanzado
+  // grupo1: grupo1_expulsiones (docId: expulsiones_YYYY-MM-DD)
   if (grupo === "grupo1") {
     let col = db.collection("grupo1_expulsiones");
     let snap = await col.get();
@@ -90,7 +90,54 @@ async function getDatosGrupo(grupo, desde, hasta) {
     return datos;
   }
 
-  // Para el resto, usa el filtro estándar (ajusta según necesidad)
+  // grupo4: grupo4_gestion (docId: gestion_YYYYMMDD)
+  if (grupo === "grupo4") {
+    let col = db.collection("grupo4_gestion");
+    let snap = await col.get();
+    let datos = [];
+    snap.forEach(doc => {
+      const docId = doc.id;
+      // Extrae fecha: gestion_YYYYMMDD
+      let fechaStr = docId.replace("gestion_", "");
+      // Formato a YYYY-MM-DD
+      if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
+      if (fechaStr >= desde && fechaStr <= hasta) {
+        datos.push({ fecha: fechaStr, ...doc.data() });
+      }
+    });
+    return datos;
+  }
+
+  // puerto: grupoPuerto_registros (docId: puerto_YYYY-MM-DD)
+  if (grupo === "puerto") {
+    let col = db.collection("grupoPuerto_registros");
+    let snap = await col.get();
+    let datos = [];
+    snap.forEach(doc => {
+      const docId = doc.id;
+      const fechaStr = docId.replace("puerto_", "");
+      if (fechaStr >= desde && fechaStr <= hasta) {
+        datos.push({ fecha: fechaStr, ...doc.data() });
+      }
+    });
+    return datos;
+  }
+
+  // cie: grupo_cie (docId: YYYY-MM-DD)
+  if (grupo === "cie") {
+    let col = db.collection("grupo_cie");
+    let snap = await col.get();
+    let datos = [];
+    snap.forEach(doc => {
+      const docId = doc.id; // Fecha directamente
+      if (docId >= desde && docId <= hasta) {
+        datos.push({ fecha: docId, ...doc.data() });
+      }
+    });
+    return datos;
+  }
+
+  // resto de grupos: filtro estándar por campo fecha
   let col = db.collection(grupo);
   let q = col.where('fecha', '>=', desde).where('fecha', '<=', hasta);
   let snap = await q.get();
@@ -127,7 +174,6 @@ function renderizarResumenHTML(resumen, desde, hasta) {
 
 // --- FORMATEA ITEM (ajusta según tus campos por grupo) ---
 function formatearItem(item, grupoId) {
-  // Ejemplo para grupo1: muestra expulsados, fletados, etc.
   if (grupoId === "grupo1") {
     const expulsados = item.expulsados ? item.expulsados.length : 0;
     const fletados = item.fletados ? item.fletados.length : 0;
@@ -137,10 +183,30 @@ function formatearItem(item, grupoId) {
     const pendientes = item.pendientes ? item.pendientes.length : 0;
     return `Fecha: ${item.fecha}, Expulsados: ${expulsados}, Fletados: ${fletados}, Fletados Futuros: ${fletadosFuturos}, Conducciones +: ${conPos}, Conducciones -: ${conNeg}, Pendientes: ${pendientes}`;
   }
-  // Para otros grupos, muestra campos genéricos
+  if (grupoId === "grupo4") {
+    const colabs = item.colaboraciones ? item.colaboraciones.length : 0;
+    const detenidos = item.detenidos ? item.detenidos.length : 0;
+    const citados = item.citados ? item.citados.length : 0;
+    const gestiones = item.gestiones ? item.gestiones.length : 0;
+    const inspecciones = item.inspeccionesTrabajo ? item.inspeccionesTrabajo.length : 0;
+    const otrasInsp = item.otrasInspecciones ? item.otrasInspecciones.length : 0;
+    return `Fecha: ${item.fecha}, Colaboraciones: ${colabs}, Detenidos: ${detenidos}, Citados: ${citados}, Otras gestiones: ${gestiones}, Inspecciones Trabajo: ${inspecciones}, Otras inspecciones: ${otrasInsp}`;
+  }
+  if (grupoId === "puerto") {
+    const ferrys = item.ferrys ? item.ferrys.length : 0;
+    const totalPasajeros = ferrys > 0 ? item.ferrys.map(f => parseInt(f.pasajeros)||0).reduce((a,b)=>a+b,0) : 0;
+    const totalVehiculos = ferrys > 0 ? item.ferrys.map(f => parseInt(f.vehiculos)||0).reduce((a,b)=>a+b,0) : 0;
+    return `Fecha: ${item.fecha}, Ferrys: ${ferrys}, Pasajeros: ${totalPasajeros}, Vehículos: ${totalVehiculos}`;
+  }
+  if (grupoId === "cie") {
+    const internosNac = item.internosNac ? item.internosNac.length : 0;
+    const ingresos = item.ingresos ? item.ingresos.length : 0;
+    const salidas = item.salidas ? item.salidas.length : 0;
+    return `Fecha: ${item.fecha}, Internos nacionales: ${internosNac}, Ingresos: ${ingresos}, Salidas: ${salidas}`;
+  }
+  // Otros grupos, genérico
   if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
   if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
-  // Por defecto, mostrar objeto como JSON corto
   return Object.entries(item).map(([k,v])=>`${k}: ${v}`).join(', ');
 }
 
