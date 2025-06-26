@@ -8,10 +8,9 @@ const firebaseConfig = {
   appId: "1:241698436443:web:1f333b3ae3f813b755167e",
   measurementId: "G-S2VPQNWZ21"
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ========== Utilidades ==========
 function showToast(msg) { alert(msg); }
 function formatoFecha(f) {
   if (!f) return "";
@@ -27,7 +26,6 @@ function limpiarFormulario() {
   renderAll();
 }
 
-// ========== Estado ==========
 let form, fechaInput, btnCargar, btnNuevo, btnGuardarRegistro, observacionesInput;
 let nacionalidadInterno, numInternosNac, btnAddInternoNac, ventanaInternosNac;
 let nacionalidadIngreso, numIngresos, btnAddIngreso, ventanaIngresos;
@@ -42,7 +40,7 @@ let salidas = [];
 
 // ========== DOMContentLoaded ==========
 window.addEventListener('DOMContentLoaded', () => {
-  // Obtener referencias DOM
+  // Referencias DOM
   form = document.getElementById('formCIE');
   fechaInput = document.getElementById('fechaCIE');
   btnCargar = document.getElementById('btnCargar');
@@ -71,35 +69,43 @@ window.addEventListener('DOMContentLoaded', () => {
   btnExportarCSV = document.getElementById('btnExportarCSV');
   btnWhatsapp = document.getElementById('btnWhatsapp');
   resumenAvanzadoVentana = document.getElementById('resumenAvanzadoVentana');
+
   // Inicial
   limpiarFormulario();
-  panelResumen.style.display = "none";
+  if(panelResumen) panelResumen.style.display = "none";
 
   // Añadir nacionalidad de internos
-  btnAddInternoNac.onclick = () => {
-    const n = nacionalidadInterno.value.trim();
-    const v = parseInt(numInternosNac.value) || 0;
-    if (!n || v <= 0) return showToast("Introduce nacionalidad y número > 0");
-    internosNac.push({ nacionalidad: n, numero: v });
-    nacionalidadInterno.value = ""; numInternosNac.value = "";
-    renderAll();
-  };
-  btnAddIngreso.onclick = () => {
-    const n = nacionalidadIngreso.value.trim();
-    const v = parseInt(numIngresos.value) || 0;
-    if (!n || v <= 0) return showToast("Introduce nacionalidad y número > 0");
-    ingresos.push({ nacionalidad: n, numero: v });
-    nacionalidadIngreso.value = ""; numIngresos.value = "";
-    renderAll();
-  };
-  btnAddSalida.onclick = () => {
-    const d = destinoSalida.value.trim();
-    const v = parseInt(numSalidas.value) || 0;
-    if (!d || v <= 0) return showToast("Introduce destino y número > 0");
-    salidas.push({ destino: d, numero: v });
-    destinoSalida.value = ""; numSalidas.value = "";
-    renderAll();
-  };
+  if (btnAddInternoNac) {
+    btnAddInternoNac.onclick = function() {
+      const n = nacionalidadInterno.value.trim();
+      const v = parseInt(numInternosNac.value) || 0;
+      if (!n || v <= 0) return showToast("Introduce nacionalidad y número > 0");
+      internosNac.push({ nacionalidad: n, numero: v });
+      nacionalidadInterno.value = ""; numInternosNac.value = "";
+      renderAll();
+    };
+  }
+  if (btnAddIngreso) {
+    btnAddIngreso.onclick = function() {
+      const n = nacionalidadIngreso.value.trim();
+      const v = parseInt(numIngresos.value) || 0;
+      if (!n || v <= 0) return showToast("Introduce nacionalidad y número > 0");
+      ingresos.push({ nacionalidad: n, numero: v });
+      nacionalidadIngreso.value = ""; numIngresos.value = "";
+      renderAll();
+    };
+  }
+  if (btnAddSalida) {
+    btnAddSalida.onclick = function() {
+      const d = destinoSalida.value.trim();
+      const v = parseInt(numSalidas.value) || 0;
+      if (!d || v <= 0) return showToast("Introduce destino y número > 0");
+      salidas.push({ destino: d, numero: v });
+      destinoSalida.value = ""; numSalidas.value = "";
+      renderAll();
+    };
+  }
+
   function renderList(container, lista, eliminarFn) {
     container.innerHTML = "";
     if (!lista.length) {
@@ -118,14 +124,14 @@ window.addEventListener('DOMContentLoaded', () => {
       container.appendChild(div);
     });
   }
-  function renderAll() {
+  window.renderAll = function() {
     renderList(ventanaInternosNac, internosNac, (i) => { internosNac.splice(i, 1); renderAll(); });
     renderList(ventanaIngresos, ingresos, (i) => { ingresos.splice(i, 1); renderAll(); });
     renderList(ventanaSalidas, salidas, (i) => { salidas.splice(i, 1); renderAll(); });
-  }
+  };
 
   // Guardar registro
-  form.addEventListener('submit', async function (e) {
+  if(form) form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!fechaInput.value) return showToast("Selecciona fecha");
     if (!nInternosInput.value) return showToast("Introduce número de internos");
@@ -144,7 +150,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // Cargar registro
-  btnCargar.onclick = async () => {
+  if (btnCargar) btnCargar.onclick = async function() {
     if (!fechaInput.value) return showToast("Selecciona una fecha");
     const doc = await db.collection("grupo_cie").doc(fechaInput.value).get();
     if (!doc.exists) { showToast("No hay registro para esa fecha"); return; }
@@ -159,9 +165,9 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Nuevo registro (reset)
-  btnNuevo.onclick = () => {
+  if (btnNuevo) btnNuevo.onclick = function() {
     limpiarFormulario();
-    panelResumen.style.display = "none";
+    if(panelResumen) panelResumen.style.display = "none";
   };
 
   // Resumen del día
@@ -180,13 +186,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar hoy por defecto
   const hoy = new Date().toISOString().slice(0,10);
-  fechaInput.value = hoy;
+  if(fechaInput) fechaInput.value = hoy;
   limpiarFormulario();
-  panelResumen.style.display = "none";
+  if(panelResumen) panelResumen.style.display = "none";
 
   // ========== RESUMEN AVANZADO ==========
   let resumenFiltrado = [];
-  btnGenerarResumen.onclick = async () => {
+  if(btnGenerarResumen) btnGenerarResumen.onclick = async function() {
     const desde = desdeResumen.value;
     const hasta = hastaResumen.value;
     if (!desde || !hasta) {
@@ -235,7 +241,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Exportar PDF
-  btnExportarPDF.onclick = function () {
+  if(btnExportarPDF) btnExportarPDF.onclick = function () {
     if (!resumenFiltrado || resumenFiltrado.length === 0) {
       showToast("Primero genera un resumen.");
       return;
@@ -270,7 +276,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Exportar CSV
-  btnExportarCSV.onclick = function () {
+  if(btnExportarCSV) btnExportarCSV.onclick = function () {
     if (!resumenFiltrado || resumenFiltrado.length === 0) {
       showToast("Primero genera un resumen.");
       return;
@@ -297,7 +303,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Exportar resumen a WhatsApp
-  btnWhatsapp.onclick = function () {
+  if(btnWhatsapp) btnWhatsapp.onclick = function () {
     if (!resumenFiltrado || resumenFiltrado.length === 0) {
       showToast("Primero genera un resumen.");
       return;
