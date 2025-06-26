@@ -13,23 +13,14 @@ html, body {
   padding: 1rem 1rem 0.7rem 1rem;
   background: transparent;
   flex-wrap: wrap;
+  position: relative;
 }
-.btn-menu {
-  background: #079cd8;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  width: 48px;
-  height: 48px;
-  box-shadow: 0 4px 16px #079cd840;
-  cursor: pointer;
-  margin-right: 0.7rem;
-  transition: background .16s, box-shadow .16s;
+.puerto-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.btn-menu:hover { background: #18509e; }
-
-.puerto-logo span {
+.puerto-logo {
   width: 56px; height: 56px;
   border-radius: 16px;
   background: #fff;
@@ -37,8 +28,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 48px;
 }
-
 .puerto-title {
   display: flex;
   flex-direction: column;
@@ -55,12 +46,38 @@ html, body {
   color: #155475;
   font-weight: 600;
 }
-
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-menu {
+  background: #079cd8;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 4px 16px #079cd840;
+  cursor: pointer;
+  transition: background .16s, box-shadow .16s;
+}
+.btn-menu:hover { background: #18509e; }
+.modo-oscuro-btn {
+  border: none;
+  background: transparent;
+  color: #ffd94a;
+  font-size: 1.7em;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.modo-oscuro-btn:hover { filter: brightness(1.6);}
 .top-actions-bar-header {
   display: flex;
   gap: 0.4em;
   align-items: center;
-  margin-left: auto;
 }
 .top-actions-bar-header button {
   font-size: 1.07rem;
@@ -86,12 +103,19 @@ html, body {
   .puerto-header { flex-wrap: wrap; }
   .top-actions-bar-header { margin: 0 0 0 0; }
 }
-
 @media (max-width:700px) {
   .puerto-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    padding: 1.1rem 1vw 1rem 2vw;
+  }
+  .puerto-logo-title { margin-bottom: 0.6em; }
+  .header-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
   }
   .top-actions-bar-header {
     margin-left: 0;
@@ -105,13 +129,16 @@ html, body {
     font-size: 1rem;
   }
 }
-
+@media (max-width:570px) {
+  .main-container { padding: 5px 1vw 60px 1vw;}
+  .panel.panel-glass { padding: 1rem 2vw 1rem 2vw;}
+  .footer { font-size: .97rem; padding-right: 7px;}
+}
 .main-container {
   max-width: 670px;
   margin: 0 auto;
   padding: 10px 0 70px 0;
 }
-/* Contenedor central responsivo */
 .panel-glass {
   background: #fff;
   border-radius: 30px;
@@ -123,7 +150,6 @@ html, body {
 @media (max-width: 780px) {
   .panel-glass { padding: 1.1em .6em; }
 }
-
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -228,17 +254,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   left: 0;
   bottom: 0;
 }
-@media (max-width: 700px) {
-  .main-container, .panel.panel-glass { padding-left: 2vw; padding-right: 2vw;}
-  .puerto-header { padding: 1.1rem 1vw 1rem 2vw;}
-}
-@media (max-width: 570px) {
-  .main-container { padding: 5px 1vw 60px 1vw;}
-  .panel.panel-glass { padding: 1rem 2vw 1rem 2vw;}
-  .footer { font-size: .97rem; padding-right: 7px;}
-}
-
-/* Mini-formulario ferry: máximo 3 por fila en móvil */
 .ferry-mini-form {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -264,8 +279,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   .ferry-mini-form { grid-template-columns: 1fr; }
   .ferry-mini-form input, .ferry-mini-form select, .ferry-mini-form button { margin-bottom: 0.5em;}
 }
-
-/* Listado de ferrys */
 .ventana-ferrys {
   background: #fafdff;
   border-radius: 1.3em;
@@ -327,8 +340,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   min-width: 72px;
   display: inline-block;
 }
-
-/* Totales de ferrys */
 .totales-ferry {
   margin-top: 7px;
   font-size: 1.13em;
@@ -339,8 +350,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   padding: 7px 15px 7px 15px;
   display: inline-block;
 }
-
-/* Botones de ayuda y exportación */
 .ayuda-btn {
   border: none;
   background: #ffd94a;
@@ -357,17 +366,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   justify-content: center;
 }
 .ayuda-btn:hover { filter: brightness(1.2); }
-.modo-oscuro-btn {
-  border: none;
-  background: transparent;
-  color: #ffd94a;
-  font-size: 1.7em;
-  margin-left: 10px;
-  cursor: pointer;
-  transition: filter .15s;
-}
-.modo-oscuro-btn:hover { filter: brightness(1.6);}
-
 .observaciones-box textarea {
   width: 99%;
   min-height: 85px;
@@ -376,7 +374,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   background: #fafdff;
 }
 @media (max-width:700px){ .observaciones-box textarea { width: 98vw; } }
-
 #resumenAvanzadoVentana table,
 #resumenAvanzadoVentana th,
 #resumenAvanzadoVentana td {
@@ -394,8 +391,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
 #resumenAvanzadoVentana tr:nth-child(odd) {
   background: #e7f6fa;
 }
-
-/* Botones resumen: 2x2 en móvil, horizontal en escritorio, tamaño moderado */
 .resumen-btns-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -424,8 +419,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   .resumen-btns-grid { grid-template-columns: 1fr;}
   .resumen-btns-grid .btn { width: 100%;}
 }
-
-/* Responsividad campos numéricos */
 .responsive-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -443,7 +436,6 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
     gap: 0.4em 0.5em;
   }
 }
-
 /* ======= MODO OSCURO ======= */
 body.dark-mode {
   background: #111d2e !important;
