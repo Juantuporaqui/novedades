@@ -411,22 +411,38 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   };
 
-  // ========== Exportar resumen a WhatsApp ==========
-  if (btnWhatsapp) btnWhatsapp.onclick = function () {
-    if (!resumenFiltrado || resumenFiltrado.length === 0) {
-      showToast("Primero genera un resumen.");
-      return;
-    }
-    let resumen = `Puerto SIREX\n${desdeResumen.value} a ${hastaResumen.value}:\n`;
-    resumenFiltrado.forEach(item => {
-      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-      resumen += `${formatoFecha(item.fecha)}: F=${(item.ferrys||[]).length}, P=${totalPasajeros}, V=${totalVehiculos}, C=${item.cruceros||0}, CR=${item.cruceristas||0}, M=${item.marinosArgos||0}\n`;
-    });
-    navigator.clipboard.writeText(resumen)
-      .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
-      .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
-  };
+
+// ========== Exportar resumen a WhatsApp ==========
+if (btnWhatsapp) btnWhatsapp.onclick = function () {
+  if (!resumenFiltrado || resumenFiltrado.length === 0) {
+    showToast("Primero genera un resumen.");
+    return;
+  }
+  let resumen = `Resumen grupo puerto:\n`;
+  resumen += `Del ${formatoFecha(desdeResumen.value)} al ${formatoFecha(hastaResumen.value)}\n\n`;
+  resumenFiltrado.forEach(item => {
+    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+    resumen += `---\n${formatoFecha(item.fecha)}\n`;
+    resumen += `Ferrys: ${(item.ferrys||[]).length}\n`;
+    resumen += `Pasajeros ferry: ${totalPasajeros}\n`;
+    resumen += `Vehículos ferry: ${totalVehiculos}\n`;
+    resumen += `Cruceros: ${item.cruceros||0}\n`;
+    resumen += `Cruceristas: ${item.cruceristas||0}\n`;
+    resumen += `Marinos Argos: ${item.marinosArgos||0}\n`;
+    resumen += `Pasaportes marinos: ${item.controlPasaportes||0}\n`;
+    resumen += `Visados Valencia: ${item.visadosValencia||0}\n`;
+    resumen += `Visados CG: ${item.visadosCG||0}\n`;
+    resumen += `Puerto deportivo: ${item.puertoDeportivo||0}\n`;
+    resumen += `Denegaciones: ${item.denegaciones||0}\n`;
+    resumen += `EIXICS: ${item.certificadosEixics||0}\n`;
+    resumen += `Observaciones: ${(item.observaciones||'---')}\n\n`;
+  });
+  navigator.clipboard.writeText(resumen)
+    .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
+    .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
+};
+// ...resto del código intacto...
 
 }); // FIN DOMContentLoaded
 
