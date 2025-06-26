@@ -24,39 +24,39 @@
     <form id="formPuerto" autocomplete="off">
       <section class="panel panel-glass">
 
-        <!-- NUEVA BARRA DE BOTONES ACCIÓN -->
-        <div class="top-actions-bar">
+        <!-- Fecha -->
+        <div class="row-cols fecha-row">
+          <label for="fechaPuerto">Fecha</label>
+          <input type="date" id="fechaPuerto" required class="form-control input-date">
+        </div>
+
+        <!-- Barra de botones principales (debajo de la fecha) -->
+        <div class="top-actions-bar-centered">
           <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro del día"><span>📂</span>Cargar</button>
           <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro"><span>🆕</span>Nuevo</button>
           <button type="submit" class="btn-guardar" id="btnGuardarRegistro" title="Guardar"><span>💾</span>Guardar</button>
         </div>
 
-        <!-- Fecha -->
-        <div class="row-cols fecha-row">
-          <label for="fechaPuerto">Fecha del registro</label>
-          <input type="date" id="fechaPuerto" required class="form-control input-date">
-        </div>
-
         <!-- Marinos/Cruceros/Visados -->
         <div class="row-cols">
           <div class="form-grid responsive-grid">
-            <label for="marinosArgos">Marinos Argos</label>
+            <label for="marinosArgos">Marinos<br>Argos</label>
             <input type="number" min="0" id="marinosArgos" placeholder="Argos">
-            <label for="controlPasaportes">Pasaportes Marinos</label>
+            <label for="controlPasaportes">Pasaportes<br>Marinos</label>
             <input type="number" min="0" id="controlPasaportes" placeholder="Pasaportes">
             <label for="cruceros">Cruceros</label>
             <input type="number" min="0" id="cruceros" placeholder="Cruceros">
             <label for="cruceristas">Cruceristas</label>
             <input type="number" min="0" id="cruceristas" placeholder="Pasajeros">
-            <label for="visadosValencia">Visados Valencia</label>
+            <label for="visadosValencia">Visados<br>Valencia</label>
             <input type="number" min="0" id="visadosValencia" placeholder="Valencia">
-            <label for="visadosCG">Visados CG</label>
+            <label for="visadosCG">Visados<br>CG</label>
             <input type="number" min="0" id="visadosCG" placeholder="CG">
-            <label for="puertoDeportivo">Puerto Deportivo</label>
+            <label for="puertoDeportivo">Pto.<br>Deportivo</label>
             <input type="number" min="0" id="puertoDeportivo" placeholder="Registros">
-            <label for="denegaciones">Denegaciones</label>
+            <label for="denegaciones">Deneg.</label>
             <input type="number" min="0" id="denegaciones" placeholder="Denegaciones">
-            <label for="certificadosEixics">Certificados EIXICS</label>
+            <label for="certificadosEixics">Cert. EIXICS</label>
             <input type="number" min="0" id="certificadosEixics" placeholder="EIXICS">
           </div>
         </div>
@@ -75,17 +75,17 @@
             </select>
             <input type="date" id="ferryFecha" class="form-control" title="Fecha">
             <input type="time" id="ferryHora" class="form-control" title="Hora">
-            <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasajeros" title="Pasajeros">
-            <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehículos" title="Vehículos">
-            <button type="button" class="btn-add-ferry" id="btnAddFerry">➕ Añadir ferry</button>
+            <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
+            <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
+            <button type="button" class="btn-add-ferry" id="btnAddFerry" title="Añadir ferry">➕ Añadir</button>
           </div>
           <!-- Ventana/listado de ferrys añadidos -->
           <div id="ferrysListWindow" class="ventana-ferrys"></div>
           <!-- Totales -->
           <div class="totales-ferry">
-            <b>Total ferrys:</b> <span id="totalFerrys">0</span> |
-            <b>Total pasajeros:</b> <span id="totalPasajeros">0</span> |
-            <b>Total vehículos:</b> <span id="totalVehiculos">0</span>
+            <b>Ferrys:</b> <span id="totalFerrys">0</span> |
+            <b>Pasaj.:</b> <span id="totalPasajeros">0</span> |
+            <b>Vehíc.:</b> <span id="totalVehiculos">0</span>
           </div>
         </div>
 
@@ -100,7 +100,7 @@
 
         <!-- Adjuntos -->
         <div class="control-group">
-          <label>Adjuntar documentos/imágenes</label>
+          <label>Adjuntar doc./imágenes</label>
           <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
         </div>
       </section>
@@ -116,12 +116,12 @@
         <input type="date" id="desdeResumen" class="form-control input-date">
         <label for="hastaResumen">Hasta</label>
         <input type="date" id="hastaResumen" class="form-control input-date">
-        <button type="button" class="btn-guardar" id="btnGenerarResumen"><i class="bi bi-clipboard-data"></i> Generar resumen</button>
       </div>
       <div class="export-btns resumen-btns-mobile">
-        <button id="btnExportarPDF" class="btn btn-pdf" type="button"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
-        <button id="btnExportarCSV" class="btn btn-guardar" type="button"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
-        <button id="btnWhatsapp" class="btn btn-menu" type="button"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+        <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="PDF"><span>📄</span>PDF</button>
+        <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="CSV"><span>📊</span>CSV</button>
+        <button id="btnWhatsapp" class="btn btn-menu" type="button" title="WhatsApp"><span>💬</span>WA</button>
+        <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen"><span>📋</span>Resumen</button>
       </div>
       <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
     </section>
