@@ -2,18 +2,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Importador Automático Novedades DOCX</title>
+    <title>Importador Novedades DOCX</title>
+    <!-- Mammoth para leer docx -->
     <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <!-- Firebase desde CDN (tradicional) -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script type="module" src="/js/firebase.js"></script>
-    <script type="module" src="/js/novedades.js"></script>
+    <!-- Tus scripts -->
+    <script src="js/firebase.js"></script>
+    <script src="js/novedades.js"></script>
     <style>
-        body { font-family: 'Inter', Arial, sans-serif; margin:0; background:#f6faff; color:#14224; }
-        h2 { color:#079cd8; }
-        #formularios-grupos form { margin-bottom:24px; background:#e4f6fd; padding:14px 20px; border-radius:18px; box-shadow:0 3px 18px #0001;}
-        input[readonly] { background:#fff; border:none; font-size:1em; padding:4px 10px; border-radius:7px; }
+      body { font-family: 'Inter', Arial, sans-serif; margin:0; background:#f6faff; color:#14224; }
+      h2 { color:#079cd8; }
+      #formularios-grupos form { margin-bottom:24px; background:#e4f6fd; padding:14px 20px; border-radius:18px; box-shadow:0 3px 18px #0001;}
+      input[readonly] { background:#fff; border:none; font-size:1em; padding:4px 10px; border-radius:7px; }
     </style>
 </head>
 <body>
