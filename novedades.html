@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIREX - Carga de Novedades</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; }
+        .upload-card {
+            max-width: 600px;
+            margin: 5rem auto;
+            border: 2px dashed #0d6efd;
+            border-radius: 15px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <span class="navbar-brand fs-4 fw-bold">SIREX · Carga de Novedades</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow-sm upload-card">
+            <div class="card-body text-center p-5">
+                <i class="bi bi-file-earmark-pdf-fill text-primary" style="font-size: 5rem;"></i>
+                <h2 class="card-title mt-3">Carga de Novedades</h2>
+                <p class="text-muted">Pulsa el botón para seleccionar el archivo PDF de novedades del día. El sistema leerá los datos y te pedirá confirmación antes de guardarlos.</p>
+                <button type="button" class="btn btn-primary btn-lg mt-3" id="btnLeerPDF">
+                    <i class="bi bi-upload"></i> Seleccionar PDF y Cargar Datos
+                </button>
+                <div id="spinner" class="text-center d-none mt-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Procesando archivo...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input oculto para seleccionar el archivo PDF -->
+    <input type="file" id="pdfFile" class="d-none" accept="application/pdf">
+
+    <!-- Modal de Bootstrap para la confirmación de datos del PDF -->
+    <div class="modal fade" id="pdfConfirmModal" tabindex="-1" aria-labelledby="pdfConfirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="pdfConfirmModalLabel">Confirmar Datos Extraídos del PDF</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="pdfConfirmModalBody">
+            <!-- El contenido se generará dinámicamente con JavaScript -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnGuardarPDFData">Confirmar y Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Librerías JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+    <!-- Tu script para esta página -->
+    <script src="js/novedades.js"></script>
+
+</body>
+</html>
