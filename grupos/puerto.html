@@ -66,16 +66,18 @@
             <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" onclick="alert('Añade cada ferry indicando fecha, hora, llegada o salida, pasajeros y vehículos. Puedes ver los ferry añadidos abajo y borrarlos si es necesario.')">?</button>
           </h4>
           <!-- Mini-formulario ferry -->
-          <div class="ferry-mini-form">
-            <select id="ferryTipo" class="form-control" title="Tipo">
-              <option value="Llegada">Llegada</option>
-              <option value="Salida">Salida</option>
-            </select>
-            <input type="date" id="ferryFecha" class="form-control" title="Fecha">
-            <input type="time" id="ferryHora" class="form-control" title="Hora">
-            <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
-            <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
-            <button type="button" class="btn-add-ferry" id="btnAddFerry" title="Añadir ferry">➕ Añadir</button>
+          <div class="ferry-mini-form-wrap">
+            <div class="ferry-mini-form" id="ferryMiniForm">
+              <select id="ferryTipo" class="form-control" title="Tipo">
+                <option value="Llegada">Llegada</option>
+                <option value="Salida">Salida</option>
+              </select>
+              <input type="date" id="ferryFecha" class="form-control" title="Fecha">
+              <input type="time" id="ferryHora" class="form-control" title="Hora">
+              <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
+              <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
+              <button type="button" class="btn-add-ferry" id="btnAddFerry" title="Añadir ferry">➕ Añadir</button>
+            </div>
           </div>
           <!-- Ventana/listado de ferrys añadidos -->
           <div id="ferrysListWindow" class="ventana-ferrys"></div>
