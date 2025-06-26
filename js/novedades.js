@@ -1,10 +1,10 @@
 // js/novedades.js
-import { db, auth } from './firebase.js';
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// ------------------------------
-//  Utilidades de Interfaz
-// ------------------------------
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
+});
+
+// -- UI feedback --
 function mostrarEstado(mensaje, tipo = "info") {
     let statusDiv = document.getElementById("estadoCarga");
     if (!statusDiv) {
@@ -22,7 +22,7 @@ function mostrarEstado(mensaje, tipo = "info") {
         document.body.appendChild(statusDiv);
     }
     statusDiv.innerText = mensaje;
-    setTimeout(() => { statusDiv.remove(); }, 4000);
+    setTimeout(() => { if (statusDiv) statusDiv.remove(); }, 4000);
 }
 
 function mostrarSpinner(visible = true) {
@@ -48,19 +48,9 @@ function mostrarSpinner(visible = true) {
     }
 }
 
-// ------------------------------
-//  Lógica de importación DOCX
-// ------------------------------
-
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
-});
-
-// Lógica principal al subir DOCX
 async function handleDocxUpload(event) {
     const file = event.target.files[0];
     if (!file) return mostrarEstado("No se ha seleccionado archivo", "error");
-
     mostrarSpinner(true);
     try {
         const arrayBuffer = await file.arrayBuffer();
@@ -77,12 +67,12 @@ async function handleDocxUpload(event) {
     }
 }
 
-// Extrae y mapea datos desde el HTML generado por Mammoth
+// -- Extraer y mapear novedades por grupo --
 function extraerYMapearDatos(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
-    // --- Detecta todos los títulos de grupo y las tablas siguientes ---
+    // Detecta todos los títulos de grupo y sus tablas siguientes
     const novedadesPorGrupo = {};
     const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo/i.test(e.textContent));
     titulos.forEach((titulo, i) => {
@@ -97,7 +87,6 @@ function extraerYMapearDatos(html) {
     return novedadesPorGrupo;
 }
 
-// Convierte una tabla DOM a array de objetos (campos: Asunto, Gestión, Observaciones)
 function tablaAObjetos(tabla) {
     const filas = Array.from(tabla.querySelectorAll('tr'));
     if (filas.length < 2) return [];
@@ -110,7 +99,7 @@ function tablaAObjetos(tabla) {
     });
 }
 
-// Autocompleta y muestra formularios para revisión visual (solo lectura)
+// -- Mostrar formularios autocompletados (readonly) --
 function autocompletarYMostrarFormularios(novedadesPorGrupo) {
     const cont = document.getElementById('formularios-grupos');
     cont.innerHTML = '';
@@ -130,17 +119,17 @@ function autocompletarYMostrarFormularios(novedadesPorGrupo) {
     });
 }
 
-// Guarda todas las novedades de todos los grupos en Firestore
+// -- Guardar en Firestore --
 async function guardarTodasNovedades(novedadesPorGrupo) {
     // Almacena bajo colección "novedades_diarias/{fecha}/grupo"
     const fechaStr = (new Date()).toISOString().slice(0, 10);
     for (const [grupo, novedades] of Object.entries(novedadesPorGrupo)) {
-        const colRef = collection(db, `novedades_diarias/${fechaStr}/${grupo.replace(/\s+/g, '_').toLowerCase()}`);
+        const colRef = db.collection(`novedades_diarias`).doc(fechaStr).collection(grupo.replace(/\s+/g, '_').toLowerCase());
         for (const novedad of novedades) {
-            await addDoc(colRef, {
+            await colRef.add({
                 ...novedad,
                 fecha: fechaStr,
-                timestamp: serverTimestamp()
+                timestamp: new Date()
             });
         }
     }
