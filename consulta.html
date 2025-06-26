@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SIREX · Consulta Global / Resúmenes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <header class="sirex-header">
+    <div class="sirex-title">SIREX</div>
+    <div class="sirex-desc">Consulta Global / Resúmenes</div>
+  </header>
+  <main>
+    <div class="container my-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="card shadow p-4">
+            <h2 class="mb-4 text-police-blue">
+              <i class="bi bi-globe2"></i> Consulta Global / Resúmenes
+            </h2>
+            <form id="consultaForm" class="row g-3 align-items-end">
+              <div class="col-12 col-md-5">
+                <label for="fechaDesde" class="form-label fw-bold">Desde</label>
+                <input type="date" id="fechaDesde" class="form-control" required>
+              </div>
+              <div class="col-12 col-md-5">
+                <label for="fechaHasta" class="form-label fw-bold">Hasta</label>
+                <input type="date" id="fechaHasta" class="form-control" required>
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-search"></i> Consultar
+                </button>
+              </div>
+            </form>
+            <div id="spinner" class="text-center mt-4 d-none">
+              <div class="spinner-border text-primary"></div>
+              <div>Cargando resumen...</div>
+            </div>
+            <div id="exportBtns" class="export-btns d-flex flex-wrap gap-2 mt-4 d-none">
+              <button id="btnExportarPDF" class="btn btn-police-yellow" type="button">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+              </button>
+              <button id="btnWhatsapp" class="btn btn-police-blue" type="button">
+                <i class="bi bi-whatsapp"></i> WhatsApp
+              </button>
+            </div>
+            <div id="resumenVentana" class="ventana-datos mt-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    &copy; 2025 SIREX · UCRIF · CNP
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/consulta.js"></script>
+</body>
+</html>
