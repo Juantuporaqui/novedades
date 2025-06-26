@@ -4,88 +4,130 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo CIE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Estilos modernos unificados (siguiendo grupo1/puerto) -->
   <link rel="stylesheet" href="../css/cie.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../img/logo_cnp.png">
 </head>
 <body class="bg-cie">
   <header class="cie-header">
-    <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
-    <div class="cie-logo"><span style="font-size:48px; display:inline-block;">🏢</span></div>
-    <div class="cie-title">
-      <span class="title-main">GRUPO CIE</span>
-      <span class="title-desc">Centro de Internamiento</span>
+    <div class="cie-logo-title">
+      <span class="cie-logo" style="font-size:48px; display:inline-block;">🏢</span>
+      <div class="cie-title">
+        <span class="title-main">GRUPO CIE</span>
+        <span class="title-desc">Centro de Internamiento - Control de Internos</span>
+      </div>
+    </div>
+    <div class="header-actions" style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+      <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
+      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo día/noche">🌙</button>
     </div>
   </header>
+
   <main class="main-container">
     <form id="formCIE" autocomplete="off">
       <section class="panel panel-glass">
-        <!-- FECHA Y NUEVO/CARGAR -->
-        <div class="row-cols">
+        <!-- Fecha y acciones -->
+        <div class="row-cols fecha-row" style="display:flex; align-items:center; gap:1em; flex-wrap:wrap;">
           <label for="fechaCIE">Fecha</label>
           <input type="date" id="fechaCIE" required class="form-control input-date">
-          <button type="button" class="btn-cargar" id="btnCargar">Cargar</button>
-          <button type="button" class="btn-nuevo" id="btnNuevo">Nuevo</button>
+          <div class="top-actions-bar-header" style="margin:0;gap:.5em;">
+            <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro">📂 Cargar</button>
+            <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro">🆕 Nuevo</button>
+            <button type="submit" class="btn-guardar" id="btnGuardarRegistro" title="Guardar">💾 Guardar</button>
+          </div>
         </div>
+        <!-- Número de internos total -->
         <div class="row-cols">
-          <label for="descripcionBreve">Descripción breve</label>
-          <input type="text" id="descripcionBreve" class="form-control" maxlength="90" placeholder="Resumen rápido de la jornada">
+          <label for="nInternos">Nº de internos total</label>
+          <input type="number" min="0" id="nInternos" required placeholder="Total internos" class="form-control">
         </div>
-        <div class="form-grid">
-          <label for="tipoActuacion">Tipo de actuación</label>
-          <input type="text" id="tipoActuacion" placeholder="Admisión, visita, traslado...">
-          <label for="nInternos">Nº internos total</label>
-          <input type="number" min="0" id="nInternos" placeholder="Total internos">
-        </div>
+        <!-- Desglose por nacionalidades -->
         <div class="subseccion">
           <label>Internos por nacionalidad</label>
           <div class="input-row-multi">
-            <input type="text" id="nacionalidadInterno" placeholder="Nacionalidad" maxlength="30">
-            <input type="number" min="0" id="numInternosNac" placeholder="Número">
+            <input type="text" id="nacionalidadInterno" placeholder="Nacionalidad" maxlength="30" class="form-control">
+            <input type="number" min="0" id="numInternosNac" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddInternoNac">Añadir</button>
           </div>
           <div class="ventana-datos" id="ventanaInternosNac"></div>
         </div>
+        <!-- Ingresos -->
         <div class="subseccion">
           <label>Ingresos</label>
           <div class="input-row-multi">
-            <input type="text" id="nacionalidadIngreso" placeholder="Nacionalidad" maxlength="30">
-            <input type="number" min="0" id="numIngresos" placeholder="Número">
+            <input type="text" id="nacionalidadIngreso" placeholder="Nacionalidad" maxlength="30" class="form-control">
+            <input type="number" min="0" id="numIngresos" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddIngreso">Añadir</button>
           </div>
           <div class="ventana-datos" id="ventanaIngresos"></div>
         </div>
+        <!-- Salidas -->
         <div class="subseccion">
           <label>Salidas</label>
           <div class="input-row-multi">
-            <input type="text" id="destinoSalida" placeholder="Destino" maxlength="30">
-            <input type="number" min="0" id="numSalidas" placeholder="Número">
+            <input type="text" id="destinoSalida" placeholder="Destino" maxlength="30" class="form-control">
+            <input type="number" min="0" id="numSalidas" placeholder="Número" class="form-control">
             <button type="button" class="btn-add" id="btnAddSalida">Añadir</button>
           </div>
           <div class="ventana-datos" id="ventanaSalidas"></div>
         </div>
+        <!-- Observaciones/Incidentes -->
         <div class="subseccion">
-          <label>Motivos, Observaciones</label>
-          <input type="text" id="nombrePersona" class="form-control" placeholder="Nombre de la persona">
-          <input type="text" id="nacionalidadPersona" class="form-control" placeholder="Nacionalidad de la persona">
-          <textarea id="motivo" class="form-control" placeholder="Motivo, observaciones..."></textarea>
-          <textarea id="observaciones" class="form-control" placeholder="Otras incidencias..."></textarea>
-        </div>
-        <div class="action-buttons">
-          <button type="submit" class="btn-guardar">Guardar Registro</button>
+          <label for="observaciones">Observaciones e incidencias</label>
+          <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
         </div>
       </section>
     </form>
+
+    <!-- RESUMEN DEL DÍA -->
     <section class="panel panel-glass mt-4" id="panelResumenCIE" style="display:none;">
       <h3>Resumen del día</h3>
       <div id="resumenCIE"></div>
     </section>
+
+    <!-- RESUMEN AVANZADO / EXPORTACIÓN -->
+    <section class="panel panel-glass mt-4" id="panelResumenAvanzado">
+      <h3>Resumen avanzado
+        <button class="ayuda-btn" type="button" title="Resumen y exportación" onclick="alert('Puedes generar un resumen por rango de fechas y exportar los datos en PDF, CSV o copiar para WhatsApp.')">?</button>
+      </h3>
+      <div class="row-cols mb-2 resumen-fechas-row" style="display:flex;align-items:center;gap:.7em;flex-wrap:wrap;">
+        <label for="desdeResumen">Desde</label>
+        <input type="date" id="desdeResumen" class="form-control input-date">
+        <label for="hastaResumen">Hasta</label>
+        <input type="date" id="hastaResumen" class="form-control input-date">
+        <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen" style="height:38px; margin-left:.5em;">📋 Resumen</button>
+      </div>
+      <div class="export-btns resumen-btns-grid">
+        <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="Exportar PDF">📄 PDF</button>
+        <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="Exportar CSV">📊 CSV</button>
+        <button id="btnWhatsapp" class="btn btn-menu" type="button" title="Compartir WhatsApp">💬 WA</button>
+      </div>
+      <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
+    </section>
   </main>
+
   <footer class="footer">
     SIREX · UCRIF · Grupo CIE &copy; 2025
   </footer>
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
-  <script src="cie.js"></script>
+  <script src="../js/cie.js"></script>
+  <script>
+    // =========== MODO OSCURO ===========
+    const darkBtn = document.getElementById("darkModeBtn");
+    if (darkBtn) {
+      darkBtn.onclick = function () {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+        darkBtn.innerText = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+      };
+      if (localStorage.getItem("sirex_darkmode") === "1") {
+        document.body.classList.add("dark-mode");
+        darkBtn.innerText = "☀️";
+      }
+    }
+  </script>
 </body>
 </html>
