@@ -30,62 +30,68 @@
 
 <div class="container mb-5">
   <div class="row justify-content-center">
-    <div class="col-lg-11">
-      <div class="card shadow-lg p-4">
-        <h2 class="mb-4 text-police-blue"><i class="bi bi-search"></i> Gestión de operaciones de investigación · Grupo 3</h2>
+    <div class="col-xl-10 col-lg-11">
+      <!-- Búsqueda/Creación de operación -->
+      <div class="card shadow-lg p-4 mb-4 bg-police-dark text-white border-0">
+        <div class="row align-items-end g-3">
+          <div class="col-md-6">
+            <label for="operacionSelect" class="form-label fw-bold">Buscar operación existente</label>
+            <select id="operacionSelect" class="form-select form-select-lg" autocomplete="off">
+              <option value="">-- Selecciona una operación --</option>
+              <!-- Operaciones se cargan dinámicamente -->
+            </select>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="btnCargarOperacion" class="btn btn-primary btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button id="btnNuevaOperacion" class="btn btn-secondary btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nueva</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de operación principal -->
+      <div class="card shadow-lg p-4 mb-4">
         <form id="formOperacion" autocomplete="off">
-          <div class="row g-3 mb-2">
-            <div class="col-md-2">
-              <label for="codigoOperacion" class="form-label fw-bold">Código operativo</label>
-              <input type="text" id="codigoOperacion" class="form-control" required maxlength="24">
-              <div id="codigoWarning" class="text-danger small d-none">Código ya existente.</div>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="codigoOperacion" class="form-label fw-bold">Código Operativo</label>
+              <input type="text" id="codigoOperacion" class="form-control" maxlength="24" placeholder="Ej: 2025-001" required>
+              <div id="codigoWarning" class="form-text text-danger d-none">Este código ya existe, por favor elige otro.</div>
             </div>
             <div class="col-md-2">
-              <label for="anioOperacion" class="form-label">Año</label>
-              <input type="number" id="anioOperacion" class="form-control" min="2023" max="2100">
+              <label for="anioOperacion" class="form-label fw-bold">Año</label>
+              <input type="number" id="anioOperacion" class="form-control" min="2000" max="2100" required>
             </div>
-            <div class="col-md-2">
-              <label for="fechaInicio" class="form-label">Fecha inicio</label>
-              <input type="date" id="fechaInicio" class="form-control">
-            </div>
-            <div class="col-md-6 d-flex align-items-end gap-2">
-              <button type="button" class="btn btn-outline-primary" id="btnCargarOperacion"><i class="bi bi-arrow-down-square"></i> Cargar</button>
-              <select id="operacionSelect" class="form-select"></select>
-              <button type="button" class="btn btn-secondary" id="btnNuevaOperacion"><i class="bi bi-file-earmark-plus"></i> Nueva</button>
-              <button type="submit" class="btn btn-police-blue" id="btnGuardarOperacion"><i class="bi bi-floppy"></i> Guardar</button>
-            </div>
-          </div>
-
-          <div class="row mb-2">
-            <div class="col-md-5">
-              <label for="nombreOperacion" class="form-label fw-bold">Nombre de la operación</label>
-              <input type="text" id="nombreOperacion" class="form-control" required maxlength="80">
-            </div>
-            <div class="col-md-7">
-              <label for="descripcionBreve" class="form-label">Resumen breve de la operación</label>
-              <input type="text" id="descripcionBreve" class="form-control" maxlength="160">
-            </div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-4">
-              <label for="origenInvestigacion" class="form-label">Origen investigación</label>
-              <input type="text" id="origenInvestigacion" class="form-control" maxlength="80">
+            <div class="col-md-3">
+              <label for="fechaInicio" class="form-label fw-bold">Fecha de Inicio</label>
+              <input type="date" id="fechaInicio" class="form-control" required>
             </div>
             <div class="col-md-4">
-              <label for="tipologiaDelictiva" class="form-label">Tipología delictiva</label>
-              <input type="text" id="tipologiaDelictiva" class="form-control" maxlength="80">
+              <label for="nombreOperacion" class="form-label fw-bold">Nombre de la Operación</label>
+              <input type="text" id="nombreOperacion" class="form-control" maxlength="80" placeholder="Ej: LUMEN-2025" required>
+            </div>
+            <div class="col-12">
+              <label for="descripcionBreve" class="form-label fw-bold">Resumen Operativo</label>
+              <textarea id="descripcionBreve" class="form-control" maxlength="320" rows="2" placeholder="Breve contexto de la operación..."></textarea>
             </div>
             <div class="col-md-4">
-              <label for="procedimientosJudiciales" class="form-label">Procedimientos judiciales</label>
-              <input type="text" id="procedimientosJudiciales" class="form-control" maxlength="80">
+              <label for="origenInvestigacion" class="form-label fw-bold">Origen de la Investigación</label>
+              <input type="text" id="origenInvestigacion" class="form-control" maxlength="80" placeholder="Oficio, denuncia, encargo, etc.">
+            </div>
+            <div class="col-md-4">
+              <label for="tipologiaDelictiva" class="form-label fw-bold">Delito Principal</label>
+              <input type="text" id="tipologiaDelictiva" class="form-control" maxlength="60" placeholder="Trata, falsedad documental...">
+            </div>
+            <div class="col-md-4">
+              <label for="procedimientosJudiciales" class="form-label fw-bold">Procedimientos Judiciales Vinculados</label>
+              <input type="text" id="procedimientosJudiciales" class="form-control" maxlength="80" placeholder="Diligencias previas, nº de juzgado...">
+            </div>
+            <div class="col-12">
+              <label for="diligenciasPoliciales" class="form-label fw-bold">Diligencias Policiales Relevantes</label>
+              <textarea id="diligenciasPoliciales" class="form-control" maxlength="320" rows="2" placeholder="Principales diligencias policiales..."></textarea>
             </div>
           </div>
-          <div class="mb-2">
-            <label for="diligenciasPoliciales" class="form-label">Diligencias policiales relevantes</label>
-            <textarea id="diligenciasPoliciales" class="form-control" maxlength="400" rows="2"></textarea>
-          </div>
-
-         </div>
           <div class="text-end mt-3">
             <button type="submit" id="btnGuardarOperacion" class="btn btn-success btn-lg px-5"><i class="bi bi-save"></i> Guardar Operación</button>
           </div>
@@ -429,7 +435,7 @@
 
 <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
   <small>
-    &copy; 2025 UCRIF · Benito | Grupo 2 Investigación | <a href="#" class="link-light text-decoration-underline">Soporte</a>
+    &copy; 2025 UCRIF · Benito | Grupo 3 Investigación | <a href="#" class="link-light text-decoration-underline">Soporte</a>
   </small>
 </footer>
 
@@ -444,4 +450,3 @@
 <script src="../js/grupo3.js"></script>
 </body>
 </html>
-
