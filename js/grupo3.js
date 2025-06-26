@@ -125,7 +125,7 @@ formOperacion.addEventListener('submit', async (e) => {
   cargarOperacionesEnSelect();
   btnGuardarOperacion.disabled = false;
   codigoWarning.classList.add("d-none");
-});
+};
 // ======= JUZGADOS =======
 const btnAñadirJuzgado = document.getElementById('btnAñadirJuzgado');
 const juzgadoInicial = document.getElementById('juzgadoInicial');
@@ -397,28 +397,30 @@ window.eliminarColaboracion = async (docid) => {
   cargarListadoColaboraciones();
 };
 
-// ======= DETENIDOS =======
+// ======= DETENIDOS / PAX. VINCULADAS (NUEVO DISEÑO) =======
 const btnAñadirDetenido = document.getElementById('btnAñadirDetenido');
-const filiacionDelito = document.getElementById('filiacionDelito');
-const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
+const nombreDetenido = document.getElementById('nombreDetenido');
+const delitoDetenido = document.getElementById('delitoDetenido');
 const fechaDetenido = document.getElementById('fechaDetenido');
-const secuenciaDetenido = document.getElementById('secuenciaDetenido');
+const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
 const listadoDetenidos = document.getElementById('listadoDetenidos');
+
 btnAñadirDetenido.addEventListener('click', async ()=>{
   if(!idOperacionActual) return showToast("Guarda la operación antes.");
   const data = {
-    filiacionDelito: filiacionDelito.value.trim(),
-    nacionalidadDetenido: nacionalidadDetenido.value.trim(),
+    nombreDetenido: nombreDetenido.value.trim(),
+    delitoDetenido: delitoDetenido.value.trim(),
     fechaDetenido: fechaDetenido.value,
-    secuenciaDetenido: secuenciaDetenido.value.trim(),
+    nacionalidadDetenido: nacionalidadDetenido.value.trim(),
     ts: new Date().toISOString()
   };
-  if(!data.filiacionDelito && !data.nacionalidadDetenido && !data.fechaDetenido && !data.secuenciaDetenido) return showToast("Completa los campos.");
+  if(!data.nombreDetenido && !data.delitoDetenido && !data.fechaDetenido && !data.nacionalidadDetenido) return showToast("Completa todos los campos.");
   await db.collection("grupo3_operaciones").doc(idOperacionActual)
     .collection("detenidos").add(data);
-  filiacionDelito.value = ""; nacionalidadDetenido.value = ""; fechaDetenido.value = ""; secuenciaDetenido.value = "";
+  nombreDetenido.value = ""; delitoDetenido.value = ""; fechaDetenido.value = ""; nacionalidadDetenido.value = "";
   cargarListadoDetenidos();
 });
+
 async function cargarListadoDetenidos() {
   if(!idOperacionActual) return listadoDetenidos.innerHTML="";
   const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual)
@@ -428,7 +430,7 @@ async function cargarListadoDetenidos() {
     const d = doc.data();
     const div = document.createElement("div");
     div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
-    div.innerHTML = `<span>${d.filiacionDelito||""} (${d.nacionalidadDetenido||""}) - ${formatoFecha(d.fechaDetenido)} [${d.secuenciaDetenido||""}]</span>
+    div.innerHTML = `<span><b>${d.nombreDetenido||""}</b> (${d.nacionalidadDetenido||""}) - ${formatoFecha(d.fechaDetenido)}<br><span class="text-muted">${d.delitoDetenido||""}</span></span>
       <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarDetenido('${doc.id}')"><i class="bi bi-trash"></i></button>`;
     listadoDetenidos.appendChild(div);
   });
@@ -438,7 +440,6 @@ window.eliminarDetenido = async (docid) => {
   await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("detenidos").doc(docid).delete();
   cargarListadoDetenidos();
 };
-
 // ======= DETENIDOS PREVISTOS =======
 const btnAñadirPrevisto = document.getElementById('btnAñadirPrevisto');
 const filiacionPrevisto = document.getElementById('filiacionPrevisto');
@@ -887,6 +888,40 @@ function cargarTodosLosListados() {
   // ...otras cargas
   cargarListadoInspecciones();
 }
+// ========== FUNCIONES DE CARGA Y LIMPIEZA DE LISTADOS ==========
+function limpiarTodosLosListados() {
+  listadoJuzgados.innerHTML = "";
+  listadoInhibiciones.innerHTML = "";
+  listadoHistoricoJuzgados.innerHTML = "";
+  listadoIntervenciones.innerHTML = "";
+  listadoSolicitudesJudiciales.innerHTML = "";
+  listadoColaboraciones.innerHTML = "";
+  listadoDetenidos.innerHTML = "";
+  listadoDetenidosPrevistos.innerHTML = "";
+  listadoOtrasPersonas.innerHTML = "";
+  listadoCronologia.innerHTML = "";
+  listadoObservaciones.innerHTML = "";
+  listadoPendientes.innerHTML = "";
+  listadoDocumentos.innerHTML = "";
+  listadoInspecciones.innerHTML = "";
+}
+function cargarTodosLosListados() {
+  cargarListadoJuzgados();
+  cargarListadoInhibiciones();
+  cargarListadoHistoricoJuzgados();
+  cargarListadoIntervenciones();
+  cargarListadoSolicitudesJudiciales();
+  cargarListadoColaboraciones();
+  cargarListadoDetenidos();
+  cargarListadoDetenidosPrevistos();
+  cargarListadoOtrasPersonas();
+  cargarListadoCronologia();
+  cargarListadoObservaciones();
+  cargarListadoPendientes();
+  cargarListadoDocumentos();
+  cargarListadoInspecciones();
+}
+
 // ========== AUTOINICIALIZACIÓN ==========
 window.addEventListener('DOMContentLoaded', () => {
   anioOperacion.value = new Date().getFullYear();
