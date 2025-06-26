@@ -492,3 +492,58 @@ body.dark-mode #resumenAvanzadoVentana th { background: #193569; color: #ffd94a;
 body.dark-mode #resumenAvanzadoVentana td { background: #25385b; color: #fff; }
 body.dark-mode #resumenAvanzadoVentana tr:nth-child(even) { background: #22314d;}
 body.dark-mode #resumenAvanzadoVentana tr:nth-child(odd) { background: #1d2a3a;}
+
+/* ...tu CSS anterior intacto arriba... */
+
+/* Mejorar visibilidad en móvil */
+@media (max-width:700px) {
+  .puerto-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 1.1rem 1vw 1rem 2vw;
+  }
+  .puerto-logo-title {
+    margin-top: 60px; /* empuja el logo-título hacia abajo para evitar solapamiento */
+    margin-bottom: 0.6em;
+  }
+  .header-actions {
+    position: absolute;
+    top: 16px; /* ligeramente más abajo para dejar aire */
+    right: 12px;
+    z-index: 10;
+  }
+}
+
+/* Botón resumen destacado */
+#btnGenerarResumen {
+  background: linear-gradient(90deg, #ffb347 60%, #ffd94a 100%);
+  color: #15498e;
+  border: none;
+  font-weight: bold;
+  border-radius: 1.2em;
+  box-shadow: 0 2px 8px #ffd94a55;
+  padding: 8px 20px;
+  font-size: 1.09em;
+  transition: filter .15s, box-shadow .15s, transform .09s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#btnGenerarResumen:hover, #btnGenerarResumen:focus {
+  filter: brightness(1.13);
+  box-shadow: 0 3px 18px #ffd94a99;
+  transform: translateY(-1px) scale(1.04);
+  outline: none;
+}
+
+@media (max-width: 700px) {
+  #btnGenerarResumen {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 7px;
+    font-size: 1em;
+    padding: 10px 0;
+  }
+}
