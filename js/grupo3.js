@@ -827,6 +827,66 @@ document.getElementById('btnGenerarInforme').addEventListener('click', async () 
   `);
   win.document.close();
 });
+// ======= INSPECCIONES EN CASAS DE CITAS =======
+const btnAñadirInspeccion = document.getElementById('btnAñadirInspeccion');
+const nombreCasa = document.getElementById('nombreCasa');
+const fechaInspeccion = document.getElementById('fechaInspeccion');
+const numFiliadas = document.getElementById('numFiliadas');
+const nacionalidadesFiliadas = document.getElementById('nacionalidadesFiliadas');
+const listadoInspecciones = document.getElementById('listadoInspecciones');
+
+btnAñadirInspeccion.addEventListener('click', async () => {
+  if (!idOperacionActual) return showToast("Guarda la operación antes.");
+  const casa = nombreCasa.value.trim();
+  const fecha = fechaInspeccion.value;
+  const num = parseInt(numFiliadas.value, 10) || 0;
+  const nacs = nacionalidadesFiliadas.value.split(',').map(n => n.trim()).filter(n => n);
+
+  if (!casa || !fecha || !num || nacs.length === 0) {
+    return showToast("Completa todos los campos.");
+  }
+  const data = {
+    casa,
+    fechaInspeccion: fecha,
+    numFiliadas: num,
+    nacionalidadesFiliadas: nacs,
+    ts: new Date().toISOString()
+  };
+  await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("inspecciones").add(data);
+
+  nombreCasa.value = "";
+  fechaInspeccion.value = "";
+  numFiliadas.value = "";
+  nacionalidadesFiliadas.value = "";
+  cargarListadoInspecciones();
+});
+
+async function cargarListadoInspecciones() {
+  if (!idOperacionActual) return listadoInspecciones.innerHTML = "";
+  const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("inspecciones").orderBy("fechaInspeccion", "desc").get();
+  listadoInspecciones.innerHTML = "";
+  snap.forEach(doc => {
+    const i = doc.data();
+    const div = document.createElement("div");
+    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+    div.innerHTML = `<span><b>${i.casa}</b> (${i.fechaInspeccion}) - ${i.numFiliadas} filiadas [${i.nacionalidadesFiliadas.join(", ")}]</span>
+      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+    listadoInspecciones.appendChild(div);
+  });
+}
+window.eliminarInspeccion = async (docid) => {
+  if (!idOperacionActual) return;
+  await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("inspecciones").doc(docid).delete();
+  cargarListadoInspecciones();
+};
+
+// Llama a cargarListadoInspecciones cuando cargas todo (por ejemplo en cargarTodosLosListados)
+function cargarTodosLosListados() {
+  // ...otras cargas
+  cargarListadoInspecciones();
+}
 // ========== AUTOINICIALIZACIÓN ==========
 window.addEventListener('DOMContentLoaded', () => {
   anioOperacion.value = new Date().getFullYear();
