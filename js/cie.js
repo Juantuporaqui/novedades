@@ -11,21 +11,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-function showToast(msg) { alert(msg); }
-function formatoFecha(f) {
-  if (!f) return "";
-  const d = new Date(f);
-  if (isNaN(d.getTime())) return f;
-  return `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
-}
-function limpiarFormulario() {
-  if (form) form.reset();
-  internosNac = [];
-  ingresos = [];
-  salidas = [];
-  renderAll();
-}
-
+// ========== Estado ==========
 let form, fechaInput, btnCargar, btnNuevo, btnGuardarRegistro, observacionesInput;
 let nacionalidadInterno, numInternosNac, btnAddInternoNac, ventanaInternosNac;
 let nacionalidadIngreso, numIngresos, btnAddIngreso, ventanaIngresos;
@@ -37,6 +23,50 @@ let desdeResumen, hastaResumen, btnGenerarResumen, btnExportarPDF, btnExportarCS
 let internosNac = [];
 let ingresos = [];
 let salidas = [];
+
+// ========== Funciones auxiliares ==========
+
+function showToast(msg) { alert(msg); }
+function formatoFecha(f) {
+  if (!f) return "";
+  const d = new Date(f);
+  if (isNaN(d.getTime())) return f;
+  return `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
+}
+
+// Renderizado de listas
+function renderList(container, lista, eliminarFn) {
+  container.innerHTML = "";
+  if (!lista.length) {
+    container.innerHTML = "<span class='text-muted'>Sin datos</span>";
+    return;
+  }
+  lista.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = "dato-item";
+    div.innerHTML = `<span>${Object.values(item).join(" · ")}</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = "🗑️";
+    btn.onclick = () => eliminarFn(i);
+    btn.style = "margin-left:1em; border:none; background:none; cursor:pointer;";
+    div.appendChild(btn);
+    container.appendChild(div);
+  });
+}
+
+function renderAll() {
+  renderList(ventanaInternosNac, internosNac, (i) => { internosNac.splice(i, 1); renderAll(); });
+  renderList(ventanaIngresos, ingresos, (i) => { ingresos.splice(i, 1); renderAll(); });
+  renderList(ventanaSalidas, salidas, (i) => { salidas.splice(i, 1); renderAll(); });
+}
+
+function limpiarFormulario() {
+  if (form) form.reset();
+  internosNac = [];
+  ingresos = [];
+  salidas = [];
+  renderAll();
+}
 
 // ========== DOMContentLoaded ==========
 window.addEventListener('DOMContentLoaded', () => {
@@ -70,10 +100,6 @@ window.addEventListener('DOMContentLoaded', () => {
   btnWhatsapp = document.getElementById('btnWhatsapp');
   resumenAvanzadoVentana = document.getElementById('resumenAvanzadoVentana');
 
-  // Inicial
-  limpiarFormulario();
-  if(panelResumen) panelResumen.style.display = "none";
-
   // Añadir nacionalidad de internos
   if (btnAddInternoNac) {
     btnAddInternoNac.onclick = function() {
@@ -105,30 +131,6 @@ window.addEventListener('DOMContentLoaded', () => {
       renderAll();
     };
   }
-
-  function renderList(container, lista, eliminarFn) {
-    container.innerHTML = "";
-    if (!lista.length) {
-      container.innerHTML = "<span class='text-muted'>Sin datos</span>";
-      return;
-    }
-    lista.forEach((item, i) => {
-      const div = document.createElement('div');
-      div.className = "dato-item";
-      div.innerHTML = `<span>${Object.values(item).join(" · ")}</span>`;
-      const btn = document.createElement('button');
-      btn.textContent = "🗑️";
-      btn.onclick = () => eliminarFn(i);
-      btn.style = "margin-left:1em; border:none; background:none; cursor:pointer;";
-      div.appendChild(btn);
-      container.appendChild(div);
-    });
-  }
-  window.renderAll = function() {
-    renderList(ventanaInternosNac, internosNac, (i) => { internosNac.splice(i, 1); renderAll(); });
-    renderList(ventanaIngresos, ingresos, (i) => { ingresos.splice(i, 1); renderAll(); });
-    renderList(ventanaSalidas, salidas, (i) => { salidas.splice(i, 1); renderAll(); });
-  };
 
   // Guardar registro
   if(form) form.addEventListener('submit', async function (e) {
@@ -322,4 +324,7 @@ window.addEventListener('DOMContentLoaded', () => {
       .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
       .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
   };
+
+  // ¡Render inicial!
+  renderAll();
 });
