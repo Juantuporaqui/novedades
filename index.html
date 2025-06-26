@@ -4,91 +4,80 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SIREX · Sistema Inteligente de Registro de Extranjería</title>
+  <meta name="description" content="SIREX: Sistema Inteligente de Registro de Extranjería. Acceso rápido a grupos y estadísticas.">
   <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- CABECERA GRANDE -->
   <header class="sirex-header">
-    <div class="sirex-title">SIREX</div>
-    <div class="sirex-desc">Sistema Inteligente de Registro de Extranjería</div>
+    <div class="sirex-title" tabindex="0">SIREX</div>
+    <div class="sirex-desc" tabindex="0">Sistema Inteligente de Registro de Extranjería</div>
   </header>
 
-  <!-- MENÚ DE GRUPOS CON AVATARES CÓMIC -->
   <main>
-    <div class="grupos-menu">
-      <!-- GRUPO 1: Expulsiones -->
-      <a href="grupos/grupo1.html" class="grupo-btn" title="Expulsiones">
+    <nav class="grupos-menu" aria-label="Menú de grupos">
+      <a href="grupos/grupo1.html" class="grupo-btn" title="Expulsiones" aria-label="Grupo Expulsiones">
         <span class="grupo-ico">
-          <img src="img/grupo1.png" alt="Grupo 1 Expulsiones" width="70" height="70" loading="lazy">
+          <img src="img/grupo1.png" alt="Icono Expulsiones" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Expulsiones</span>
       </a>
-      <!-- GRUPO 2: Investigación 1 -->
-      <a href="grupos/grupo2.html" class="grupo-btn" title="Investigación 1">
+      <a href="grupos/grupo2.html" class="grupo-btn" title="Investigación 1" aria-label="Grupo Investigación 1">
         <span class="grupo-ico">
-          <img src="img/grupo2.png" alt="Grupo 2 Investigación" width="70" height="70" loading="lazy">
+          <img src="img/grupo2.png" alt="Icono Investigación 1" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Investigación 1</span>
       </a>
-      <!-- GRUPO 3: Investigación 2 -->
-      <a href="grupos/grupo3.html" class="grupo-btn" title="Investigación 2">
+      <a href="grupos/grupo3.html" class="grupo-btn" title="Investigación 2" aria-label="Grupo Investigación 2">
         <span class="grupo-ico">
-          <img src="img/grupo3.png" alt="Grupo 3 Investigación" width="70" height="70" loading="lazy">
+          <img src="img/grupo3.png" alt="Icono Investigación 2" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Investigación 2</span>
       </a>
-      <!-- GRUPO 4: Operativo -->
-      <a href="grupos/grupo4.html" class="grupo-btn" title="Operativo">
+      <a href="grupos/grupo4.html" class="grupo-btn" title="Operativo" aria-label="Grupo Operativo">
         <span class="grupo-ico">
-          <img src="img/grupo4.png" alt="Grupo 4 Operativo" width="70" height="70" loading="lazy">
+          <img src="img/grupo4.png" alt="Icono Operativo" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Operativo</span>
       </a>
-      <!-- PUERTO -->
-      <a href="grupos/puerto.html" class="grupo-btn" title="Puerto">
+      <a href="grupos/puerto.html" class="grupo-btn" title="Puerto" aria-label="Grupo Puerto">
         <span class="grupo-ico">
-          <img src="img/puerto.png" alt="Puerto" width="70" height="70" loading="lazy">
+          <img src="img/puerto.png" alt="Icono Puerto" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Puerto</span>
       </a>
-      <!-- GESTIÓN -->
-      <a href="grupos/gestion.html" class="grupo-btn" title="Gestión">
+      <a href="grupos/gestion.html" class="grupo-btn" title="Gestión" aria-label="Grupo Gestión">
         <span class="grupo-ico">
-          <img src="img/gestion.png" alt="Gestión" width="70" height="70" loading="lazy">
+          <img src="img/gestion.png" alt="Icono Gestión" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Gestión</span>
       </a>
-      <!-- CECOREX -->
-      <a href="grupos/cecorex.html" class="grupo-btn" title="Cecorex">
+      <a href="grupos/cecorex.html" class="grupo-btn" title="CECOREX" aria-label="Grupo CECOREX">
         <span class="grupo-ico">
-          <img src="img/cecorex.png" alt="Cecorex" width="70" height="70" loading="lazy">
+          <img src="img/cecorex.png" alt="Icono CECOREX" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">CECOREX</span>
       </a>
-      <!-- CIE -->
-      <a href="grupos/cie.html" class="grupo-btn" title="CIE">
+      <a href="grupos/cie.html" class="grupo-btn" title="CIE" aria-label="Grupo CIE">
         <span class="grupo-ico">
-          <img src="img/cie.png" alt="CIE" width="70" height="70" loading="lazy">
+          <img src="img/cie.png" alt="Icono CIE" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">CIE</span>
       </a>
-      <!-- ESTADÍSTICA -->
-      <a href="grupos/estadistica.html" class="grupo-btn" title="Estadística">
+      <a href="grupos/estadistica.html" class="grupo-btn" title="Estadística" aria-label="Grupo Estadística">
         <span class="grupo-ico">
-          <img src="img/estadistica.svg" alt="Estadística" width="70" height="70" loading="lazy">
+          <img src="img/estadistica.svg" alt="Icono Estadística" width="70" height="70" loading="lazy">
         </span>
         <span class="grupo-label">Estadística</span>
       </a>
-    </div>
-    <!-- CONSULTA GLOBAL -->
+    </nav>
+
     <div class="text-center mt-4">
       <a href="consulta.html" class="btn-consulta">Consulta Global / Resúmenes</a>
     </div>
   </main>
 
-  <!-- FOOTER SIMPLE -->
   <footer class="footer">
     &copy; 2025 SIREX · UCRIF · CNP
   </footer>
