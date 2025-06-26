@@ -34,12 +34,10 @@ function mostrarError(msg) {
 // ====== LÓGICA PARA LECTURA DE NOVEDADES PDF ======================
 // ==================================================================
 
-// --- Evento para activar la selección de archivo ---
 btnLeerPDF.addEventListener('click', () => {
     pdfFileInput.click();
 });
 
-// --- Evento cuando el usuario selecciona un archivo ---
 pdfFileInput.addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -49,7 +47,7 @@ pdfFileInput.addEventListener('change', async (event) => {
             const datosExtraidos = parseNovedadesPDF(pdfText);
             
             if (!datosExtraidos.fecha) {
-                throw new Error("No se pudo determinar la fecha del documento de novedades.");
+                throw new Error("No se pudo determinar la fecha del documento de novedades. Asegúrate de que la fecha aparezca en un formato reconocible (ej: DD/MM/YYYY o 'DEL DÍA DD DE MES YYYY').");
             }
 
             window._pdfDataToSave = datosExtraidos;
@@ -90,17 +88,47 @@ async function leerTextoDePDF(file) {
     });
 }
 
+/**
+ * Analiza el texto extraído del PDF y lo convierte en un objeto estructurado.
+ * @param {string} texto - El contenido completo del PDF.
+ * @returns {object} - Un objeto con los datos estructurados por grupo.
+ */
 function parseNovedadesPDF(texto) {
     const datos = {};
-    const matchFecha = texto.match(/DEL DÍA (\d{1,2}) DE (\w+) (\d{4})/i);
-    if (matchFecha) {
-        const meses = { "enero": 0, "febrero": 1, "marzo": 2, "abril": 3, "mayo": 4, "junio": 5, "julio": 6, "agosto": 7, "septiembre": 8, "octubre": 9, "noviembre": 10, "diciembre": 11 };
-        const dia = parseInt(matchFecha[1], 10);
-        const mes = meses[matchFecha[2].toLowerCase()];
-        const anio = parseInt(matchFecha[3], 10);
-        const fecha = new Date(anio, mes, dia);
-        datos.fecha = fecha.toISOString().slice(0, 10);
-        datos.fecha_yyyymmdd = `${anio}${String(mes+1).padStart(2,'0')}${String(dia).padStart(2,'0')}`;
+
+    // CORRECCIÓN: Se implementa un sistema más robusto para encontrar la fecha
+    // probando varios formatos comunes.
+    const regexesFecha = [
+        /DEL DÍA (\d{1,2}) DE (\w+) DE (\d{4})/i, // Formato: DEL DÍA 25 DE JUNIO DE 2025
+        /NOVEDADES BPEF DEL DÍA (\d{1,2}) DE (\w+) (\d{4})/i, // Formato: NOVEDADES BPEF DEL DÍA 25 DE JUNIO 2025
+        /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // Formato: 25/06/2025
+        /(\d{1,2})-(\d{1,2})-(\d{4})/ // Formato: 25-06-2025
+    ];
+    const meses = { "enero": 0, "febrero": 1, "marzo": 2, "abril": 3, "mayo": 4, "junio": 5, "julio": 6, "agosto": 7, "septiembre": 8, "octubre": 9, "noviembre": 10, "diciembre": 11 };
+
+    for (const regex of regexesFecha) {
+        const match = texto.match(regex);
+        if (match) {
+            let dia, mes, anio;
+            if (isNaN(parseInt(match[2], 10))) { // El mes es texto (ej. "JUNIO")
+                dia = parseInt(match[1], 10);
+                mes = meses[match[2].toLowerCase()];
+                anio = parseInt(match[3], 10);
+            } else { // El mes es número (ej. "06")
+                dia = parseInt(match[1], 10);
+                mes = parseInt(match[2], 10) - 1; // JS usa meses 0-11
+                anio = parseInt(match[3], 10);
+            }
+            const fecha = new Date(anio, mes, dia);
+            datos.fecha = fecha.toISOString().slice(0, 10);
+            datos.fecha_yyyymmdd = `${anio}${String(mes + 1).padStart(2, '0')}${String(dia).padStart(2, '0')}`;
+            break; // Salimos del bucle una vez encontrada la fecha
+        }
+    }
+
+    // Si después de probar todos los formatos no hay fecha, no continuamos.
+    if (!datos.fecha) {
+        return datos; // Devolver objeto vacío para que la función que llama detecte el error.
     }
 
     const getNum = (regex, txt) => {
@@ -138,7 +166,6 @@ function parseNovedadesPDF(texto) {
             if (grupoId === "grupo4") {
                 datos.grupo4 = {
                     citados: getNum(/CITAS\s*=\s*(\d+)/i, seccionTexto),
-                    // Otros campos se pueden añadir aquí si se encuentran en el PDF
                 };
             }
             if (grupoId === "cecorex") {
@@ -170,7 +197,7 @@ function mostrarDatosParaConfirmacion(datos) {
     let html = `<p>Hemos extraído los siguientes datos del PDF para la fecha <b>${datos.fecha}</b>. Por favor, revísalos antes de guardar.</p>`;
     html += '<ul class="list-group">';
     if(datos.grupo1) html += `<li class="list-group-item"><b>🚔 Grupo 1:</b> ${datos.grupo1.expulsados.length} expulsado(s) detectado(s).</li>`;
-    if(datos.grupo3) html += `<li class="list-group-item"><b>🕵️‍♂️ Grupo 3:</b> ${datos.grupo3.inspecciones ? datos.grupo3.inspecciones[0].numFiliadas : '0'} filiadas en control de casa de citas.</li>`;
+    if(datos.grupo3) html += `<li class="list-group-item"><b>🕵️‍♂️ Grupo 3:</b> ${datos.grupo3 && datos.grupo3.inspecciones ? datos.grupo3.inspecciones[0].numFiliadas : '0'} filiadas en control de casa de citas.</li>`;
     if(datos.grupo4) html += `<li class="list-group-item"><b>🚨 Grupo 4:</b> ${datos.grupo4.citados} citado(s).</li>`;
     if(datos.cecorex) html += `<li class="list-group-item"><b>📡 CECOREX:</b> ${datos.cecorex.detenidos} detenido(s), ${datos.cecorex.identificados} identificado(s), ${datos.cecorex.citados} citado(s).</li>`;
     if(datos.puerto) html += `<li class="list-group-item"><b>⚓ Puerto:</b> ${datos.puerto.marinosArgos} marinos chequeados, ${datos.puerto.cruceristas} en control de pasaportes.</li>`;
@@ -194,7 +221,6 @@ btnGuardarPDFData.addEventListener('click', async () => {
             batch.set(ref1, { expulsados: datos.grupo1.expulsados, fletados: datos.grupo1.fletados }, { merge: true });
         }
         if (datos.grupo3 && datos.grupo3.inspecciones) {
-            // Asumimos que las inspecciones se añaden a una operación genérica del día
             const opRef = db.collection("grupo3_operaciones").doc(`op_diaria_${datos.fecha}`);
             batch.set(opRef, { nombreOperacion: `Novedades ${datos.fecha}` }, { merge: true });
             datos.grupo3.inspecciones.forEach(ins => {
@@ -223,3 +249,4 @@ btnGuardarPDFData.addEventListener('click', async () => {
         mostrarSpinner(false);
     }
 });
+
