@@ -1,252 +1,147 @@
 // js/novedades.js
-// SIREX · Lógica para la carga de datos desde PDF
+import { db, auth } from './firebase.js';
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- CONFIGURACIÓN FIREBASE ---
-const firebaseConfig = {
-    apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-    authDomain: "ucrif-5bb75.firebaseapp.com",
-    projectId: "ucrif-5bb75",
-    storageBucket: "ucrif-5bb75.appspot.com",
-    messagingSenderId: "241698436443",
-    appId: "1:241698436443:web:1f333b3ae3f813b755167e",
-    measurementId: "G-S2VPQNWZ21"
-};
-if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// --- ELEMENTOS DOM ---
-const spinner = document.getElementById('spinner');
-const btnLeerPDF = document.getElementById('btnLeerPDF');
-const pdfFileInput = document.getElementById('pdfFile');
-const pdfModal = new bootstrap.Modal(document.getElementById('pdfConfirmModal'));
-const pdfModalBody = document.getElementById('pdfConfirmModalBody');
-const btnGuardarPDFData = document.getElementById('btnGuardarPDFData');
-
-// --- SPINNER Y ERROR ---
-function mostrarSpinner(mostrar) {
-    spinner.classList.toggle('d-none', !mostrar);
-}
-function mostrarError(msg) {
-    alert(`Error: ${msg}`);
+// ------------------------------
+//  Utilidades de Interfaz
+// ------------------------------
+function mostrarEstado(mensaje, tipo = "info") {
+    let statusDiv = document.getElementById("estadoCarga");
+    if (!statusDiv) {
+        statusDiv = document.createElement("div");
+        statusDiv.id = "estadoCarga";
+        statusDiv.style.position = "fixed";
+        statusDiv.style.top = "10px";
+        statusDiv.style.right = "10px";
+        statusDiv.style.padding = "12px 22px";
+        statusDiv.style.borderRadius = "10px";
+        statusDiv.style.background = tipo === "error" ? "#e74646" : "#28b063";
+        statusDiv.style.color = "#fff";
+        statusDiv.style.zIndex = 9999;
+        statusDiv.style.boxShadow = "0 4px 24px #0002";
+        document.body.appendChild(statusDiv);
+    }
+    statusDiv.innerText = mensaje;
+    setTimeout(() => { statusDiv.remove(); }, 4000);
 }
 
-// ==================================================================
-// ====== LÓGICA PARA LECTURA DE NOVEDADES PDF ======================
-// ==================================================================
+function mostrarSpinner(visible = true) {
+    let sp = document.getElementById("spinnerCarga");
+    if (!sp && visible) {
+        sp = document.createElement("div");
+        sp.id = "spinnerCarga";
+        sp.innerHTML = '<div style="width:80px;height:80px;border:10px solid #e4f6fd;border-top:10px solid #079cd8;border-radius:50%;animation:spin 1s linear infinite;margin:auto"></div>';
+        sp.style.position = "fixed";
+        sp.style.left = "0"; sp.style.top = "0";
+        sp.style.width = "100vw"; sp.style.height = "100vh";
+        sp.style.background = "#fff8";
+        sp.style.zIndex = 10000;
+        sp.style.display = "flex";
+        sp.style.justifyContent = "center";
+        sp.style.alignItems = "center";
+        document.body.appendChild(sp);
+        const style = document.createElement("style");
+        style.innerHTML = "@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
+        document.head.appendChild(style);
+    } else if (sp && !visible) {
+        sp.remove();
+    }
+}
 
-btnLeerPDF.addEventListener('click', () => {
-    pdfFileInput.click();
+// ------------------------------
+//  Lógica de importación DOCX
+// ------------------------------
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
 });
 
-pdfFileInput.addEventListener('change', async (event) => {
+// Lógica principal al subir DOCX
+async function handleDocxUpload(event) {
     const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-        mostrarSpinner(true);
-        try {
-            const pdfText = await leerTextoDePDF(file);
-            const datosExtraidos = parseNovedadesPDF(pdfText);
-            
-            if (!datosExtraidos.fecha) {
-                throw new Error("No se pudo determinar la fecha del documento de novedades. Asegúrate de que la fecha aparezca en un formato reconocible (ej: DD/MM/YYYY o 'DEL DÍA DD DE MES YYYY').");
-            }
+    if (!file) return mostrarEstado("No se ha seleccionado archivo", "error");
 
-            window._pdfDataToSave = datosExtraidos;
-            mostrarDatosParaConfirmacion(datosExtraidos);
-            pdfModal.show();
-
-        } catch (error) {
-            console.error("Error procesando el PDF:", error);
-            mostrarError(`Error al procesar el PDF: ${error.message}`);
-        } finally {
-            mostrarSpinner(false);
-            pdfFileInput.value = '';
-        }
-    }
-});
-
-async function leerTextoDePDF(file) {
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-        reader.onload = async (event) => {
-            try {
-                const pdf = await pdfjsLib.getDocument({ data: event.target.result }).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-                }
-                resolve(fullText);
-            } catch (error) {
-                reject(error);
-            }
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-    });
-}
-
-/**
- * Analiza el texto extraído del PDF y lo convierte en un objeto estructurado.
- * @param {string} texto - El contenido completo del PDF.
- * @returns {object} - Un objeto con los datos estructurados por grupo.
- */
-function parseNovedadesPDF(texto) {
-    const datos = {};
-
-    // CORRECCIÓN: Se implementa un sistema más robusto para encontrar la fecha
-    // probando varios formatos comunes.
-    const regexesFecha = [
-        /DEL DÍA (\d{1,2}) DE (\w+) DE (\d{4})/i, // Formato: DEL DÍA 25 DE JUNIO DE 2025
-        /NOVEDADES BPEF DEL DÍA (\d{1,2}) DE (\w+) (\d{4})/i, // Formato: NOVEDADES BPEF DEL DÍA 25 DE JUNIO 2025
-        /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // Formato: 25/06/2025
-        /(\d{1,2})-(\d{1,2})-(\d{4})/ // Formato: 25-06-2025
-    ];
-    const meses = { "enero": 0, "febrero": 1, "marzo": 2, "abril": 3, "mayo": 4, "junio": 5, "julio": 6, "agosto": 7, "septiembre": 8, "octubre": 9, "noviembre": 10, "diciembre": 11 };
-
-    for (const regex of regexesFecha) {
-        const match = texto.match(regex);
-        if (match) {
-            let dia, mes, anio;
-            if (isNaN(parseInt(match[2], 10))) { // El mes es texto (ej. "JUNIO")
-                dia = parseInt(match[1], 10);
-                mes = meses[match[2].toLowerCase()];
-                anio = parseInt(match[3], 10);
-            } else { // El mes es número (ej. "06")
-                dia = parseInt(match[1], 10);
-                mes = parseInt(match[2], 10) - 1; // JS usa meses 0-11
-                anio = parseInt(match[3], 10);
-            }
-            const fecha = new Date(anio, mes, dia);
-            datos.fecha = fecha.toISOString().slice(0, 10);
-            datos.fecha_yyyymmdd = `${anio}${String(mes + 1).padStart(2, '0')}${String(dia).padStart(2, '0')}`;
-            break; // Salimos del bucle una vez encontrada la fecha
-        }
-    }
-
-    // Si después de probar todos los formatos no hay fecha, no continuamos.
-    if (!datos.fecha) {
-        return datos; // Devolver objeto vacío para que la función que llama detecte el error.
-    }
-
-    const getNum = (regex, txt) => {
-        const match = txt.match(regex);
-        return match ? parseInt(match[1], 10) : 0;
-    };
-    
-    const secciones = texto.split(/GRUPO \d:|CECOREX:|PUERTO:|CIE:/);
-    const titulos = texto.match(/GRUPO \d:|CECOREX:|PUERTO:|CIE:/g);
-
-    if(titulos){
-        titulos.forEach((titulo, index) => {
-            const seccionTexto = secciones[index + 1] || "";
-            const grupoId = titulo.toLowerCase().replace(":", "").replace(" ", "");
-
-            if (grupoId === "grupo1") {
-                datos.grupo1 = {
-                    expulsados: getNum(/Expulsión de ciudadano de [\w\s]+, excarcelado/i, seccionTexto) > 0 ? [{nombre: 'Expulsado desde prisión', nacionalidad: 'N/D', diligencias: 'N/D'}] : [],
-                    fletados: [], 
-                };
-            }
-            if (grupoId === "grupo3") {
-                 const numIdentificadas = getNum(/CONTROL CASA DE\s+CITAS\s+-\s*(\d+) identificadas/i, seccionTexto);
-                 if (numIdentificadas > 0) {
-                     datos.grupo3 = {
-                        inspecciones: [{
-                            casa: "Control genérico",
-                            numFiliadas: numIdentificadas,
-                            nacionalidadesFiliadas: ["Varias"],
-                            fechaInspeccion: datos.fecha
-                        }]
-                    };
-                 }
-            }
-            if (grupoId === "grupo4") {
-                datos.grupo4 = {
-                    citados: getNum(/CITAS\s*=\s*(\d+)/i, seccionTexto),
-                };
-            }
-            if (grupoId === "cecorex") {
-                datos.cecorex = {
-                    detenidos: getNum(/(\d+) DETENIDO por ILE/i, seccionTexto),
-                    identificados: getNum(/(\d+) identificados vía pública/i, seccionTexto),
-                    citados: getNum(/(\d+) citados para CECOREX/i, seccionTexto),
-                };
-            }
-             if (grupoId === "puerto") {
-                datos.puerto = {
-                    denegaciones: 0,
-                    marinosArgos: getNum(/Marinos chequeados en ARGOS:\s*(\d+)/i, seccionTexto),
-                    cruceristas: getNum(/Control pasaportes marinos:\s*(\d+)/i, seccionTexto),
-                };
-            }
-            if (grupoId === "cie") {
-                datos.cie = {
-                    internosNac: getNum(/(\d+) INTERNOS/i, seccionTexto),
-                    salidas: 0,
-                };
-            }
-        });
-    }
-    return datos;
-}
-
-function mostrarDatosParaConfirmacion(datos) {
-    let html = `<p>Hemos extraído los siguientes datos del PDF para la fecha <b>${datos.fecha}</b>. Por favor, revísalos antes de guardar.</p>`;
-    html += '<ul class="list-group">';
-    if(datos.grupo1) html += `<li class="list-group-item"><b>🚔 Grupo 1:</b> ${datos.grupo1.expulsados.length} expulsado(s) detectado(s).</li>`;
-    if(datos.grupo3) html += `<li class="list-group-item"><b>🕵️‍♂️ Grupo 3:</b> ${datos.grupo3 && datos.grupo3.inspecciones ? datos.grupo3.inspecciones[0].numFiliadas : '0'} filiadas en control de casa de citas.</li>`;
-    if(datos.grupo4) html += `<li class="list-group-item"><b>🚨 Grupo 4:</b> ${datos.grupo4.citados} citado(s).</li>`;
-    if(datos.cecorex) html += `<li class="list-group-item"><b>📡 CECOREX:</b> ${datos.cecorex.detenidos} detenido(s), ${datos.cecorex.identificados} identificado(s), ${datos.cecorex.citados} citado(s).</li>`;
-    if(datos.puerto) html += `<li class="list-group-item"><b>⚓ Puerto:</b> ${datos.puerto.marinosArgos} marinos chequeados, ${datos.puerto.cruceristas} en control de pasaportes.</li>`;
-    if(datos.cie) html += `<li class="list-group-item"><b>🏢 CIE:</b> ${datos.cie.internosNac} interno(s).</li>`;
-    html += '</ul>';
-    pdfModalBody.innerHTML = html;
-}
-
-btnGuardarPDFData.addEventListener('click', async () => {
-    const datos = window._pdfDataToSave;
-    if (!datos || !datos.fecha) {
-        mostrarError("No hay datos de PDF para guardar.");
-        return;
-    }
     mostrarSpinner(true);
-    pdfModal.hide();
     try {
-        const batch = db.batch();
-        if (datos.grupo1) {
-            const ref1 = db.collection("grupo1_expulsiones").doc(`expulsiones_${datos.fecha}`);
-            batch.set(ref1, { expulsados: datos.grupo1.expulsados, fletados: datos.grupo1.fletados }, { merge: true });
-        }
-        if (datos.grupo3 && datos.grupo3.inspecciones) {
-            const opRef = db.collection("grupo3_operaciones").doc(`op_diaria_${datos.fecha}`);
-            batch.set(opRef, { nombreOperacion: `Novedades ${datos.fecha}` }, { merge: true });
-            datos.grupo3.inspecciones.forEach(ins => {
-                const insRef = opRef.collection("inspecciones").doc();
-                batch.set(insRef, ins);
-            });
-        }
-        if (datos.grupo4) {
-             const ref4 = db.collection("grupo4_gestion").doc(`gestion_${datos.fecha_yyyymmdd}`);
-             batch.set(ref4, {citados: datos.grupo4.citados, fecha: datos.fecha}, {merge: true});
-        }
-        if (datos.puerto) {
-            const refP = db.collection("grupoPuerto_registros").doc(`puerto_${datos.fecha}`);
-            batch.set(refP, {...datos.puerto, fecha: datos.fecha}, {merge: true});
-        }
-        if (datos.cie) {
-            const refC = db.collection("grupo_cie").doc(datos.fecha);
-            batch.set(refC, {...datos.cie, fecha: datos.fecha}, {merge: true});
-        }
-        await batch.commit();
-        alert("Datos del PDF guardados correctamente en la base de datos.");
-    } catch (error) {
-        console.error("Error al guardar datos del PDF en Firestore:", error);
-        mostrarError("No se pudieron guardar los datos del PDF.");
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+        const novedadesEstructuradas = extraerYMapearDatos(result.value);
+        autocompletarYMostrarFormularios(novedadesEstructuradas);
+        await guardarTodasNovedades(novedadesEstructuradas);
+        mostrarEstado("¡Importación y guardado completados!");
+    } catch (err) {
+        mostrarEstado("Error procesando DOCX: " + err, "error");
+        console.error(err);
     } finally {
         mostrarSpinner(false);
     }
-});
+}
 
+// Extrae y mapea datos desde el HTML generado por Mammoth
+function extraerYMapearDatos(html) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // --- Detecta todos los títulos de grupo y las tablas siguientes ---
+    const novedadesPorGrupo = {};
+    const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo/i.test(e.textContent));
+    titulos.forEach((titulo, i) => {
+        const tabla = titulo.nextElementSibling && titulo.nextElementSibling.tagName === "TABLE"
+            ? titulo.nextElementSibling
+            : null;
+        if (tabla) {
+            const grupo = titulo.textContent.trim().replace(":", "").toUpperCase();
+            novedadesPorGrupo[grupo] = tablaAObjetos(tabla);
+        }
+    });
+    return novedadesPorGrupo;
+}
+
+// Convierte una tabla DOM a array de objetos (campos: Asunto, Gestión, Observaciones)
+function tablaAObjetos(tabla) {
+    const filas = Array.from(tabla.querySelectorAll('tr'));
+    if (filas.length < 2) return [];
+    const encabezados = Array.from(filas[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toLowerCase());
+    return filas.slice(1).map(fila => {
+        const celdas = Array.from(fila.querySelectorAll('td')).map(td => td.textContent.trim());
+        let obj = {};
+        encabezados.forEach((h, i) => { obj[h] = celdas[i] || ""; });
+        return obj;
+    });
+}
+
+// Autocompleta y muestra formularios para revisión visual (solo lectura)
+function autocompletarYMostrarFormularios(novedadesPorGrupo) {
+    const cont = document.getElementById('formularios-grupos');
+    cont.innerHTML = '';
+    Object.entries(novedadesPorGrupo).forEach(([grupo, novedades]) => {
+        const form = document.createElement('form');
+        form.innerHTML = `<h3 style="color:#079cd8">${grupo}</h3>`;
+        novedades.forEach((n, idx) => {
+            form.innerHTML += `
+                <div style="margin:6px 0;border-bottom:1px solid #ddd;padding-bottom:6px">
+                    <b>Asunto:</b> <input readonly value="${n.asunto || ""}" style="width:40%">
+                    <b>Gestión:</b> <input readonly value="${n.gestión || n.gestion || ""}" style="width:40%">
+                    <b>Observaciones:</b> <input readonly value="${n.observaciones || n.obs || ""}" style="width:40%">
+                </div>
+            `;
+        });
+        cont.appendChild(form);
+    });
+}
+
+// Guarda todas las novedades de todos los grupos en Firestore
+async function guardarTodasNovedades(novedadesPorGrupo) {
+    // Almacena bajo colección "novedades_diarias/{fecha}/grupo"
+    const fechaStr = (new Date()).toISOString().slice(0, 10);
+    for (const [grupo, novedades] of Object.entries(novedadesPorGrupo)) {
+        const colRef = collection(db, `novedades_diarias/${fechaStr}/${grupo.replace(/\s+/g, '_').toLowerCase()}`);
+        for (const novedad of novedades) {
+            await addDoc(colRef, {
+                ...novedad,
+                fecha: fechaStr,
+                timestamp: serverTimestamp()
+            });
+        }
+    }
+}
