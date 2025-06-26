@@ -125,7 +125,7 @@ formOperacion.addEventListener('submit', async (e) => {
   cargarOperacionesEnSelect();
   btnGuardarOperacion.disabled = false;
   codigoWarning.classList.add("d-none");
-};
+});
 // ======= JUZGADOS =======
 const btnAñadirJuzgado = document.getElementById('btnAñadirJuzgado');
 const juzgadoInicial = document.getElementById('juzgadoInicial');
