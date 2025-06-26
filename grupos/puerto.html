@@ -17,6 +17,11 @@
       <span class="title-main">GRUPO PUERTO</span>
       <span class="title-desc">Control y Estadística Portuaria</span>
     </div>
+    <div class="top-actions-bar-header">
+      <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro"><span>📂</span>Cargar</button>
+      <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro"><span>🆕</span>Nuevo</button>
+      <button type="submit" form="formPuerto" class="btn-guardar" id="btnGuardarRegistro" title="Guardar"><span>💾</span>Guardar</button>
+    </div>
     <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo día/noche">🌙</button>
   </header>
 
@@ -28,13 +33,6 @@
         <div class="row-cols fecha-row">
           <label for="fechaPuerto">Fecha</label>
           <input type="date" id="fechaPuerto" required class="form-control input-date">
-        </div>
-
-        <!-- Barra de botones principales (debajo de la fecha) -->
-        <div class="top-actions-bar-centered">
-          <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro del día"><span>📂</span>Cargar</button>
-          <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro"><span>🆕</span>Nuevo</button>
-          <button type="submit" class="btn-guardar" id="btnGuardarRegistro" title="Guardar"><span>💾</span>Guardar</button>
         </div>
 
         <!-- Marinos/Cruceros/Visados -->
@@ -65,7 +63,7 @@
         <div class="mb-3 ferrys-block">
           <h4>
             FERRYS
-            <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" onclick="alert('Añade cada ferry indicando fecha, hora, llegada o salida, pasajeros y vehículos. Puedes ver los ferry [...]
+            <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" onclick="alert('Añade cada ferry indicando fecha, hora, llegada o salida, pasajeros y vehículos. Puedes ver los ferry añadidos abajo y borrarlos si es necesario.')">?</button>
           </h4>
           <!-- Mini-formulario ferry -->
           <div class="ferry-mini-form">
@@ -117,10 +115,10 @@
         <label for="hastaResumen">Hasta</label>
         <input type="date" id="hastaResumen" class="form-control input-date">
       </div>
-      <div class="export-btns resumen-btns-mobile">
-        <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="PDF"><span>📄</span>PDF</button>
-        <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="CSV"><span>📊</span>CSV</button>
-        <button id="btnWhatsapp" class="btn btn-menu" type="button" title="WhatsApp"><span>💬</span>WA</button>
+      <div class="export-btns resumen-btns-grid">
+        <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="Exportar PDF"><span>📄</span>PDF</button>
+        <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="Exportar CSV"><span>📊</span>CSV</button>
+        <button id="btnWhatsapp" class="btn btn-menu" type="button" title="Compartir WhatsApp"><span>💬</span>WA</button>
         <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen"><span>📋</span>Resumen</button>
       </div>
       <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
