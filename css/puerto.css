@@ -204,6 +204,267 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   .footer { font-size: .97rem; padding-right: 7px;}
 }
 
+/* ======= NUEVAS MEJORAS Y FERRYS DINÁMICOS ======= */
+
+/* Barra superior de acciones principales */
+.top-actions-bar {
+  display: flex;
+  gap: 1em;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1.1em;
+  flex-wrap: wrap;
+}
+.top-actions-bar button {
+  font-size: 1.08rem;
+  padding: 9px 20px;
+  border-radius: 1.2em;
+  border: none;
+  background: linear-gradient(90deg, #079cd8 70%, #5bd7f8 100%);
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 12px #079cd829;
+  transition: filter .12s, transform .12s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.top-actions-bar button:hover {
+  filter: brightness(1.15);
+  transform: scale(1.04);
+}
+.top-actions-bar .btn-cargar { background: #ffd94a; color: #15498e; }
+.top-actions-bar .btn-nuevo { background: #b9f7ff; color: #079cd8; }
+.top-actions-bar .btn-guardar { background: linear-gradient(90deg, #089be0 70%, #5bc8f8 100%); color: #fff; }
+
+.fecha-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  flex-wrap: wrap;
+}
+@media (max-width: 650px) {
+  .fecha-row { flex-direction: column; align-items: flex-start;}
+}
+
+/* Mini-formulario ferry y ventana ferrys */
+.ferrys-block {
+  margin-bottom: 2em;
+}
+.ferry-mini-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 1.2fr 1fr 1fr 1.4fr;
+  gap: 0.7em;
+  align-items: end;
+  background: #eafaff;
+  border-radius: 1.1em;
+  padding: 0.7em 0.7em 0.1em 0.7em;
+  margin-bottom: 1em;
+}
+@media (max-width: 900px) {
+  .ferry-mini-form {
+    grid-template-columns: 1fr 1fr 1fr;
+    row-gap: 0.7em; column-gap: 0.5em;
+  }
+}
+@media (max-width: 510px) {
+  .ferry-mini-form { grid-template-columns: 1fr; }
+}
+.ferry-mini-form input, .ferry-mini-form select {
+  min-width: 0;
+}
+
+.btn-add-ferry {
+  background: #0cb972;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 1.2em;
+  font-size: 1.09em;
+  padding: 9px 18px;
+  transition: filter .11s, box-shadow .11s;
+  box-shadow: 0 2px 8px #0cb97229;
+  margin-left: 1em;
+  margin-top: 0px !important;
+  grid-column: span 1;
+}
+.btn-add-ferry:hover { filter: brightness(1.12); }
+
+/* Listado de ferrys */
+.ventana-ferrys {
+  background: #fafdff;
+  border-radius: 1.3em;
+  padding: 0.8em 1.1em;
+  margin-bottom: 1em;
+  min-height: 40px;
+  max-height: 190px;
+  overflow-y: auto;
+  box-shadow: 0 2px 9px #079cd820;
+}
+.ferry-list-item {
+  display: flex;
+  align-items: center;
+  gap: 1.3em;
+  padding: 5px 0 5px 0;
+  border-bottom: 1px dashed #bde2fa;
+  font-size: 1.07em;
+  position: relative;
+}
+.ferry-list-item:last-child { border-bottom: none; }
+.ferry-chip {
+  font-size: 0.97em;
+  font-weight: bold;
+  border-radius: 1em;
+  padding: 3px 13px;
+  background: #bde2fa;
+  color: #15498e;
+  margin-right: 0.2em;
+  min-width: 60px;
+  text-align: center;
+  display: inline-block;
+}
+.ferry-chip.ferry-salida { background: #ffd94a; color: #18509e; }
+.ferry-chip.ferry-llegada { background: #bde2fa; color: #079cd8; }
+.btn-ferry-del {
+  border: none;
+  background: #ff6060;
+  color: #fff;
+  border-radius: 50%;
+  width: 2em;
+  height: 2em;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter .1s;
+  position: absolute;
+  right: 0.2em;
+  top: 0.2em;
+  z-index: 1;
+}
+.btn-ferry-del:hover { filter: brightness(1.23);}
+.ferry-empty {
+  color: #89abc7;
+  text-align: left;
+  font-style: italic;
+  padding: 3px 0 3px 4px;
+}
+.ferry-fecha, .ferry-hora, .ferry-pasajeros, .ferry-vehiculos {
+  min-width: 72px;
+  display: inline-block;
+}
+
+/* Totales de ferrys */
+.totales-ferry {
+  margin-top: 7px;
+  font-size: 1.14em;
+  font-weight: bold;
+  color: #18509e;
+  background: #eafaff;
+  border-radius: 1em;
+  padding: 7px 15px 7px 15px;
+  display: inline-block;
+}
+
+/* Botones de ayuda y exportación */
+.ayuda-btn {
+  border: none;
+  background: #ffd94a;
+  color: #24385d;
+  border-radius: 50%;
+  width: 1.7em;
+  height: 1.7em;
+  font-weight: bold;
+  margin-left: 6px;
+  transition: filter .14s;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ayuda-btn:hover { filter: brightness(1.2); }
+.modo-oscuro-btn {
+  border: none;
+  background: transparent;
+  color: #ffd94a;
+  font-size: 1.7em;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.modo-oscuro-btn:hover { filter: brightness(1.6);}
+.export-btns .btn {
+  min-width: 130px;
+  margin-bottom: 4px;
+}
+
+/* Observaciones ancho y responsivo */
+.observaciones-box textarea {
+  width: 99%;
+  min-height: 85px;
+  font-size: 1.15rem;
+  border-radius: 1em;
+  background: #fafdff;
+}
+@media (max-width:700px){ .observaciones-box textarea { width: 98vw; } }
+
+/* Tabla de resumen avanzado */
+#resumenAvanzadoVentana table,
+#resumenAvanzadoVentana th,
+#resumenAvanzadoVentana td {
+  border-collapse: collapse;
+  border: 1px solid #b5e7fa;
+  padding: 5px 8px;
+}
+#resumenAvanzadoVentana th {
+  background: #bde2fa;
+  color: #144e8e;
+}
+#resumenAvanzadoVentana tr:nth-child(even) {
+  background: #f2faff;
+}
+#resumenAvanzadoVentana tr:nth-child(odd) {
+  background: #e7f6fa;
+}
+
+/* Mejoras para botones de resumen en móvil */
+.resumen-btns-mobile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin-bottom: 1em;
+}
+@media (max-width: 700px) {
+  .resumen-btns-mobile {
+    justify-content: center;
+    gap: 0.3em;
+  }
+  .export-btns .btn {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 0.3em;
+  }
+}
+
+/* ======= RESPONSIVIDAD EN CAMPOS NUMÉRICOS ======= */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1em 2em;
+}
+@media (max-width: 700px) {
+  .responsive-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em 1.1em;
+  }
+}
+@media (max-width: 480px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 0.4em 0.5em;
+  }
+}
+
 /* ======= MODO OSCURO ======= */
 body.dark-mode {
   background: #111d2e !important;
@@ -236,105 +497,26 @@ body.dark-mode .btn-pdf,
 body.dark-mode .btn-menu {
   filter: brightness(1.08);
 }
-
-/* ======= BOTONES DE AYUDA Y EXPORTACIÓN ======= */
-.ayuda-btn {
-  border: none;
-  background: #ffd94a;
-  color: #24385d;
-  border-radius: 50%;
-  width: 1.7em;
-  height: 1.7em;
-  font-weight: bold;
-  margin-left: 6px;
-  transition: filter .14s;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.ayuda-btn:hover { filter: brightness(1.2); }
-.modo-oscuro-btn {
-  border: none;
-  background: transparent;
+body.dark-mode .top-actions-bar button {
+  background: linear-gradient(90deg, #193569 60%, #144e8e 100%);
   color: #ffd94a;
-  font-size: 1.7em;
-  margin-left: 10px;
-  cursor: pointer;
-  transition: filter .15s;
 }
-.modo-oscuro-btn:hover { filter: brightness(1.6);}
-.export-btns .btn {
-  min-width: 130px;
-  margin-bottom: 4px;
+body.dark-mode .btn-cargar { background: #ffd94a; color: #111d2e; }
+body.dark-mode .btn-nuevo { background: #7fd7e6; color: #0c3754; }
+body.dark-mode .ventana-ferrys {
+  background: #17253b;
 }
-
-/* ======= OBSERVACIONES ANCHO Y RESPONSIVO ======= */
-.observaciones-box textarea {
-  width: 99%;
-  min-height: 85px;
-  font-size: 1.15rem;
-  border-radius: 1em;
-  background: #fafdff;
+body.dark-mode .ferry-list-item {
+  border-bottom: 1px dashed #394968;
+  color: #f0f4fa;
 }
-@media (max-width:700px){ .observaciones-box textarea { width: 98vw; } }
-
-/* ======= FERRYS DINÁMICOS ======= */
-.ferry-bloque {
-  border: 2px solid #079cd8;
-  border-radius: 1em;
-  padding: 1.1em 1em;
-  margin-bottom: 1em;
-  background: #fafdff;
-  position: relative;
-}
-.ferry-bloque .btn-del-ferry {
-  position: absolute;
-  right: 10px; top: 10px;
-  border: none;
-  background: #ff6060;
-  color: #fff;
-  border-radius: 50%;
-  width: 2em;
-  height: 2em;
-  font-size: 1.2em;
-  font-weight: bold;
-  cursor: pointer;
-  transition: filter .1s;
-}
-.ferry-bloque .btn-del-ferry:hover { filter: brightness(1.2);}
-.ferry-bloque label { margin-bottom: 0.2em;}
-.ferry-campos {
-  display: grid;
-  grid-template-columns: repeat(5,1fr);
-  gap: .5em 1.2em;
-  align-items: end;
-}
-@media (max-width:800px){
-  .ferry-campos{ grid-template-columns: 1fr 1fr;}
-}
-.totales-ferry {
-  margin-top: 16px;
-  font-size: 1.18em;
-  font-weight: bold;
-  color: #18509e;
-}
-
-/* ======= TABLA DE RESUMEN AVANZADO ======= */
-#resumenAvanzadoVentana table,
-#resumenAvanzadoVentana th,
-#resumenAvanzadoVentana td {
-  border-collapse: collapse;
-  border: 1px solid #b5e7fa;
-  padding: 5px 8px;
-}
-#resumenAvanzadoVentana th {
-  background: #bde2fa;
-  color: #144e8e;
-}
-#resumenAvanzadoVentana tr:nth-child(even) {
-  background: #f2faff;
-}
-#resumenAvanzadoVentana tr:nth-child(odd) {
-  background: #e7f6fa;
-}
+body.dark-mode .ferry-chip.ferry-salida { background: #ffe066; color: #17253b;}
+body.dark-mode .ferry-chip.ferry-llegada { background: #3fd7fa; color: #1d2a3a;}
+body.dark-mode .btn-ferry-del { background: #ff4e4e; }
+body.dark-mode .totales-ferry { background: #193569; color: #ffd94a; }
+body.dark-mode .observaciones-box textarea { background: #202c3b; color: #fff; }
+body.dark-mode #resumenPuerto { background: #1d2a3a; color: #ffd94a; }
+body.dark-mode #resumenAvanzadoVentana th { background: #193569; color: #ffd94a; }
+body.dark-mode #resumenAvanzadoVentana td { background: #25385b; color: #fff; }
+body.dark-mode #resumenAvanzadoVentana tr:nth-child(even) { background: #22314d;}
+body.dark-mode #resumenAvanzadoVentana tr:nth-child(odd) { background: #1d2a3a;}
