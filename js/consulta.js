@@ -265,10 +265,17 @@ btnWhatsapp.addEventListener('click', () => {
 
 function crearMensajeWhatsapp(resumen, desde, hasta) {
   let msg = `SIREX Resumen Global\n(${desde} a ${hasta})\n`;
+  let total = 0;
   GRUPOS.forEach(g => {
     const cantidad = resumen[g.id].length;
-    msg += `${g.icon} ${g.label}: ${cantidad}\n`;
+    total += cantidad;
+    msg += `\n${g.icon} ${g.label}: ${cantidad}`;
+    if (cantidad > 0) {
+      resumen[g.id].forEach(item => {
+        msg += `\n- ${formatearItem(item, g.id)}`;
+      });
+    }
   });
-  return msg + 'Total general: ' +
-    GRUPOS.reduce((acc,g)=>acc+resumen[g.id].length,0);
+  msg += `\n\nTotal general: ${total}`;
+  return msg;
 }
