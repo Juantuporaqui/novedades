@@ -69,7 +69,6 @@ form.addEventListener('submit', async function(e) {
 });
 
 // --- CONSULTA FIRESTORE DE UN GRUPO ---
-// CORRECCIÓN: Esta función ahora actúa como un "router", aplicando la lógica de consulta correcta para cada grupo.
 async function getDatosGrupo(grupo, desde, hasta) {
     // Lógica para Grupo 1 (Expulsiones)
     if (grupo === "grupo1") {
@@ -110,14 +109,57 @@ async function getDatosGrupo(grupo, desde, hasta) {
         }
         return resultado;
     }
+    
+    // CORRECCIÓN: Lógica para Grupo 4 (Operativo)
+    if (grupo === "grupo4") {
+        let col = db.collection("grupo4_gestion");
+        let snap = await col.get(); // No se puede filtrar por ID YYYYMMDD, obtenemos todo y filtramos en cliente
+        let datos = [];
+        snap.forEach(doc => {
+            const docId = doc.id;
+            let fechaStr = docId.replace("gestion_", "");
+            if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
+            if (fechaStr >= desde && fechaStr <= hasta) {
+                datos.push({ tipo: 'registro_operativo', fecha: fechaStr, ...doc.data() });
+            }
+        });
+        return datos;
+    }
 
-    // Lógica para otros grupos con estructuras simples
+    // CORRECCIÓN: Lógica para Puerto
+    if (grupo === "puerto") {
+        const col = db.collection("grupoPuerto_registros");
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`)
+                                .where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`)
+                                .get();
+        let datos = [];
+        snap.forEach(doc => {
+            datos.push({ tipo: 'registro_puerto', fecha: doc.id.replace("puerto_", ""), ...doc.data() });
+        });
+        return datos;
+    }
+
+    // CORRECCIÓN: Lógica para CIE
+    if (grupo === "cie") {
+        const col = db.collection("grupo_cie");
+        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', desde)
+                                .where(firebase.firestore.FieldPath.documentId(), '<=', hasta)
+                                .get();
+        let datos = [];
+        snap.forEach(doc => {
+            datos.push({ tipo: 'registro_cie', fecha: doc.id, ...doc.data() });
+        });
+        return datos;
+    }
+
+
+    // Lógica genérica para el resto de grupos (Gestión, Cecorex, Estadística)
     try {
         const snap = await db.collection(grupo).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
-        return snap.docs.map(doc => doc.data());
+        return snap.docs.map(doc => ({tipo: 'generico', ...doc.data()}));
     } catch (e) {
         console.warn(`El grupo '${grupo}' no tiene una estructura estándar o no existe. Devolviendo 0 resultados.`);
-        return []; // Devuelve un array vacío si la consulta falla para evitar errores.
+        return [];
     }
 }
 
@@ -140,7 +182,6 @@ function renderizarResumenHTML(resumen, desde, hasta) {
         if (resumen[g.id].length > 0) {
             html += `<h6 class="mt-3">${g.icon} ${g.label}</h6><ul>`;
             resumen[g.id].forEach((item) => {
-                // CORRECCIÓN: Pasamos el ID del grupo para aplicar el formato correcto.
                 html += `<li>${formatearItem(item, g.id)}</li>`;
             });
             html += `</ul>`;
@@ -151,7 +192,6 @@ function renderizarResumenHTML(resumen, desde, hasta) {
 }
 
 // --- FORMATEA ITEM ---
-// CORRECCIÓN: La función ahora recibe el ID del grupo para saber cómo formatear cada item.
 function formatearItem(item, grupoId) {
     if (grupoId === "grupo1") {
         switch (item.tipo) {
@@ -174,9 +214,23 @@ function formatearItem(item, grupoId) {
         }
     }
     
-    // Formato por defecto para otros grupos
-    if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
-    if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
+    // CORRECCIÓN: Formato para los grupos que se rompieron
+    if (grupoId === "grupo4" && item.tipo === "registro_operativo") {
+        return `Fecha: ${item.fecha} - Gestiones: ${item.gestiones||0}, Citados: ${item.citados||0}, Colaboraciones: ${item.colaboraciones||0}`;
+    }
+    if (grupoId === "puerto" && item.tipo === "registro_puerto") {
+        return `Fecha: ${item.fecha} - Denegaciones: ${item.denegaciones||0}, Marinos/Argos: ${item.marinosArgos||0}, Cruceristas: ${item.cruceristas||0}`;
+    }
+    if (grupoId === "cie" && item.tipo === "registro_cie") {
+        return `Fecha: ${item.fecha} - Internos: ${item.internosNac||0}, Salidas: ${item.salidas||0}`;
+    }
+
+    // Formato por defecto para otros grupos (Gestión, Cecorex, etc.)
+    if (item.tipo === "generico") {
+        if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
+        if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
+    }
+
     return `Dato no reconocido: ${JSON.stringify(item)}`;
 }
 
@@ -228,7 +282,6 @@ function exportarPDF(resumen, desde, hasta) {
 }
 
 // --- EXPORTAR WHATSAPP ---
-// CORRECCIÓN: Función actualizada para crear el mensaje detallado.
 btnWhatsapp.addEventListener('click', () => {
     if (!window._ultimoResumen) return;
     const { resumen, desde, hasta } = window._ultimoResumen;
@@ -241,7 +294,6 @@ function crearMensajeWhatsapp(resumen, desde, hasta) {
     let msg = `*SIREX Resumen Global*\n(del ${desde} al ${hasta})\n`;
     let total = 0;
     
-    // Primero, un resumen de totales
     let totalesMsg = "\n*Totales por grupo:*\n";
     GRUPOS.forEach(g => {
         const cantidad = resumen[g.id].length;
@@ -254,14 +306,13 @@ function crearMensajeWhatsapp(resumen, desde, hasta) {
     
     msg += totalesMsg;
 
-    // Segundo, el detalle
     let detalleMsg = "\n*Detalle:*\n";
     GRUPOS.forEach(g => {
         const cantidad = resumen[g.id].length;
         if (cantidad > 0) {
             detalleMsg += `\n*${g.icon} ${g.label}:*\n`;
             resumen[g.id].forEach(item => {
-                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, ""); // Sin HTML
+                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, "");
                 detalleMsg += `- ${textoItem}\n`;
             });
         }
