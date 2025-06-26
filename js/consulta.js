@@ -73,8 +73,24 @@ form.addEventListener('submit', async function (e) {
   }
 });
 
-// --- CONSULTA FIRESTORE DE UN GRUPO ---
+// --- CONSULTA FIRESTORE DE UN GRUPO (adaptado para grupo1) ---
 async function getDatosGrupo(grupo, desde, hasta) {
+  // Para grupo1, sigue la lógica de su propio resumen avanzado
+  if (grupo === "grupo1") {
+    let col = db.collection("grupo1_expulsiones");
+    let snap = await col.get();
+    let datos = [];
+    snap.forEach(doc => {
+      const docId = doc.id;
+      const fechaStr = docId.replace("expulsiones_", "");
+      if (fechaStr >= desde && fechaStr <= hasta) {
+        datos.push({ fecha: fechaStr, ...doc.data() });
+      }
+    });
+    return datos;
+  }
+
+  // Para el resto, usa el filtro estándar (ajusta según necesidad)
   let col = db.collection(grupo);
   let q = col.where('fecha', '>=', desde).where('fecha', '<=', hasta);
   let snap = await q.get();
@@ -100,7 +116,7 @@ function renderizarResumenHTML(resumen, desde, hasta) {
     if (resumen[g.id].length > 0) {
       html += `<h6 class="mt-3">${g.icon} ${g.label}</h6><ul>`;
       resumen[g.id].forEach((item, idx) => {
-        html += `<li>${formatearItem(item)}</li>`;
+        html += `<li>${formatearItem(item, g.id)}</li>`;
       });
       html += `</ul>`;
     }
@@ -110,8 +126,18 @@ function renderizarResumenHTML(resumen, desde, hasta) {
 }
 
 // --- FORMATEA ITEM (ajusta según tus campos por grupo) ---
-function formatearItem(item) {
-  // Si tienes campos comunes, ajústalos aquí. Si no, muestra todo el objeto.
+function formatearItem(item, grupoId) {
+  // Ejemplo para grupo1: muestra expulsados, fletados, etc.
+  if (grupoId === "grupo1") {
+    const expulsados = item.expulsados ? item.expulsados.length : 0;
+    const fletados = item.fletados ? item.fletados.length : 0;
+    const fletadosFuturos = item.fletadosFuturos ? item.fletadosFuturos.length : 0;
+    const conPos = (item.conduccionesPositivas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0);
+    const conNeg = (item.conduccionesNegativas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0);
+    const pendientes = item.pendientes ? item.pendientes.length : 0;
+    return `Fecha: ${item.fecha}, Expulsados: ${expulsados}, Fletados: ${fletados}, Fletados Futuros: ${fletadosFuturos}, Conducciones +: ${conPos}, Conducciones -: ${conNeg}, Pendientes: ${pendientes}`;
+  }
+  // Para otros grupos, muestra campos genéricos
   if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
   if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
   // Por defecto, mostrar objeto como JSON corto
@@ -152,7 +178,7 @@ function exportarPDF(resumen, desde, hasta) {
     if (cantidad > 0) {
       resumen[g.id].forEach((item, idx) => {
         doc.setFontSize(10);
-        doc.text(`- ${formatearItem(item)}`, 15, y);
+        doc.text(`- ${formatearItem(item, g.id)}`, 15, y);
         y += 6;
         if (y > 270) { doc.addPage(); y = 20; }
       });
