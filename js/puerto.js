@@ -20,7 +20,7 @@ function formatoFecha(f) {
   if (isNaN(d.getTime())) return f;
   return `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
 }
-function limpiarFormulario() { form.reset(); limpiarFerrys(); }
+function limpiarFormulario() { if (form) form.reset(); limpiarFerrys(); }
 function formatoHora(h) {
   if (!h) return "";
   if (h.length === 5 && h[2] === ":") return h;
@@ -36,7 +36,7 @@ const btnGuardarRegistro = document.getElementById('btnGuardarRegistro');
 const adjuntosInput = document.getElementById('adjuntos');
 const observacionesInput = document.getElementById('observaciones');
 
-// Ferry mini-formulario
+// Ferry mini-formulario (robusto)
 const ferryTipo = document.getElementById('ferryTipo');
 const ferryFecha = document.getElementById('ferryFecha');
 const ferryHora = document.getElementById('ferryHora');
@@ -120,7 +120,13 @@ function actualizarTotalesFerrys() {
   totalVehiculosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.vehiculos)||0), 0);
 }
 
-btnAddFerry.onclick = () => {
+// ==== MINI-FORMULARIO FERRY: SIEMPRE FUNCIONA ====
+function addFerry() {
+  // Asegúrate de que todos los campos existen y están accesibles
+  if (!ferryTipo || !ferryFecha || !ferryHora || !ferryPasajeros || !ferryVehiculos) {
+    showToast("Error interno en los campos del ferry.");
+    return;
+  }
   const tipo = ferryTipo.value;
   const fecha = ferryFecha.value;
   const hora = ferryHora.value;
@@ -133,15 +139,24 @@ btnAddFerry.onclick = () => {
   ferrys.push({ tipo, fecha, hora, pasajeros, vehiculos });
   renderFerrysList();
   actualizarTotalesFerrys();
-  // Limpiar mini-formulario
+  // Limpiar mini-formulario tras añadir
   ferryFecha.value = "";
   ferryHora.value = "";
   ferryPasajeros.value = "";
   ferryVehiculos.value = "";
-};
+}
+
+// Siempre asigna el evento en DOMContentLoaded
+window.addEventListener('DOMContentLoaded', () => {
+  limpiarFerrys();
+  // Asignar evento añadir ferry de forma robusta
+  if (btnAddFerry) {
+    btnAddFerry.onclick = addFerry;
+  }
+});
 
 // ========== CARGAR REGISTRO ==========
-btnCargar.addEventListener('click', async () => {
+if (btnCargar) btnCargar.addEventListener('click', async () => {
   if (!fechaInput.value) return showToast("Selecciona una fecha.");
   const docSnap = await getDocRefDia(fechaInput.value).get();
   if (!docSnap.exists) return showToast("No hay registro para ese día.");
@@ -161,23 +176,22 @@ function cargarFormulario(datos) {
   // Ferrys
   ferrys = Array.isArray(datos.ferrys) ? datos.ferrys : [];
   renderFerrysList();
-  // Adjuntos: no se cargan los archivos como FileList, pero pueden listarse en el resumen
 }
 
 // ========== NUEVO REGISTRO ==========
-btnNuevo.addEventListener('click', () => {
+if (btnNuevo) btnNuevo.addEventListener('click', () => {
   limpiarFormulario();
   panelResumen.style.display = 'none';
   if(fechaInput) fechaInput.value = '';
 });
 
 // ========== GUARDAR REGISTRO ==========
-form.addEventListener('submit', async function (e) {
+if (form) form.addEventListener('submit', async function (e) {
   e.preventDefault();
   if (!fechaInput.value) return showToast("Selecciona una fecha.");
   // Adjuntos
   let adjuntos = [];
-  if (adjuntosInput.files && adjuntosInput.files.length > 0) {
+  if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
     for (const file of adjuntosInput.files) {
       const ref = storage.ref().child(`grupoPuerto/${getDocIdDia(fechaInput.value)}/${file.name}`);
       await ref.put(file);
@@ -205,7 +219,7 @@ form.addEventListener('submit', async function (e) {
   showToast("Registro guardado en la nube.");
   mostrarResumen(datos);
   panelResumen.style.display = 'block';
-  adjuntosInput.value = '';
+  if (adjuntosInput) adjuntosInput.value = '';
 });
 
 // ========== MOSTRAR RESUMEN DÍA ==========
@@ -301,7 +315,6 @@ function handleGenerarResumen() {
     mostrarResumenAvanzado(resumen);
   });
 }
-// Puede estar en varios botones
 if (btnGenerarResumen) btnGenerarResumen.addEventListener('click', handleGenerarResumen);
 
 function mostrarResumenAvanzado(resumen) {
@@ -456,9 +469,3 @@ if (btnWhatsapp) btnWhatsapp.onclick = function () {
     .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
     .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
 };
-
-// ========== Inicialización automática ==========
-window.addEventListener('DOMContentLoaded', () => {
-  limpiarFerrys();
-  // Modo oscuro persistente (ya gestionado en HTML)
-});
