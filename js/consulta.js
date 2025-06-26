@@ -1,4 +1,3 @@
-// js/consulta.js
 // SIREX · Consulta Global / Resúmenes
 
 // --- CONFIGURACIÓN FIREBASE ---
@@ -137,6 +136,49 @@ async function getDatosGrupo(grupo, desde, hasta) {
     return datos;
   }
 
+  // grupo2 y grupo3: solo detenidos e inspecciones (inspecciones solo grupo3)
+  if (grupo === "grupo2" || grupo === "grupo3") {
+    const nombreColeccion = grupo + "_operaciones";
+    let operacionesSnap = await db.collection(nombreColeccion).get();
+    let resultado = [];
+
+    for (const opDoc of operacionesSnap.docs) {
+      const opId = opDoc.id;
+      const opData = opDoc.data();
+
+      // --- DETENIDOS ---
+      const detenidosSnap = await db.collection(nombreColeccion).doc(opId)
+        .collection("detenidos")
+        .where("fechaDetenido", ">=", desde)
+        .where("fechaDetenido", "<=", hasta)
+        .get();
+      detenidosSnap.forEach(det => {
+        resultado.push({
+          tipo: "detenido",
+          operacion: opData.nombreOperacion || opId,
+          ...det.data()
+        });
+      });
+
+      // --- INSPECCIONES (solo grupo3, extiende a grupo2 si implementas ahí) ---
+      if (grupo === "grupo3") {
+        const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId)
+          .collection("inspecciones")
+          .where("fechaInspeccion", ">=", desde)
+          .where("fechaInspeccion", "<=", hasta)
+          .get();
+        inspeccionesSnap.forEach(ins => {
+          resultado.push({
+            tipo: "inspeccion",
+            operacion: opData.nombreOperacion || opId,
+            ...ins.data()
+          });
+        });
+      }
+    }
+    return resultado;
+  }
+
   // resto de grupos: filtro estándar por campo fecha
   let col = db.collection(grupo);
   let q = col.where('fecha', '>=', desde).where('fecha', '<=', hasta);
@@ -148,7 +190,7 @@ async function getDatosGrupo(grupo, desde, hasta) {
 function renderizarResumenHTML(resumen, desde, hasta) {
   let html = `<h4 class="mb-3">Resumen global del <b>${desde}</b> al <b>${hasta}</b></h4>`;
   html += `<div class="table-responsive"><table class="table table-striped align-middle">
-    <thead><tr><th>Grupo</th><th>Actuaciones / Registros</th></tr></thead><tbody>`;
+    <thead><tr><th>Grupo</th><th>Detenidos / Inspecciones</th></tr></thead><tbody>`;
   let total = 0;
   GRUPOS.forEach(g => {
     const cantidad = resumen[g.id].length;
@@ -174,35 +216,12 @@ function renderizarResumenHTML(resumen, desde, hasta) {
 
 // --- FORMATEA ITEM (ajusta según tus campos por grupo) ---
 function formatearItem(item, grupoId) {
-  if (grupoId === "grupo1") {
-    const expulsados = item.expulsados ? item.expulsados.length : 0;
-    const fletados = item.fletados ? item.fletados.length : 0;
-    const fletadosFuturos = item.fletadosFuturos ? item.fletadosFuturos.length : 0;
-    const conPos = (item.conduccionesPositivas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0);
-    const conNeg = (item.conduccionesNegativas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0);
-    const pendientes = item.pendientes ? item.pendientes.length : 0;
-    return `Fecha: ${item.fecha}, Expulsados: ${expulsados}, Fletados: ${fletados}, Fletados Futuros: ${fletadosFuturos}, Conducciones +: ${conPos}, Conducciones -: ${conNeg}, Pendientes: ${pendientes}`;
+  // Solo detenidos e inspecciones para grupo2 y grupo3
+  if ((grupoId === "grupo2" || grupoId === "grupo3") && item.tipo === "detenido") {
+    return `Detenido: ${item.filiacionDelito||''} (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.motivo||item.filiacionDelito||'-'} - Fecha: ${item.fechaDetenido||'-'} [${item.operacion}]`;
   }
-  if (grupoId === "grupo4") {
-    const colabs = item.colaboraciones ? item.colaboraciones.length : 0;
-    const detenidos = item.detenidos ? item.detenidos.length : 0;
-    const citados = item.citados ? item.citados.length : 0;
-    const gestiones = item.gestiones ? item.gestiones.length : 0;
-    const inspecciones = item.inspeccionesTrabajo ? item.inspeccionesTrabajo.length : 0;
-    const otrasInsp = item.otrasInspecciones ? item.otrasInspecciones.length : 0;
-    return `Fecha: ${item.fecha}, Colaboraciones: ${colabs}, Detenidos: ${detenidos}, Citados: ${citados}, Otras gestiones: ${gestiones}, Inspecciones Trabajo: ${inspecciones}, Otras inspecciones: ${otrasInsp}`;
-  }
-  if (grupoId === "puerto") {
-    const ferrys = item.ferrys ? item.ferrys.length : 0;
-    const totalPasajeros = ferrys > 0 ? item.ferrys.map(f => parseInt(f.pasajeros)||0).reduce((a,b)=>a+b,0) : 0;
-    const totalVehiculos = ferrys > 0 ? item.ferrys.map(f => parseInt(f.vehiculos)||0).reduce((a,b)=>a+b,0) : 0;
-    return `Fecha: ${item.fecha}, Ferrys: ${ferrys}, Pasajeros: ${totalPasajeros}, Vehículos: ${totalVehiculos}`;
-  }
-  if (grupoId === "cie") {
-    const internosNac = item.internosNac ? item.internosNac.length : 0;
-    const ingresos = item.ingresos ? item.ingresos.length : 0;
-    const salidas = item.salidas ? item.salidas.length : 0;
-    return `Fecha: ${item.fecha}, Internos nacionales: ${internosNac}, Ingresos: ${ingresos}, Salidas: ${salidas}`;
+  if (grupoId === "grupo3" && item.tipo === "inspeccion") {
+    return `Inspección: ${item.casa} (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [${item.operacion}]`;
   }
   // Otros grupos, genérico
   if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
