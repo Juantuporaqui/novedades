@@ -23,6 +23,7 @@ const btnExportarPDF = document.getElementById('btnExportarPDF');
 const btnWhatsapp = document.getElementById('btnWhatsapp');
 
 // --- NOMBRES Y ETIQUETAS DE GRUPOS ---
+// Se mantiene la lista de grupos para la interfaz de usuario.
 const GRUPOS = [
     { id: 'grupo1', label: 'Expulsiones', icon: '🚔' },
     { id: 'grupo2', label: 'Investigación 1', icon: '🕵️' },
@@ -34,6 +35,161 @@ const GRUPOS = [
     { id: 'cie', label: 'CIE', icon: '🏢' },
     { id: 'estadistica', label: 'Estadística', icon: '📊' }
 ];
+
+
+// =================================================================================
+// ====== ARQUITECTURA DE CONSULTA REFACTORIZADA ===================================
+// =================================================================================
+
+/**
+ * Objeto de configuración central que define cómo consultar y formatear los datos para cada grupo.
+ * Esto reemplaza la cadena de 'if/else if' por un sistema modular y escalable.
+ */
+const GROUP_STRATEGIES = {
+    // Estrategia para Grupo 1: Los datos están anidados dentro de documentos diarios.
+    grupo1: {
+        query: async (desde, hasta) => {
+            const snap = await db.collection("grupo1_expulsiones")
+                .where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`)
+                .where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`)
+                .get();
+            
+            let results = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                const fechaDia = doc.id.replace("expulsiones_", "");
+                if (data.expulsados) results.push(...data.expulsados.map(item => ({ ...item, tipo: 'expulsado', fecha: fechaDia })));
+                if (data.fletados) results.push(...data.fletados.map(item => ({ ...item, tipo: 'fletado' })));
+                if (data.conduccionesPositivas) results.push(...data.conduccionesPositivas.map(item => ({ ...item, tipo: 'conduccionPositiva', fecha: fechaDia })));
+                if (data.conduccionesNegativas) results.push(...data.conduccionesNegativas.map(item => ({ ...item, tipo: 'conduccionNegativa', fecha: fechaDia })));
+                if (data.pendientes) results.push(...data.pendientes.map(item => ({ ...item, tipo: 'pendiente' })));
+            });
+            return results;
+        },
+        formatter: (item) => {
+            switch (item.tipo) {
+                case 'expulsado': return `Expulsado: <b>${item.nombre||''}</b> (${item.nacionalidad||'-'}) [Diligencias: ${item.diligencias||'-'}]`;
+                case 'fletado': return `Fletado: <b>${item.destino||''}</b> (${item.pax||0} pax) - Fecha: ${item.fecha||'-'}`;
+                case 'conduccionPositiva': return `Conducción Positiva: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
+                case 'conduccionNegativa': return `Conducción Negativa: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
+                case 'pendiente': return `Pendiente: <b>${item.descripcion||''}</b> (Para el: ${item.fecha||'-'})`;
+                default: return JSON.stringify(item);
+            }
+        }
+    },
+    // Estrategia para Grupos 2 y 3: Los datos están en subcolecciones de operaciones.
+    investigacion: {
+        query: async (desde, hasta, grupoId) => {
+            const nombreColeccion = `${grupoId}_operaciones`;
+            const operacionesSnap = await db.collection(nombreColeccion).get();
+            let results = [];
+            for (const opDoc of operacionesSnap.docs) {
+                const opData = opDoc.data();
+                const detenidosSnap = await opDoc.ref.collection("detenidos").where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
+                detenidosSnap.forEach(det => results.push({ tipo: "detenido", operacion: opData.nombreOperacion || opDoc.id, ...det.data() }));
+                
+                if (grupoId === "grupo3") {
+                    const inspeccionesSnap = await opDoc.ref.collection("inspecciones").where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
+                    inspeccionesSnap.forEach(ins => results.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opDoc.id, ...ins.data() }));
+                }
+            }
+            return results;
+        },
+        formatter: (item) => {
+            if (item.tipo === "detenido") {
+                return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
+            }
+            if (item.tipo === "inspeccion") {
+                return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
+            }
+            return JSON.stringify(item);
+        }
+    },
+    // Estrategia genérica para colecciones con un campo 'fecha'.
+    default: {
+        query: async (desde, hasta, grupoId) => {
+            const snap = await db.collection(grupoId).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
+            return snap.docs.map(doc => doc.data());
+        },
+        formatter: (item) => `Fecha: ${item.fecha} - ${item.asunto || item.descripcion || 'Registro genérico'}`
+    },
+    // Estrategias específicas para colecciones con estructuras únicas.
+    grupo4: {
+        query: async (desde, hasta) => {
+            const snap = await db.collection("grupo4_gestion").get();
+            const results = [];
+            snap.forEach(doc => {
+                let fechaStr = doc.id.replace("gestion_", "");
+                if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
+                if (fechaStr >= desde && fechaStr <= hasta) {
+                    results.push({ fecha: fechaStr, ...doc.data() });
+                }
+            });
+            return results;
+        },
+        formatter: (item) => `Fecha: ${item.fecha} - Gestiones: ${item.gestiones||0}, Citados: ${item.citados||0}, Colaboraciones: ${item.colaboraciones||0}`
+    },
+    puerto: {
+        query: async (desde, hasta) => {
+            const snap = await db.collection("grupoPuerto_registros").where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`).get();
+            return snap.docs.map(doc => ({ fecha: doc.id.replace("puerto_", ""), ...doc.data() }));
+        },
+        formatter: (item) => `Fecha: ${item.fecha} - Denegaciones: ${item.denegaciones||0}, Marinos/Argos: ${item.marinosArgos||0}, Cruceristas: ${item.cruceristas||0}`
+    },
+    cie: {
+        query: async (desde, hasta) => {
+            const snap = await db.collection("grupo_cie").where(firebase.firestore.FieldPath.documentId(), '>=', desde).where(firebase.firestore.FieldPath.documentId(), '<=', hasta).get();
+            return snap.docs.map(doc => ({ fecha: doc.id, ...doc.data() }));
+        },
+        formatter: (item) => `Fecha: ${item.fecha} - Internos: ${item.internosNac||0}, Salidas: ${item.salidas||0}`
+    },
+    cecorex: {
+        query: async (desde, hasta) => {
+            const snap = await db.collection("cecorex").where(firebase.firestore.FieldPath.documentId(), '>=', `cecorex_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `cecorex_${hasta}`).get();
+            return snap.docs.map(doc => doc.data());
+        },
+        formatter: (item) => `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`
+    }
+};
+
+// Asignar estrategias a los grupos correspondientes
+GROUP_STRATEGIES.grupo2 = GROUP_STRATEGIES.investigacion;
+GROUP_STRATEGIES.grupo3 = GROUP_STRATEGIES.investigacion;
+GROUP_STRATEGIES.gestion = GROUP_STRATEGIES.default;
+GROUP_STRATEGIES.estadistica = GROUP_STRATEGIES.default;
+
+
+// --- FUNCIÓN DE CONSULTA PRINCIPAL (AHORA MÁS LIMPIA) ---
+async function getDatosGrupo(grupo, desde, hasta) {
+    // Selecciona la estrategia adecuada para el grupo. Si no hay una específica, usa la 'default'.
+    const strategy = GROUP_STRATEGIES[grupo] || GROUP_STRATEGIES.default;
+    try {
+        // Ejecuta la función de consulta de la estrategia.
+        return await strategy.query(desde, hasta, grupo);
+    } catch (e) {
+        console.warn(`Error al consultar el grupo '${grupo}':`, e.message);
+        // Devuelve un array vacío si la consulta falla para no romper la aplicación.
+        return [];
+    }
+}
+
+// --- FUNCIÓN DE FORMATO PRINCIPAL (AHORA MÁS LIMPIA) ---
+function formatearItem(item, grupoId) {
+    // Selecciona el formateador adecuado para el grupo.
+    const strategy = GROUP_STRATEGIES[grupoId] || GROUP_STRATEGIES.default;
+    try {
+        // Ejecuta la función de formato de la estrategia.
+        return strategy.formatter(item, grupoId);
+    } catch (e) {
+        console.error(`Error al formatear item para el grupo '${grupoId}':`, e);
+        return `Error al mostrar dato: ${JSON.stringify(item)}`;
+    }
+}
+
+
+// =================================================================================
+// ====== SECCIÓN DE RENDERIZADO Y EXPORTACIÓN (SIN CAMBIOS) =======================
+// =================================================================================
 
 // --- GESTIÓN DEL FORMULARIO ---
 form.addEventListener('submit', async function(e) {
@@ -68,99 +224,6 @@ form.addEventListener('submit', async function(e) {
     }
 });
 
-// --- CONSULTA FIRESTORE DE UN GRUPO ---
-async function getDatosGrupo(grupo, desde, hasta) {
-    if (grupo === "grupo1") {
-        const col = db.collection("grupo1_expulsiones");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`).get();
-        let datosAplanados = [];
-        snap.forEach(doc => {
-            const data = doc.data();
-            const fechaDia = doc.id.replace("expulsiones_", "");
-            if (data.expulsados) data.expulsados.forEach(item => datosAplanados.push({ ...item, tipo: 'expulsado', fecha: fechaDia }));
-            if (data.fletados) data.fletados.forEach(item => datosAplanados.push({ ...item, tipo: 'fletado' }));
-            if (data.conduccionesPositivas) data.conduccionesPositivas.forEach(item => datosAplanados.push({ ...item, tipo: 'conduccionPositiva', fecha: fechaDia }));
-            if (data.conduccionesNegativas) data.conduccionesNegativas.forEach(item => datosAplanados.push({ ...item, tipo: 'conduccionNegativa', fecha: fechaDia }));
-            if (data.pendientes) data.pendientes.forEach(item => datosAplanados.push({ ...item, tipo: 'pendiente' }));
-        });
-        return datosAplanados;
-    }
-    if (grupo === "grupo2" || grupo === "grupo3") {
-        const nombreColeccion = grupo + "_operaciones";
-        let operacionesSnap = await db.collection(nombreColeccion).get();
-        let resultado = [];
-        for (const opDoc of operacionesSnap.docs) {
-            const opId = opDoc.id;
-            const opData = opDoc.data();
-            const detenidosSnap = await db.collection(nombreColeccion).doc(opId).collection("detenidos").where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
-            detenidosSnap.forEach(det => resultado.push({ tipo: "detenido", operacion: opData.nombreOperacion || opId, ...det.data() }));
-            if (grupo === "grupo3") {
-                const inspeccionesSnap = await db.collection(nombreColeccion).doc(opId).collection("inspecciones").where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
-                inspeccionesSnap.forEach(ins => resultado.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opId, ...ins.data() }));
-            }
-        }
-        return resultado;
-    }
-    if (grupo === "grupo4") {
-        let col = db.collection("grupo4_gestion");
-        let snap = await col.get();
-        let datos = [];
-        snap.forEach(doc => {
-            const docId = doc.id;
-            let fechaStr = docId.replace("gestion_", "");
-            if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
-            if (fechaStr >= desde && fechaStr <= hasta) {
-                datos.push({ tipo: 'registro_operativo', fecha: fechaStr, ...doc.data() });
-            }
-        });
-        return datos;
-    }
-    if (grupo === "puerto") {
-        const col = db.collection("grupoPuerto_registros");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`).get();
-        let datos = [];
-        snap.forEach(doc => {
-            datos.push({ tipo: 'registro_puerto', fecha: doc.id.replace("puerto_", ""), ...doc.data() });
-        });
-        return datos;
-    }
-    if (grupo === "cie") {
-        const col = db.collection("grupo_cie");
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', desde).where(firebase.firestore.FieldPath.documentId(), '<=', hasta).get();
-        let datos = [];
-        snap.forEach(doc => {
-            datos.push({ tipo: 'registro_cie', fecha: doc.id, ...doc.data() });
-        });
-        return datos;
-    }
-    // Lógica específica para CECOREX
-    if (grupo === "cecorex") {
-        const col = db.collection("cecorex");
-        // CORRECCIÓN: Se añade el prefijo al filtro por ID
-        const snap = await col.where(firebase.firestore.FieldPath.documentId(), '>=', `cecorex_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `cecorex_${hasta}`).get();
-        let datos = [];
-        snap.forEach(doc => {
-            datos.push({ tipo: 'registro_cecorex', ...doc.data() });
-        });
-        return datos;
-    }
-    // Lógica específica para GESTION
-    if (grupo === "gestion") {
-        const col = db.collection("gestion");
-        const snap = await col.where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
-        return snap.docs.map(doc => ({tipo: 'registro_gestion', ...doc.data()}));
-    }
-    // Lógica genérica para el resto de grupos (Estadística)
-    try {
-        const snap = await db.collection(grupo).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
-        return snap.docs.map(doc => ({tipo: 'generico', ...doc.data()}));
-    } catch (e) {
-        console.warn(`El grupo '${grupo}' no tiene una estructura estándar o no existe. Devolviendo 0 resultados.`);
-        return [];
-    }
-}
-
-
 // --- RENDER HTML DEL RESUMEN ---
 function renderizarResumenHTML(resumen, desde, hasta) {
     let html = `<h4 class="mb-3">Resumen global del <b>${desde}</b> al <b>${hasta}</b></h4>`;
@@ -187,49 +250,6 @@ function renderizarResumenHTML(resumen, desde, hasta) {
     html += `</details>`;
     return html;
 }
-
-// --- FORMATEA ITEM ---
-function formatearItem(item, grupoId) {
-    if (grupoId === "grupo1") {
-        switch (item.tipo) {
-            case 'expulsado': return `Expulsado: <b>${item.nombre||''}</b> (${item.nacionalidad||'-'}) [Diligencias: ${item.diligencias||'-'}]`;
-            case 'fletado': return `Fletado: <b>${item.destino||''}</b> (${item.pax||0} pax) - Fecha: ${item.fecha||'-'}`;
-            case 'conduccionPositiva': return `Conducción Positiva: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
-            case 'conduccionNegativa': return `Conducción Negativa: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
-            case 'pendiente': return `Pendiente: <b>${item.descripcion||''}</b> (Para el: ${item.fecha||'-'})`;
-        }
-    }
-    if (grupoId === "grupo2" || grupoId === "grupo3") {
-        if (item.tipo === "detenido") {
-            return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
-        }
-        if (item.tipo === "inspeccion") {
-            return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
-        }
-    }
-    if (grupoId === "grupo4" && item.tipo === "registro_operativo") {
-        return `Fecha: ${item.fecha} - Gestiones: ${item.gestiones||0}, Citados: ${item.citados||0}, Colaboraciones: ${item.colaboraciones||0}`;
-    }
-    if (grupoId === "puerto" && item.tipo === "registro_puerto") {
-        return `Fecha: ${item.fecha} - Denegaciones: ${item.denegaciones||0}, Marinos/Argos: ${item.marinosArgos||0}, Cruceristas: ${item.cruceristas||0}`;
-    }
-    if (grupoId === "cie" && item.tipo === "registro_cie") {
-        return `Fecha: ${item.fecha} - Internos: ${item.internosNac||0}, Salidas: ${item.salidas||0}`;
-    }
-    // CORRECCIÓN: Formato para CECOREX basado en el JS que me pasaste
-    if (grupoId === "cecorex" && item.tipo === "registro_cecorex") {
-        return `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`;
-    }
-    if (grupoId === "gestion" && item.tipo === "registro_gestion") {
-        return `Fecha: ${item.fecha} - Asunto: ${item.asunto||'N/A'}, Descripción: ${item.descripcion||'N/A'}`;
-    }
-    if (item.tipo === "generico") {
-        if (item.nombre) return `${item.nombre} (${item.nacionalidad||'-'}) - ${item.diligencias||'-'} - ${item.fecha||''}`;
-        if (item.descripcion) return `${item.descripcion} [${item.fecha||''}]`;
-    }
-    return `Dato no reconocido: ${JSON.stringify(item)}`;
-}
-
 
 // --- SPINNER Y ERROR ---
 function mostrarSpinner(mostrar) {
