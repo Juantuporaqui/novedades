@@ -203,6 +203,7 @@ input[type="file"]:focus { outline: 1.5px solid #079cd8;}
   .panel.panel-glass { padding: 1rem 2vw 1rem 2vw;}
   .footer { font-size: .97rem; padding-right: 7px;}
 }
+
 /* ======= MODO OSCURO ======= */
 body.dark-mode {
   background: #111d2e !important;
