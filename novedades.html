@@ -1,81 +1,147 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIREX - Carga de Novedades</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body { background-color: #f0f2f5; }
-        .upload-card {
-            max-width: 600px;
-            margin: 5rem auto;
-            border: 2px dashed #0d6efd;
-            border-radius: 15px;
-            background-color: #fff;
+// js/novedades.js
+import { db, auth } from './firebase.js';
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ------------------------------
+//  Utilidades de Interfaz
+// ------------------------------
+function mostrarEstado(mensaje, tipo = "info") {
+    let statusDiv = document.getElementById("estadoCarga");
+    if (!statusDiv) {
+        statusDiv = document.createElement("div");
+        statusDiv.id = "estadoCarga";
+        statusDiv.style.position = "fixed";
+        statusDiv.style.top = "10px";
+        statusDiv.style.right = "10px";
+        statusDiv.style.padding = "12px 22px";
+        statusDiv.style.borderRadius = "10px";
+        statusDiv.style.background = tipo === "error" ? "#e74646" : "#28b063";
+        statusDiv.style.color = "#fff";
+        statusDiv.style.zIndex = 9999;
+        statusDiv.style.boxShadow = "0 4px 24px #0002";
+        document.body.appendChild(statusDiv);
+    }
+    statusDiv.innerText = mensaje;
+    setTimeout(() => { statusDiv.remove(); }, 4000);
+}
+
+function mostrarSpinner(visible = true) {
+    let sp = document.getElementById("spinnerCarga");
+    if (!sp && visible) {
+        sp = document.createElement("div");
+        sp.id = "spinnerCarga";
+        sp.innerHTML = '<div style="width:80px;height:80px;border:10px solid #e4f6fd;border-top:10px solid #079cd8;border-radius:50%;animation:spin 1s linear infinite;margin:auto"></div>';
+        sp.style.position = "fixed";
+        sp.style.left = "0"; sp.style.top = "0";
+        sp.style.width = "100vw"; sp.style.height = "100vh";
+        sp.style.background = "#fff8";
+        sp.style.zIndex = 10000;
+        sp.style.display = "flex";
+        sp.style.justifyContent = "center";
+        sp.style.alignItems = "center";
+        document.body.appendChild(sp);
+        const style = document.createElement("style");
+        style.innerHTML = "@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
+        document.head.appendChild(style);
+    } else if (sp && !visible) {
+        sp.remove();
+    }
+}
+
+// ------------------------------
+//  Lógica de importación DOCX
+// ------------------------------
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
+});
+
+// Lógica principal al subir DOCX
+async function handleDocxUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return mostrarEstado("No se ha seleccionado archivo", "error");
+
+    mostrarSpinner(true);
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+        const novedadesEstructuradas = extraerYMapearDatos(result.value);
+        autocompletarYMostrarFormularios(novedadesEstructuradas);
+        await guardarTodasNovedades(novedadesEstructuradas);
+        mostrarEstado("¡Importación y guardado completados!");
+    } catch (err) {
+        mostrarEstado("Error procesando DOCX: " + err, "error");
+        console.error(err);
+    } finally {
+        mostrarSpinner(false);
+    }
+}
+
+// Extrae y mapea datos desde el HTML generado por Mammoth
+function extraerYMapearDatos(html) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // --- Detecta todos los títulos de grupo y las tablas siguientes ---
+    const novedadesPorGrupo = {};
+    const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo/i.test(e.textContent));
+    titulos.forEach((titulo, i) => {
+        const tabla = titulo.nextElementSibling && titulo.nextElementSibling.tagName === "TABLE"
+            ? titulo.nextElementSibling
+            : null;
+        if (tabla) {
+            const grupo = titulo.textContent.trim().replace(":", "").toUpperCase();
+            novedadesPorGrupo[grupo] = tablaAObjetos(tabla);
         }
-    </style>
-</head>
-<body>
+    });
+    return novedadesPorGrupo;
+}
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container">
-            <span class="navbar-brand fs-4 fw-bold">SIREX · Carga de Novedades</span>
-        </div>
-    </nav>
+// Convierte una tabla DOM a array de objetos (campos: Asunto, Gestión, Observaciones)
+function tablaAObjetos(tabla) {
+    const filas = Array.from(tabla.querySelectorAll('tr'));
+    if (filas.length < 2) return [];
+    const encabezados = Array.from(filas[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toLowerCase());
+    return filas.slice(1).map(fila => {
+        const celdas = Array.from(fila.querySelectorAll('td')).map(td => td.textContent.trim());
+        let obj = {};
+        encabezados.forEach((h, i) => { obj[h] = celdas[i] || ""; });
+        return obj;
+    });
+}
 
-    <div class="container">
-        <div class="card shadow-sm upload-card">
-            <div class="card-body text-center p-5">
-                <i class="bi bi-file-earmark-pdf-fill text-primary" style="font-size: 5rem;"></i>
-                <h2 class="card-title mt-3">Carga de Novedades</h2>
-                <p class="text-muted">Pulsa el botón para seleccionar el archivo PDF de novedades del día. El sistema leerá los datos y te pedirá confirmación antes de guardarlos.</p>
-                <button type="button" class="btn btn-primary btn-lg mt-3" id="btnLeerPDF">
-                    <i class="bi bi-upload"></i> Seleccionar PDF y Cargar Datos
-                </button>
-                <div id="spinner" class="text-center d-none mt-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <p class="mt-2">Procesando archivo...</p>
+// Autocompleta y muestra formularios para revisión visual (solo lectura)
+function autocompletarYMostrarFormularios(novedadesPorGrupo) {
+    const cont = document.getElementById('formularios-grupos');
+    cont.innerHTML = '';
+    Object.entries(novedadesPorGrupo).forEach(([grupo, novedades]) => {
+        const form = document.createElement('form');
+        form.innerHTML = `<h3 style="color:#079cd8">${grupo}</h3>`;
+        novedades.forEach((n, idx) => {
+            form.innerHTML += `
+                <div style="margin:6px 0;border-bottom:1px solid #ddd;padding-bottom:6px">
+                    <b>Asunto:</b> <input readonly value="${n.asunto || ""}" style="width:40%">
+                    <b>Gestión:</b> <input readonly value="${n.gestión || n.gestion || ""}" style="width:40%">
+                    <b>Observaciones:</b> <input readonly value="${n.observaciones || n.obs || ""}" style="width:40%">
                 </div>
-            </div>
-        </div>
-    </div>
+            `;
+        });
+        cont.appendChild(form);
+    });
+}
 
-    <!-- Input oculto para seleccionar el archivo PDF -->
-    <input type="file" id="pdfFile" class="d-none" accept="application/pdf">
-
-    <!-- Modal de Bootstrap para la confirmación de datos del PDF -->
-    <div class="modal fade" id="pdfConfirmModal" tabindex="-1" aria-labelledby="pdfConfirmModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="pdfConfirmModalLabel">Confirmar Datos Extraídos del PDF</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" id="pdfConfirmModalBody">
-            <!-- El contenido se generará dinámicamente con JavaScript -->
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btnGuardarPDFData">Confirmar y Guardar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Librerías JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-
-    <!-- Tu script para esta página -->
-    <script src="js/novedades.js"></script>
-
-</body>
-</html>
+// Guarda todas las novedades de todos los grupos en Firestore
+async function guardarTodasNovedades(novedadesPorGrupo) {
+    // Almacena bajo colección "novedades_diarias/{fecha}/grupo"
+    const fechaStr = (new Date()).toISOString().slice(0, 10);
+    for (const [grupo, novedades] of Object.entries(novedadesPorGrupo)) {
+        const colRef = collection(db, `novedades_diarias/${fechaStr}/${grupo.replace(/\s+/g, '_').toLowerCase()}`);
+        for (const novedad of novedades) {
+            await addDoc(colRef, {
+                ...novedad,
+                fecha: fechaStr,
+                timestamp: serverTimestamp()
+            });
+        }
+    }
+}
