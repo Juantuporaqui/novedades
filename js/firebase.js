@@ -1,11 +1,8 @@
 // js/firebase.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-// -- PON AQUÍ TUS CLAVES --
+// Configuración Firebase real
 const firebaseConfig = {
-  apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+    apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
     authDomain: "ucrif-5bb75.firebaseapp.com",
     projectId: "ucrif-5bb75",
     storageBucket: "ucrif-5bb75.appspot.com",
@@ -14,11 +11,10 @@ const firebaseConfig = {
     measurementId: "G-S2VPQNWZ21"
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-// -- AUTENTICACIÓN ANÓNIMA SIEMPRE ACTIVA --
-onAuthStateChanged(auth, user => {
-    if (!user) signInAnonymously(auth);
+auth.onAuthStateChanged(user => {
+    if (!user) auth.signInAnonymously();
 });
