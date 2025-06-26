@@ -11,28 +11,32 @@
 <body>
   <!-- HEADER -->
   <header class="puerto-header">
-    <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
-    <div class="puerto-logo"><span style="font-size:48px; display:inline-block;">⚓️</span></div>
-    <div class="puerto-title">
-      <span class="title-main">GRUPO PUERTO</span>
-      <span class="title-desc">Control y Estadística Portuaria</span>
+    <div class="header-left">
+      <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
+      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo día/noche">🌙</button>
+      <div class="puerto-logo-title">
+        <span class="puerto-logo" style="font-size:48px; display:inline-block;">⚓️</span>
+        <div class="puerto-title">
+          <span class="title-main">GRUPO PUERTO</span>
+          <span class="title-desc">Control y Estadística Portuaria</span>
+        </div>
+      </div>
     </div>
-    <div class="top-actions-bar-header">
-      <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro"><span>📂</span>Cargar</button>
-      <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro"><span>🆕</span>Nuevo</button>
-      <button type="submit" form="formPuerto" class="btn-guardar" id="btnGuardarRegistro" title="Guardar"><span>💾</span>Guardar</button>
-    </div>
-    <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo día/noche">🌙</button>
   </header>
 
   <main class="main-container">
     <form id="formPuerto" autocomplete="off">
       <section class="panel panel-glass">
 
-        <!-- Fecha -->
-        <div class="row-cols fecha-row">
+        <!-- Fecha y acciones -->
+        <div class="row-cols fecha-row" style="display:flex; align-items:center; gap:1em; flex-wrap:wrap;">
           <label for="fechaPuerto">Fecha</label>
           <input type="date" id="fechaPuerto" required class="form-control input-date">
+          <div class="top-actions-bar-header" style="margin:0;gap:.5em;">
+            <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro"><span>📂</span>Cargar</button>
+            <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro"><span>🆕</span>Nuevo</button>
+            <button type="submit" form="formPuerto" class="btn-guardar" id="btnGuardarRegistro" title="Guardar"><span>💾</span>Guardar</button>
+          </div>
         </div>
 
         <!-- Marinos/Cruceros/Visados -->
@@ -63,7 +67,7 @@
         <div class="mb-3 ferrys-block">
           <h4>
             FERRYS
-            <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" onclick="alert('Añade cada ferry indicando fecha, hora, llegada o salida, pasajeros y vehículos. Puedes ver los ferry añadidos abajo y borrarlos si es necesario.')">?</button>
+            <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" onclick="alert('Añade cada ferry indicando fecha, hora, llegada o salida, pasajeros y vehículos. Puedes ver los ferrys añadidos abajo y se sumarán al total.')">?</button>
           </h4>
           <!-- Mini-formulario ferry -->
           <div class="ferry-mini-form-wrap">
@@ -111,17 +115,17 @@
       <h3>Resumen avanzado 
         <button class="ayuda-btn" type="button" title="Resumen y exportación" onclick="alert('Puedes generar un resumen por rango de fechas y exportar los datos en PDF, CSV o copiar para WhatsApp.')">?</button>
       </h3>
-      <div class="row-cols mb-2 resumen-fechas-row">
+      <div class="row-cols mb-2 resumen-fechas-row" style="display:flex;align-items:center;gap:.7em;flex-wrap:wrap;">
         <label for="desdeResumen">Desde</label>
         <input type="date" id="desdeResumen" class="form-control input-date">
         <label for="hastaResumen">Hasta</label>
         <input type="date" id="hastaResumen" class="form-control input-date">
+        <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen" style="height:38px; margin-left:.5em;"><span>📋</span>Resumen</button>
       </div>
       <div class="export-btns resumen-btns-grid">
         <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="Exportar PDF"><span>📄</span>PDF</button>
         <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="Exportar CSV"><span>📊</span>CSV</button>
         <button id="btnWhatsapp" class="btn btn-menu" type="button" title="Compartir WhatsApp"><span>💬</span>WA</button>
-        <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen"><span>📋</span>Resumen</button>
       </div>
       <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
     </section>
@@ -140,7 +144,7 @@
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-storage-compat.js"></script>
   <script src="../js/puerto.js"></script>
   <script>
-    // =========== MODO OSCURO =========== 
+    // =========== MODO OSCURO ===========
     const darkBtn = document.getElementById("darkModeBtn");
     if (darkBtn) {
       darkBtn.onclick = function() {
