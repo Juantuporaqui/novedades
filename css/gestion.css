@@ -1,5 +1,5 @@
 /* SIREX Gestión - Glassmorphism, Responsive y Modo Oscuro */
-/* Basado en grupo4.css, adaptado para gestión */
+/* Basado en grupo4.css, adaptado para campos de gestión */
 
 body {
   font-family: 'Inter', Arial, sans-serif;
@@ -24,12 +24,10 @@ body {
   position: sticky;
   top: 0; z-index: 10;
 }
-
 .header-icon span {
   font-size: 2.4rem;
   margin-right: 18px;
 }
-
 .header-title .brand {
   font-size: 1.6rem;
   font-weight: 700;
@@ -74,7 +72,6 @@ body {
   margin: 22px 16px 18px 16px;
   padding: 16px 12px;
 }
-
 .registro-bar label {
   font-weight: 600;
   font-size: 1.1rem;
@@ -120,6 +117,7 @@ body {
 }
 .btn-eliminar:hover { background: #b71c1c; }
 
+/* Historial botones */
 #historialFechas {
   margin: 0 16px 16px 16px;
   display: flex;
@@ -138,7 +136,7 @@ body {
 }
 .btn-historial:hover { background: #1976d2; color: #fff; }
 
-/* Paneles y listas */
+/* Panel formulario y resumen */
 .panel-seccion {
   background: rgba(255,255,255,0.93);
   margin: 18px 16px;
@@ -156,33 +154,34 @@ body {
 }
 .input-row {
   display: flex;
-  gap: 10px;
-  margin-bottom: 9px;
   align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
 }
-.input-row input, .input-row textarea {
+.input-row label {
+  min-width: 140px;
+  font-weight: 600;
+  font-size: 1.08rem;
+}
+.input-row input[type="number"], 
+.input-row input[type="text"],
+.input-row textarea {
   font-size: 1rem;
   border: 1px solid #bdbdbd;
   border-radius: 7px;
-  padding: 5px 9px;
+  padding: 7px 10px;
   min-width: 0;
+  transition: border 0.2s;
+  background: #fafdff;
+  flex: 1;
 }
-.input-row input:focus {
+.input-row input:focus, .input-row textarea:focus {
   border: 1.5px solid #1976d2;
   outline: none;
 }
-.btn-add {
-  background: #1976d2;
-  color: #fff;
-  border: none;
-  font-weight: 700;
-  font-size: 1.2rem;
-  border-radius: 7px;
-  padding: 5px 15px;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+.input-row textarea {
+  resize: vertical;
 }
-.btn-add:hover { background: #388eea; }
 .ayuda-btn {
   margin-left: 8px;
   font-size: 1rem;
@@ -197,47 +196,6 @@ body {
 }
 .ayuda-btn:hover { background: #1976d2; color: #fff; }
 
-.lista {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.lista li {
-  background: #f2f7fd;
-  margin-bottom: 5px;
-  padding: 7px 12px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1.07rem;
-  transition: background 0.2s;
-}
-.lista li:hover { background: #bbdefb; }
-.del-btn {
-  background: #e53935;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-size: 1.0rem;
-  font-weight: bold;
-  padding: 2px 9px;
-  margin-left: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.del-btn:hover { background: #b71c1c; }
-
-textarea#observaciones {
-  width: 100%;
-  min-height: 48px;
-  font-size: 1.1rem;
-  border-radius: 9px;
-  border: 1px solid #bdbdbd;
-  padding: 9px 13px;
-  resize: vertical;
-}
-
 #panelResumen {
   background: #e3f2fd;
   color: #263238;
@@ -251,6 +209,7 @@ textarea#observaciones {
   padding: 14px 0;
 }
 
+/* Panel glass resumen fechas */
 .panel-glass {
   background: rgba(255,255,255,0.85);
   border-radius: 18px;
@@ -345,32 +304,22 @@ body.dark-mode #panelResumen {
   color: #fff;
   border-color: #1976d2;
 }
-body.dark-mode textarea#observaciones,
 body.dark-mode .input-row input,
+body.dark-mode .input-row textarea,
 body.dark-mode .input-date {
   background: #14263b;
   color: #fff;
   border-color: #1976d2;
 }
-body.dark-mode .lista li {
-  background: #1b314d;
-  color: #fff;
-}
-body.dark-mode .lista li:hover {
-  background: #1976d2;
-  color: #fff;
-}
 body.dark-mode .btn-principal,
-body.dark-mode .btn-add {
+body.dark-mode .btn-guardar {
   background: #ffd600;
   color: #222;
 }
 body.dark-mode .btn-principal:hover,
-body.dark-mode .btn-add:hover { background: #fff9c4; color: #1976d2;}
-body.dark-mode .btn-eliminar,
-body.dark-mode .del-btn { background: #c62828;}
-body.dark-mode .btn-eliminar:hover,
-body.dark-mode .del-btn:hover { background: #b71c1c; }
+body.dark-mode .btn-guardar:hover { background: #fff9c4; color: #1976d2;}
+body.dark-mode .btn-eliminar { background: #c62828;}
+body.dark-mode .btn-eliminar:hover { background: #b71c1c; }
 body.dark-mode .btn-menu {
   background: rgba(255,255,255,0.10);
   color: #fff;
@@ -378,8 +327,12 @@ body.dark-mode .btn-menu {
 body.dark-mode .btn-menu:hover { background: #ffd600; color: #222; }
 body.dark-mode .btn-pdf { background: #ffd600; color: #0d2540;}
 body.dark-mode .btn-pdf:hover { background: #fff9c4;}
-body.dark-mode .btn-guardar { background: #388e3c;}
-body.dark-mode .btn-guardar:hover { background: #2e7d32;}
+body.dark-mode .ayuda-btn {
+  background: #14263b;
+  color: #ffd600;
+  border-color: #ffd600;
+}
+body.dark-mode .ayuda-btn:hover { background: #ffd600; color: #14263b; }
 
 /* Responsive */
 @media (max-width: 800px) {
@@ -389,8 +342,8 @@ body.dark-mode .btn-guardar:hover { background: #2e7d32;}
   }
   .header { padding: 11px 7px;}
 }
-
 @media (max-width: 520px) {
   .header-title .brand { font-size: 1.1rem; }
-  /* Otros ajustes responsivos aquí según necesidad */
+  .input-row label { font-size: 0.97rem; min-width: 80px;}
+  .panel-seccion, .panel-glass { font-size: 0.97rem; }
 }
