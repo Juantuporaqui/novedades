@@ -1,6 +1,6 @@
 // js/firebase.js
 
-// Configuración Firebase real
+// Configuración real de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
     authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -11,6 +11,7 @@ const firebaseConfig = {
     measurementId: "G-S2VPQNWZ21"
 };
 
+// Inicializa Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
