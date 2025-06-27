@@ -204,6 +204,66 @@ window.eliminarInhibicion = async (docid) => {
   cargarListadoInhibiciones();
 };
 
+// ======= INSPECCIONES EN CASAS DE CITAS =======
+const btnAñadirInspeccion = document.getElementById('btnAñadirInspeccion');
+const nombreCasa = document.getElementById('nombreCasa');
+const fechaInspeccion = document.getElementById('fechaInspeccion');
+const numFiliadas = document.getElementById('numFiliadas');
+const nacionalidadesFiliadas = document.getElementById('nacionalidadesFiliadas');
+const listadoInspecciones = document.getElementById('listadoInspecciones');
+
+btnAñadirInspeccion.addEventListener('click', async () => {
+  if (!idOperacionActual) return showToast("Guarda la operación antes.");
+  const casa = nombreCasa.value.trim();
+  const fecha = fechaInspeccion.value;
+  const num = parseInt(numFiliadas.value, 10) || 0;
+  const nacs = nacionalidadesFiliadas.value.split(',').map(n => n.trim()).filter(n => n);
+
+  if (!casa || !fecha) {
+    return showToast("El nombre de la casa y la fecha son obligatorios.");
+  }
+  const data = {
+    casa,
+    fechaInspeccion: fecha,
+    numFiliadas: num,
+    nacionalidadesFiliadas: nacs,
+    ts: new Date().toISOString()
+  };
+  await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").add(data);
+  nombreCasa.value = "";
+  fechaInspeccion.value = "";
+  numFiliadas.value = "";
+  nacionalidadesFiliadas.value = "";
+  cargarListadoInspecciones();
+});
+
+async function cargarListadoInspecciones() {
+  if (!idOperacionActual) return listadoInspecciones.innerHTML = "";
+  const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").orderBy("fechaInspeccion", "desc").get();
+  listadoInspecciones.innerHTML = "";
+  snap.forEach(doc => {
+    const d = doc.data();
+    const div = document.createElement("div");
+    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+    div.innerHTML = `<span>
+      <b>${d.casa || ""}</b> - ${formatoFecha(d.fechaInspeccion)}
+      <br>
+      Nº Filiadas: <b>${d.numFiliadas || 0}</b>
+      <br>
+      <span class="text-muted">Nacionalidades: ${(d.nacionalidadesFiliadas || []).join(', ') || "N/A"}</span>
+    </span>
+    <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumentoInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+    listadoInspecciones.appendChild(div);
+  });
+}
+
+// Opción para eliminar inspecciones individuales
+window.eliminarSubdocumentoInspeccion = async function(docid) {
+  if (!idOperacionActual) return;
+  await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").doc(docid).delete();
+  cargarListadoInspecciones();
+};
+
 // ======= HISTÓRICO DE JUZGADOS =======
 const btnAñadirHistoricoJuzgado = document.getElementById('btnAñadirHistoricoJuzgado');
 const fechaHistoricoJuzgado = document.getElementById('fechaHistoricoJuzgado');
@@ -632,6 +692,7 @@ function cargarTodosLosListados() {
   cargarListadoObservaciones();
   cargarListadoPendientes();
   cargarListadoDocumentos();
+  cargarListadoInspecciones();
 }
 // ======= ADJUNTAR DOCUMENTOS (Firebase Storage) =======
 const btnAñadirDocumento = document.getElementById('btnAñadirDocumento');
