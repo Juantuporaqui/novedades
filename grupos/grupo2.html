@@ -246,84 +246,43 @@
     </div>
   </div>
         
-        <!-- Personas vinculadas -->
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingPersonas">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePersonas" aria-expanded="false" aria-controls="collapsePersonas">
-              <i class="bi bi-people-fill text-purple me-2"></i> Personas Vinculadas
-            </button>
-          </h2>
-          <div id="collapsePersonas" class="accordion-collapse collapse" aria-labelledby="headingPersonas" data-bs-parent="#accordionOperacion">
-            <div class="accordion-body">
-              <form id="formDetenidos" class="row g-2 mb-3">
-                <div class="col-md-3">
-                  <label class="form-label">Filiación Delito</label>
-                  <input type="text" id="filiacionDelito" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Nacionalidad</label>
-                  <input type="text" id="nacionalidadDetenido" class="form-control" maxlength="40">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Fecha</label>
-                  <input type="date" id="fechaDetenido" class="form-control">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Secuencia</label>
-                  <input type="text" id="secuenciaDetenido" class="form-control" maxlength="12" placeholder="Nº Orden">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirDetenido" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-              </form>
-              <div id="listadoDetenidos" class="ventana-datos"></div>
-              <form id="formDetenidosPrevistos" class="row g-2 mb-3">
-                <div class="col-md-3">
-                  <label class="form-label">Filiación Delito</label>
-                  <input type="text" id="filiacionPrevisto" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Nacionalidad</label>
-                  <input type="text" id="nacionalidadPrevisto" class="form-control" maxlength="40">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Fecha</label>
-                  <input type="date" id="fechaPrevisto" class="form-control">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Secuencia</label>
-                  <input type="text" id="secuenciaPrevisto" class="form-control" maxlength="12" placeholder="Nº Orden">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirPrevisto" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-              </form>
-              <div id="listadoDetenidosPrevistos" class="ventana-datos"></div>
-              <form id="formOtrasPersonas" class="row g-2 mb-3">
-                <div class="col-md-3">
-                  <label class="form-label">Filiación</label>
-                  <input type="text" id="filiacionOtraPersona" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Tipo Vinculación</label>
-                  <input type="text" id="tipoVinculacion" class="form-control" maxlength="40">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Nacionalidad</label>
-                  <input type="text" id="nacionalidadOtraPersona" class="form-control" maxlength="40">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Teléfono</label>
-                  <input type="text" id="telefonoOtraPersona" class="form-control" maxlength="18">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirOtraPersona" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-              </form>
-              <div id="listadoOtrasPersonas" class="ventana-datos"></div>
-            </div>
-          </div>
+       <!-- ACORDEÓN: PERSONAS VINCULADAS -->
+<div class="accordion-item">
+  <h2 class="accordion-header" id="headingPersonasVinculadas">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePersonasVinculadas" aria-expanded="false" aria-controls="collapsePersonasVinculadas">
+      <i class="bi bi-people-fill text-primary me-2"></i> Personas vinculadas (no detenidas)
+    </button>
+  </h2>
+  <div id="collapsePersonasVinculadas" class="accordion-collapse collapse" aria-labelledby="headingPersonasVinculadas" data-bs-parent="#accordionOperacion">
+    <div class="accordion-body">
+
+      <!-- FORMULARIO OTRAS PERSONAS VINCULADAS -->
+      <form id="formOtrasPersonas" class="row g-2 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input type="text" id="filiacionOtraPersona" class="form-control" maxlength="60">
         </div>
+        <div class="col-md-3">
+          <label class="form-label">Tipo de vinculación</label>
+          <input type="text" id="tipoVinculacion" class="form-control" maxlength="40">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Nacionalidad</label>
+          <input type="text" id="nacionalidadOtraPersona" class="form-control" maxlength="40">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Teléfono</label>
+          <input type="text" id="telefonoOtraPersona" class="form-control" maxlength="20">
+        </div>
+        <div class="col-md-12 d-grid">
+          <button type="button" id="btnAñadirOtraPersona" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
+        </div>
+      </form>
+      <div id="listadoOtrasPersonas" class="ventana-datos"></div>
+
+    </div>
+  </div>
+</div>
         <!-- Inspecciones en casas de citas -->
 <div class="accordion-item">
   <h2 class="accordion-header" id="headingInspecciones">
