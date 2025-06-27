@@ -662,7 +662,6 @@ window.eliminarPendiente = async (docid) => {
   await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("pendientes").doc(docid).delete();
   cargarListadoPendientes();
 };
-// ========== FUNCIONES DE CARGA Y LIMPIEZA DE LISTADOS ==========
 function limpiarTodosLosListados() {
   listadoJuzgados.innerHTML = "";
   listadoInhibiciones.innerHTML = "";
@@ -677,6 +676,7 @@ function limpiarTodosLosListados() {
   listadoObservaciones.innerHTML = "";
   listadoPendientes.innerHTML = "";
   listadoDocumentos.innerHTML = "";
+  listadoInspecciones.innerHTML = "";
 }
 function cargarTodosLosListados() {
   cargarListadoJuzgados();
