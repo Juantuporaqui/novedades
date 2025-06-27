@@ -158,61 +158,7 @@
             </div>
           </div>
         </div>
-        <!-- Intervenciones / Medidas -->
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingIntervenciones">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIntervenciones" aria-expanded="false" aria-controls="collapseIntervenciones">
-              <i class="bi bi-telephone-forward text-danger me-2"></i> Intervenciones / Medidas
-            </button>
-          </h2>
-          <div id="collapseIntervenciones" class="accordion-collapse collapse" aria-labelledby="headingIntervenciones" data-bs-parent="#accordionOperacion">
-            <div class="accordion-body">
-              <form id="formIntervenciones" class="row g-2 mb-3">
-                <div class="col-md-5">
-                  <label class="form-label">Intervenciones Telefónicas</label>
-                  <input type="text" id="intervencionTelefonica" class="form-control" maxlength="100" placeholder="Descripción">
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label">Entradas y Registros</label>
-                  <input type="text" id="entradaRegistro" class="form-control" maxlength="100" placeholder="Descripción">
-                </div>
-                <div class="col-md-2 d-grid">
-                  <button type="button" id="btnAñadirIntervencion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Solicitudes Judiciales</label>
-                  <input type="text" id="solicitudJudicial" class="form-control" maxlength="100" placeholder="Tipo">
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label">Descripción Solicitud</label>
-                  <input type="text" id="descripcionSolicitudJudicial" class="form-control" maxlength="100" placeholder="Descripción">
-                </div>
-                <div class="col-md-3 d-grid">
-                  <button type="button" id="btnAñadirSolicitudJudicial" class="btn btn-police-blue mt-4"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label">Fecha Colaboración</label>
-                  <input type="date" id="fechaColaboracion" class="form-control">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Grupo/Institución</label>
-                  <input type="text" id="grupoColaboracion" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Tipo Colaboración</label>
-                  <input type="text" id="tipoColaboracion" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirColaboracion" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
-                </div>
-              </form>
-              <div id="listadoIntervenciones" class="ventana-datos"></div>
-              <div id="listadoSolicitudesJudiciales" class="ventana-datos"></div>
-              <div id="listadoColaboraciones" class="ventana-datos"></div>
-            </div>
-          </div>
-        </div>
-        <!-- Cronología -->
+         <!-- Cronología -->
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingCronologia">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCronologia" aria-expanded="false" aria-controls="collapseCronologia">
@@ -316,6 +262,97 @@
             </div>
           </div>
         </div>
+        <!-- Inspecciones en casas de citas -->
+<div class="accordion-item">
+  <h2 class="accordion-header" id="headingInspecciones">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInspecciones" aria-expanded="false" aria-controls="collapseInspecciones">
+      <i class="bi bi-house-door-fill text-brown me-2"></i> Inspecciones en Casas de Citas
+    </button>
+  </h2>
+  <div id="collapseInspecciones" class="accordion-collapse collapse" aria-labelledby="headingInspecciones" data-bs-parent="#accordionOperacion">
+    <div class="accordion-body">
+      <form id="formInspecciones" class="row g-2 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">Casa de citas</label>
+          <input type="text" id="nombreCasa" class="form-control" maxlength="60" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Fecha Inspección</label>
+          <input type="date" id="fechaInspeccion" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Nº Filiadas</label>
+          <input type="number" id="numFiliadas" class="form-control" min="0" max="100" required>
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Nacionalidades Filiadas (separadas por coma)</label>
+          <input type="text" id="nacionalidadesFiliadas" class="form-control" maxlength="200">
+        </div>
+        <div class="col-12">
+          <button type="button" id="btnAñadirInspeccion" class="btn btn-police-blue mt-2">
+            <i class="bi bi-plus"></i> Añadir
+          </button>
+        </div>
+      </form>
+      <div id="listadoInspecciones" class="ventana-datos"></div>
+    </div>
+  </div>
+</div>
+        <!-- Intervenciones / Medidas -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingIntervenciones">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIntervenciones" aria-expanded="false" aria-controls="collapseIntervenciones">
+              <i class="bi bi-telephone-forward text-danger me-2"></i> Intervenciones / Medidas
+            </button>
+          </h2>
+          <div id="collapseIntervenciones" class="accordion-collapse collapse" aria-labelledby="headingIntervenciones" data-bs-parent="#accordionOperacion">
+            <div class="accordion-body">
+              <form id="formIntervenciones" class="row g-2 mb-3">
+                <div class="col-md-5">
+                  <label class="form-label">Intervenciones Telefónicas</label>
+                  <input type="text" id="intervencionTelefonica" class="form-control" maxlength="100" placeholder="Descripción">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Entradas y Registros</label>
+                  <input type="text" id="entradaRegistro" class="form-control" maxlength="100" placeholder="Descripción">
+                </div>
+                <div class="col-md-2 d-grid">
+                  <button type="button" id="btnAñadirIntervencion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Solicitudes Judiciales</label>
+                  <input type="text" id="solicitudJudicial" class="form-control" maxlength="100" placeholder="Tipo">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Descripción Solicitud</label>
+                  <input type="text" id="descripcionSolicitudJudicial" class="form-control" maxlength="100" placeholder="Descripción">
+                </div>
+                <div class="col-md-3 d-grid">
+                  <button type="button" id="btnAñadirSolicitudJudicial" class="btn btn-police-blue mt-4"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Fecha Colaboración</label>
+                  <input type="date" id="fechaColaboracion" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Grupo/Institución</label>
+                  <input type="text" id="grupoColaboracion" class="form-control" maxlength="60">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo Colaboración</label>
+                  <input type="text" id="tipoColaboracion" class="form-control" maxlength="60">
+                </div>
+                <div class="col-md-12 d-grid">
+                  <button type="button" id="btnAñadirColaboracion" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+              </form>
+              <div id="listadoIntervenciones" class="ventana-datos"></div>
+              <div id="listadoSolicitudesJudiciales" class="ventana-datos"></div>
+              <div id="listadoColaboraciones" class="ventana-datos"></div>
+            </div>
+          </div>
+        </div>
+       
         <!-- Documentación (con adjuntos) -->
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingDocumentacion">
