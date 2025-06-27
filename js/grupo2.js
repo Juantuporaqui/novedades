@@ -581,6 +581,7 @@ const tipoVinculacion = document.getElementById('tipoVinculacion');
 const nacionalidadOtraPersona = document.getElementById('nacionalidadOtraPersona');
 const telefonoOtraPersona = document.getElementById('telefonoOtraPersona');
 const listadoOtrasPersonas = document.getElementById('listadoOtrasPersonas');
+
 btnAñadirOtraPersona.addEventListener('click', async ()=>{
   if(!idOperacionActual) return showToast("Guarda la operación antes.");
   const data = {
@@ -593,7 +594,10 @@ btnAñadirOtraPersona.addEventListener('click', async ()=>{
   if(!data.filiacionOtraPersona && !data.tipoVinculacion && !data.nacionalidadOtraPersona && !data.telefonoOtraPersona) return showToast("Completa los campos.");
   await db.collection("grupo2_operaciones").doc(idOperacionActual)
     .collection("otrasPersonas").add(data);
-  filiacionOtraPersona.value = ""; tipoVinculacion.value = ""; nacionalidadOtraPersona.value = ""; telefonoOtraPersona.value = "";
+  filiacionOtraPersona.value = "";
+  tipoVinculacion.value = "";
+  nacionalidadOtraPersona.value = "";
+  telefonoOtraPersona.value = "";
   cargarListadoOtrasPersonas();
 });
 async function cargarListadoOtrasPersonas() {
