@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
 });
 
-// -- UI feedback --
 function mostrarEstado(mensaje, tipo = "info") {
     let statusDiv = document.getElementById("estadoCarga");
     if (!statusDiv) {
@@ -67,16 +66,15 @@ async function handleDocxUpload(event) {
     }
 }
 
-// -- Extraer y mapear novedades por grupo --
 function extraerYMapearDatos(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
     // Detecta todos los títulos de grupo y sus tablas siguientes
     const novedadesPorGrupo = {};
-    const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo/i.test(e.textContent));
+    const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo|puerto|cie/i.test(e.textContent));
     titulos.forEach((titulo, i) => {
-        const tabla = titulo.nextElementSibling && titulo.nextElementSibling.tagName === "TABLE"
+        const tabla = titulo.nextElementSibling && tabla.nextElementSibling.tagName === "TABLE"
             ? titulo.nextElementSibling
             : null;
         if (tabla) {
@@ -99,7 +97,6 @@ function tablaAObjetos(tabla) {
     });
 }
 
-// -- Mostrar formularios autocompletados (readonly) --
 function autocompletarYMostrarFormularios(novedadesPorGrupo) {
     const cont = document.getElementById('formularios-grupos');
     cont.innerHTML = '';
@@ -119,7 +116,6 @@ function autocompletarYMostrarFormularios(novedadesPorGrupo) {
     });
 }
 
-// -- Guardar en Firestore --
 async function guardarTodasNovedades(novedadesPorGrupo) {
     // Almacena bajo colección "novedades_diarias/{fecha}/grupo"
     const fechaStr = (new Date()).toISOString().slice(0, 10);
