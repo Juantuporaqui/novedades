@@ -352,6 +352,102 @@ async function cargarListadoSolicitudesJudiciales() {
         listadoSolicitudesJudiciales.appendChild(div);
     });
 }
+// ======= DETENIDOS =======
+const btnAñadirDetenido = document.getElementById('btnAñadirDetenido');
+const nombreDetenido = document.getElementById('nombreDetenido');
+const fechaDetenido = document.getElementById('fechaDetenido');
+const delitoDetenido = document.getElementById('delitoDetenido');
+const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
+const secuenciaDetenido = document.getElementById('secuenciaDetenido');
+const listadoDetenidos = document.getElementById('listadoDetenidos');
+
+btnAñadirDetenido.addEventListener('click', async ()=>{
+  if(!idOperacionActual) return showToast("Guarda la operación antes.");
+  const data = {
+    nombreDetenido: nombreDetenido.value.trim(),
+    fechaDetenido: fechaDetenido.value,
+    delitoDetenido: delitoDetenido.value.trim(),
+    nacionalidadDetenido: nacionalidadDetenido.value.trim(),
+    secuenciaDetenido: secuenciaDetenido.value.trim(),
+    ts: new Date().toISOString()
+  };
+  if(!data.nombreDetenido && !data.fechaDetenido && !data.delitoDetenido && !data.nacionalidadDetenido && !data.secuenciaDetenido) return showToast("Completa los campos.");
+  await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("detenidos").add(data);
+  nombreDetenido.value = "";
+  fechaDetenido.value = "";
+  delitoDetenido.value = "";
+  nacionalidadDetenido.value = "";
+  secuenciaDetenido.value = "";
+  cargarListadoDetenidos();
+});
+async function cargarListadoDetenidos() {
+  if(!idOperacionActual) return listadoDetenidos.innerHTML="";
+  const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("detenidos").orderBy("ts","desc").get();
+  listadoDetenidos.innerHTML = "";
+  snap.forEach(doc => {
+    const d = doc.data();
+    const div = document.createElement("div");
+    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+    div.innerHTML = `<span>
+      <b>${d.nombreDetenido||""}</b> - ${formatoFecha(d.fechaDetenido)}<br>
+      Delito: ${d.delitoDetenido||""} | Nacionalidad: ${d.nacionalidadDetenido||""} | Ordinal: ${d.secuenciaDetenido||""}
+      </span>
+      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarDetenido('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+    listadoDetenidos.appendChild(div);
+  });
+}
+window.eliminarDetenido = async (docid) => {
+  if(!idOperacionActual) return;
+  await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("detenidos").doc(docid).delete();
+  cargarListadoDetenidos();
+};
+
+// ======= DETENIDOS PREVISTOS =======
+const btnAñadirPrevisto = document.getElementById('btnAñadirPrevisto');
+const nombrePrevisto = document.getElementById('nombrePrevisto');
+const nacionalidadPrevisto = document.getElementById('nacionalidadPrevisto');
+const delitoPrevisto = document.getElementById('delitoPrevisto');
+const listadoDetenidosPrevistos = document.getElementById('listadoDetenidosPrevistos');
+
+btnAñadirPrevisto.addEventListener('click', async ()=>{
+  if(!idOperacionActual) return showToast("Guarda la operación antes.");
+  const data = {
+    nombrePrevisto: nombrePrevisto.value.trim(),
+    nacionalidadPrevisto: nacionalidadPrevisto.value.trim(),
+    delitoPrevisto: delitoPrevisto.value.trim(),
+    ts: new Date().toISOString()
+  };
+  if(!data.nombrePrevisto && !data.nacionalidadPrevisto && !data.delitoPrevisto) return showToast("Completa los campos.");
+  await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("detenidosPrevistos").add(data);
+  nombrePrevisto.value = "";
+  nacionalidadPrevisto.value = "";
+  delitoPrevisto.value = "";
+  cargarListadoDetenidosPrevistos();
+});
+async function cargarListadoDetenidosPrevistos() {
+  if(!idOperacionActual) return listadoDetenidosPrevistos.innerHTML="";
+  const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("detenidosPrevistos").orderBy("ts","desc").get();
+  listadoDetenidosPrevistos.innerHTML = "";
+  snap.forEach(doc => {
+    const d = doc.data();
+    const div = document.createElement("div");
+    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+    div.innerHTML = `<span>
+      <b>${d.nombrePrevisto||""}</b> | Nacionalidad: ${d.nacionalidadPrevisto||""} | Delito: ${d.delitoPrevisto||""}
+      </span>
+      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarPrevisto('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+    listadoDetenidosPrevistos.appendChild(div);
+  });
+}
+window.eliminarPrevisto = async (docid) => {
+  if(!idOperacionActual) return;
+  await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("detenidosPrevistos").doc(docid).delete();
+  cargarListadoDetenidosPrevistos();
+};
 
 // --- COLABORACIONES ---
 const btnAñadirColaboracion = document.getElementById('btnAñadirColaboracion');
@@ -424,46 +520,51 @@ async function cargarListadoCronologia() {
     });
 }
 
-// --- DETENIDOS / PAX. VINCULADAS ---
-const btnAñadirDetenido = document.getElementById('btnAñadirDetenido');
-const nombreDetenido = document.getElementById('nombreDetenido');
-const delitoDetenido = document.getElementById('delitoDetenido');
-const fechaDetenido = document.getElementById('fechaDetenido');
-const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
-const listadoDetenidos = document.getElementById('listadoDetenidos');
+// ======= OTRAS PERSONAS =======
+const btnAñadirOtraPersona = document.getElementById('btnAñadirOtraPersona');
+const filiacionOtraPersona = document.getElementById('filiacionOtraPersona');
+const tipoVinculacion = document.getElementById('tipoVinculacion');
+const nacionalidadOtraPersona = document.getElementById('nacionalidadOtraPersona');
+const telefonoOtraPersona = document.getElementById('telefonoOtraPersona');
+const listadoOtrasPersonas = document.getElementById('listadoOtrasPersonas');
 
-btnAñadirDetenido.addEventListener('click', async () => {
-    if (!idOperacionActual) return showToast("Guarda la operación antes.");
-    const data = {
-        nombreDetenido: nombreDetenido.value.trim(),
-        delitoDetenido: delitoDetenido.value.trim(),
-        fechaDetenido: fechaDetenido.value,
-        nacionalidadDetenido: nacionalidadDetenido.value.trim(),
-        ts: new Date().toISOString()
-    };
-    if (!data.nombreDetenido || !data.fechaDetenido) return showToast("El nombre y la fecha son obligatorios.");
-    await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("detenidos").add(data);
-    nombreDetenido.value = "";
-    delitoDetenido.value = "";
-    fechaDetenido.value = "";
-    nacionalidadDetenido.value = "";
-    cargarListadoDetenidos();
+btnAñadirOtraPersona.addEventListener('click', async ()=>{
+  if(!idOperacionActual) return showToast("Guarda la operación antes.");
+  const data = {
+    filiacionOtraPersona: filiacionOtraPersona.value.trim(),
+    tipoVinculacion: tipoVinculacion.value.trim(),
+    nacionalidadOtraPersona: nacionalidadOtraPersona.value.trim(),
+    telefonoOtraPersona: telefonoOtraPersona.value.trim(),
+    ts: new Date().toISOString()
+  };
+  if(!data.filiacionOtraPersona && !data.tipoVinculacion && !data.nacionalidadOtraPersona && !data.telefonoOtraPersona) return showToast("Completa los campos.");
+  await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("otrasPersonas").add(data);
+  filiacionOtraPersona.value = "";
+  tipoVinculacion.value = "";
+  nacionalidadOtraPersona.value = "";
+  telefonoOtraPersona.value = "";
+  cargarListadoOtrasPersonas();
 });
-
-async function cargarListadoDetenidos() {
-    if (!idOperacionActual) return listadoDetenidos.innerHTML = "";
-    const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("detenidos").orderBy("fechaDetenido", "desc").get();
-    listadoDetenidos.innerHTML = "";
-    snap.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement("div");
-        div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
-        div.innerHTML = `<span><b>${d.nombreDetenido || ""}</b> (${d.nacionalidadDetenido || "N/A"}) - ${formatoFecha(d.fechaDetenido)}<br><span class="text-muted">${d.delitoDetenido || "Sin delito especificado"}</span></span>
-      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumento('detenidos', '${doc.id}', cargarListadoDetenidos)"><i class="bi bi-trash"></i></button>`;
-        listadoDetenidos.appendChild(div);
-    });
+async function cargarListadoOtrasPersonas() {
+  if(!idOperacionActual) return listadoOtrasPersonas.innerHTML="";
+  const snap = await db.collection("grupo3_operaciones").doc(idOperacionActual)
+    .collection("otrasPersonas").orderBy("ts","desc").get();
+  listadoOtrasPersonas.innerHTML = "";
+  snap.forEach(doc => {
+    const p = doc.data();
+    const div = document.createElement("div");
+    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+    div.innerHTML = `<span>${p.filiacionOtraPersona||""} / ${p.tipoVinculacion||""} (${p.nacionalidadOtraPersona||""}) Tel: ${p.telefonoOtraPersona||""}</span>
+      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarOtraPersona('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+    listadoOtrasPersonas.appendChild(div);
+  });
 }
-
+window.eliminarOtraPersona = async (docid) => {
+  if(!idOperacionActual) return;
+  await db.collection("grupo3_operaciones").doc(idOperacionActual).collection("otrasPersonas").doc(docid).delete();
+  cargarListadoOtrasPersonas();
+};
 
 // --- INSPECCIONES EN CASAS DE CITAS ---
 const btnAñadirInspeccion = document.getElementById('btnAñadirInspeccion');
