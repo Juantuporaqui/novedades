@@ -480,24 +480,31 @@ window.eliminarColaboracion = async (docid) => {
 
 // ======= DETENIDOS =======
 const btnAñadirDetenido = document.getElementById('btnAñadirDetenido');
-const filiacionDelito = document.getElementById('filiacionDelito');
-const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
+const nombreDetenido = document.getElementById('nombreDetenido');
 const fechaDetenido = document.getElementById('fechaDetenido');
+const delitoDetenido = document.getElementById('delitoDetenido');
+const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
 const secuenciaDetenido = document.getElementById('secuenciaDetenido');
 const listadoDetenidos = document.getElementById('listadoDetenidos');
+
 btnAñadirDetenido.addEventListener('click', async ()=>{
   if(!idOperacionActual) return showToast("Guarda la operación antes.");
   const data = {
-    filiacionDelito: filiacionDelito.value.trim(),
-    nacionalidadDetenido: nacionalidadDetenido.value.trim(),
+    nombreDetenido: nombreDetenido.value.trim(),
     fechaDetenido: fechaDetenido.value,
+    delitoDetenido: delitoDetenido.value.trim(),
+    nacionalidadDetenido: nacionalidadDetenido.value.trim(),
     secuenciaDetenido: secuenciaDetenido.value.trim(),
     ts: new Date().toISOString()
   };
-  if(!data.filiacionDelito && !data.nacionalidadDetenido && !data.fechaDetenido && !data.secuenciaDetenido) return showToast("Completa los campos.");
+  if(!data.nombreDetenido && !data.fechaDetenido && !data.delitoDetenido && !data.nacionalidadDetenido && !data.secuenciaDetenido) return showToast("Completa los campos.");
   await db.collection("grupo2_operaciones").doc(idOperacionActual)
     .collection("detenidos").add(data);
-  filiacionDelito.value = ""; nacionalidadDetenido.value = ""; fechaDetenido.value = ""; secuenciaDetenido.value = "";
+  nombreDetenido.value = "";
+  fechaDetenido.value = "";
+  delitoDetenido.value = "";
+  nacionalidadDetenido.value = "";
+  secuenciaDetenido.value = "";
   cargarListadoDetenidos();
 });
 async function cargarListadoDetenidos() {
@@ -509,7 +516,10 @@ async function cargarListadoDetenidos() {
     const d = doc.data();
     const div = document.createElement("div");
     div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
-    div.innerHTML = `<span>${d.filiacionDelito||""} (${d.nacionalidadDetenido||""}) - ${formatoFecha(d.fechaDetenido)} [${d.secuenciaDetenido||""}]</span>
+    div.innerHTML = `<span>
+      <b>${d.nombreDetenido||""}</b> - ${formatoFecha(d.fechaDetenido)}<br>
+      Delito: ${d.delitoDetenido||""} | Nacionalidad: ${d.nacionalidadDetenido||""} | Ordinal: ${d.secuenciaDetenido||""}
+      </span>
       <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarDetenido('${doc.id}')"><i class="bi bi-trash"></i></button>`;
     listadoDetenidos.appendChild(div);
   });
@@ -522,24 +532,25 @@ window.eliminarDetenido = async (docid) => {
 
 // ======= DETENIDOS PREVISTOS =======
 const btnAñadirPrevisto = document.getElementById('btnAñadirPrevisto');
-const filiacionPrevisto = document.getElementById('filiacionPrevisto');
+const nombrePrevisto = document.getElementById('nombrePrevisto');
 const nacionalidadPrevisto = document.getElementById('nacionalidadPrevisto');
-const fechaPrevisto = document.getElementById('fechaPrevisto');
-const secuenciaPrevisto = document.getElementById('secuenciaPrevisto');
+const delitoPrevisto = document.getElementById('delitoPrevisto');
 const listadoDetenidosPrevistos = document.getElementById('listadoDetenidosPrevistos');
+
 btnAñadirPrevisto.addEventListener('click', async ()=>{
   if(!idOperacionActual) return showToast("Guarda la operación antes.");
   const data = {
-    filiacionPrevisto: filiacionPrevisto.value.trim(),
+    nombrePrevisto: nombrePrevisto.value.trim(),
     nacionalidadPrevisto: nacionalidadPrevisto.value.trim(),
-    fechaPrevisto: fechaPrevisto.value,
-    secuenciaPrevisto: secuenciaPrevisto.value.trim(),
+    delitoPrevisto: delitoPrevisto.value.trim(),
     ts: new Date().toISOString()
   };
-  if(!data.filiacionPrevisto && !data.nacionalidadPrevisto && !data.fechaPrevisto && !data.secuenciaPrevisto) return showToast("Completa los campos.");
+  if(!data.nombrePrevisto && !data.nacionalidadPrevisto && !data.delitoPrevisto) return showToast("Completa los campos.");
   await db.collection("grupo2_operaciones").doc(idOperacionActual)
     .collection("detenidosPrevistos").add(data);
-  filiacionPrevisto.value = ""; nacionalidadPrevisto.value = ""; fechaPrevisto.value = ""; secuenciaPrevisto.value = "";
+  nombrePrevisto.value = "";
+  nacionalidadPrevisto.value = "";
+  delitoPrevisto.value = "";
   cargarListadoDetenidosPrevistos();
 });
 async function cargarListadoDetenidosPrevistos() {
@@ -551,7 +562,9 @@ async function cargarListadoDetenidosPrevistos() {
     const d = doc.data();
     const div = document.createElement("div");
     div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
-    div.innerHTML = `<span>${d.filiacionPrevisto||""} (${d.nacionalidadPrevisto||""}) - ${formatoFecha(d.fechaPrevisto)} [${d.secuenciaPrevisto||""}]</span>
+    div.innerHTML = `<span>
+      <b>${d.nombrePrevisto||""}</b> | Nacionalidad: ${d.nacionalidadPrevisto||""} | Delito: ${d.delitoPrevisto||""}
+      </span>
       <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarPrevisto('${doc.id}')"><i class="bi bi-trash"></i></button>`;
     listadoDetenidosPrevistos.appendChild(div);
   });
@@ -561,7 +574,6 @@ window.eliminarPrevisto = async (docid) => {
   await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("detenidosPrevistos").doc(docid).delete();
   cargarListadoDetenidosPrevistos();
 };
-
 // ======= OTRAS PERSONAS =======
 const btnAñadirOtraPersona = document.getElementById('btnAñadirOtraPersona');
 const filiacionOtraPersona = document.getElementById('filiacionOtraPersona');
