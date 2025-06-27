@@ -35,118 +35,183 @@
 
     <section id="historialFechas"></section>
 
-    <form id="formGestion" autocomplete="off">
+    <form id="formGestion" autocomplete="off" class="form-container">
+      
       <section class="panel-seccion">
+        <h2 class="seccion-titulo">Datos Generales del Trámite</h2>
         <div class="input-row">
           <label for="tipoTramite">Tipo de trámite</label>
           <input type="text" id="tipoTramite" placeholder="Asilo, Carta Invitación, etc.">
-          <button type="button" class="ayuda-btn" data-seccion="tipoTramite" title="¿Qué es esto?">?</button>
         </div>
         <div class="input-row">
           <label for="datosGestionado">Datos del gestionado</label>
           <textarea id="datosGestionado" rows="2" placeholder="Nombre, NIE, etc."></textarea>
-          <button type="button" class="ayuda-btn" data-seccion="datosGestionado" title="¿Qué es esto?">?</button>
         </div>
         <div class="input-row">
           <label for="descripcionTramite">Descripción del trámite</label>
           <textarea id="descripcionTramite" rows="2" placeholder="Detalles del trámite"></textarea>
-          <button type="button" class="ayuda-btn" data-seccion="descripcionTramite" title="¿Qué es esto?">?</button>
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Asilo y Citas</h2>
+        <div class="input-row">
+          <label for="entrevistasAsilo">Entrevistas asilo</label>
+          <input type="number" min="0" id="entrevistasAsilo" value="0">
+          <span class="label-inline">Fallos</span>
+          <input type="number" min="0" id="entrevistasAsiloFallos" value="0" class="input-small">
+        </div>
+        <div class="input-row">
+          <label for="citas">Citas Ofertadas</label>
+          <input type="number" min="0" id="citas" value="0">
+           <span class="label-inline">Fallos</span>
+          <input type="number" min="0" id="citasFaltan" value="0" class="input-small">
+        </div>
+         <div class="input-row">
+          <label for="renunciasAsilo">Renuncias Asilo</label>
+          <input type="number" min="0" id="renunciasAsilo" value="0">
+        </div>
+        <div class="input-row-group">
+          <label>Citas Telefónicas</label>
+          <div class="sub-input-row">
+              <span class="label-inline">Asilo</span>
+              <input type="number" min="0" id="citasTelAsilo" value="0" class="input-small">
+              <span class="label-inline">Cartas</span>
+              <input type="number" min="0" id="citasTelCartas" value="0" class="input-small">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Protección Temporal (Ucrania)</h2>
+        <div class="input-row">
+          <label for="renunciasUcrania">Renuncias Ucrania</label>
+          <input type="number" min="0" id="renunciasUcrania" value="0">
+        </div>
+        <div class="input-row">
+          <label for="correosUcrania">Correos Ucrania</label>
+          <input type="number" min="0" id="correosUcrania" value="0">
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Cartas de Invitación</h2>
+        <div class="input-row-group">
+          <label>Entrevistas Cartas</label>
+           <div class="sub-input-row">
+              <span class="label-inline">Concedidas</span>
+              <input type="number" min="0" id="cartasConcedidas" value="0" class="input-small">
+              <span class="label-inline">Denegadas</span>
+              <input type="number" min="0" id="cartasDenegadas" value="0" class="input-small">
+              <span class="label-inline">Fallos</span>
+              <input type="number" min="0" id="cartasFallan" value="0" class="input-small">
+          </div>
+        </div>
+        <div class="input-row">
+          <label for="devolucionesTasas">Devolución Tasas</label>
+          <input type="number" min="0" id="devolucionesTasas" value="0">
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Trámites de Extranjería (Subdelegación/Bailén)</h2>
+        <div class="input-row">
+          <label for="citasSubdelegacion">Citas Subdelegación</label>
+          <input type="number" min="0" id="citasSubdelegacion" value="0">
+        </div>
+        <div class="input-row">
+          <label for="tarjetasSubdelegacion">Tarjetas Recogidas</label>
+          <input type="number" min="0" id="tarjetasSubdelegacion" value="0">
+        </div>
+        <div class="input-row">
+          <label for="cues">CUEs (Cert. UE)</label>
+          <input type="number" min="0" id="cues" value="0">
+        </div>
+        <div class="input-row">
+          <label for="certificadosBailen">Certificados (Bailén)</label>
+          <input type="number" min="0" id="certificadosBailen" value="0">
+        </div>
+        <div class="input-row">
+          <label for="asignaciones">Asignaciones NIE</label>
+          <input type="number" min="0" id="asignaciones" value="0">
+        </div>
+         <div class="input-row">
+          <label for="prorrogasEstancia">Prórrogas Estancia</label>
+          <input type="number" min="0" id="prorrogasEstancia" value="0">
+        </div>
+        <div class="input-row">
+          <label for="declaracionEntrada">Declaración Entrada</label>
+          <input type="number" min="0" id="declaracionEntrada" value="0">
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Otros Trámites y Gestiones</h2>
+        <div class="input-row">
+          <label for="protecciones">Protecciones</label>
+          <input type="number" min="0" id="protecciones" value="0">
         </div>
         <div class="input-row">
           <label for="menas">MENAs</label>
-          <input type="number" min="0" id="menas" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="menas" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="entrevistasAsilo">Entrevistas asilo</label>
-          <input type="number" min="0" id="entrevistasAsilo" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="entrevistasAsilo" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="citas">Citas ofertadas</label>
-          <input type="number" min="0" id="citas" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="citas" title="¿Qué es esto?">?</button>
-          <span style="margin-left:20px;font-weight:600;">Faltan</span>
-          <input type="number" min="0" id="citasFaltan" placeholder="0" style="width:70px;">
-          <button type="button" class="ayuda-btn" data-seccion="citasFaltan" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="cartasInvitacion">Cartas de invitación</label>
-          <span style="font-weight:600;">Fallan</span>
-          <input type="number" min="0" id="cartasFallan" placeholder="0" style="width:60px;">
-          <span style="font-weight:600;">Concedidas</span>
-          <input type="number" min="0" id="cartasConcedidas" placeholder="0" style="width:60px;">
-          <span style="font-weight:600;">Denegadas</span>
-          <input type="number" min="0" id="cartasDenegadas" placeholder="0" style="width:60px;">
-          <button type="button" class="ayuda-btn" data-seccion="cartasInvitacion" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="cues">CUEs</label>
-          <input type="number" min="0" id="cues" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="cues" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="asignaciones">Asignaciones</label>
-          <input type="number" min="0" id="asignaciones" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="asignaciones" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="protecciones">Protecciones</label>
-          <input type="number" min="0" id="protecciones" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="protecciones" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="oficios">Oficios</label>
-          <input type="number" min="0" id="oficios" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="oficios" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="correosProtcInternacional">Correos protc internacional</label>
-          <input type="number" min="0" id="correosProtcInternacional" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="correosProtcInternacional" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="telefonemas">Telefonemas</label>
-          <input type="number" min="0" id="telefonemas" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="telefonemas" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="modificacionesFavorables">Modificaciones telemáticos</label>
-          <span style="font-weight:600;">Favorables</span>
-          <input type="number" min="0" id="modificacionesFavorables" placeholder="0" style="width:60px;">
-          <span style="font-weight:600;">Desfavorables</span>
-          <input type="number" min="0" id="modificacionesDesfavorables" placeholder="0" style="width:60px;">
-          <button type="button" class="ayuda-btn" data-seccion="modificacionesTelematicos" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="citasSubdelegacion">Citas subdelegación</label>
-          <input type="number" min="0" id="citasSubdelegacion" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="citasSubdelegacion" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="tarjetasSubdelegacion">Tarjetas subdelegación</label>
-          <input type="number" min="0" id="tarjetasSubdelegacion" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="tarjetasSubdelegacion" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="notificacionesConcedidas">Notificaciones concedidas</label>
-          <input type="number" min="0" id="notificacionesConcedidas" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="notificacionesConcedidas" title="¿Qué es esto?">?</button>
-        </div>
-        <div class="input-row">
-          <label for="notificacionesDenegadas">Notificaciones denegadas</label>
-          <input type="number" min="0" id="notificacionesDenegadas" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="notificacionesDenegadas" title="¿Qué es esto?">?</button>
+          <input type="number" min="0" id="menas" value="0">
         </div>
         <div class="input-row">
           <label for="presentados">Presentados</label>
-          <input type="number" min="0" id="presentados" placeholder="0">
-          <button type="button" class="ayuda-btn" data-seccion="presentados" title="¿Qué es esto?">?</button>
+          <input type="number" min="0" id="presentados" value="0">
         </div>
         <div class="input-row">
-          <label for="observaciones">Observaciones</label>
-          <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..."></textarea>
-          <button type="button" class="ayuda-btn" data-seccion="observaciones" title="¿Qué es esto?">?</button>
+          <label for="atencionPublico">Atención al Público</label>
+          <input type="number" min="0" id="atencionPublico" value="0">
+        </div>
+         <div class="input-row">
+          <label for="cajaOAR">Caja OAR</label>
+          <input type="number" min="0" id="cajaOAR" value="0">
+        </div>
+      </section>
+
+      <section class="panel-seccion">
+        <h2 class="seccion-titulo">Comunicaciones y Notificaciones</h2>
+         <div class="input-row">
+          <label for="notificacionesConcedidas">Notif. Concedidas</label>
+          <input type="number" min="0" id="notificacionesConcedidas" value="0">
+        </div>
+        <div class="input-row">
+          <label for="notificacionesDenegadas">Notif. Denegadas</label>
+          <input type="number" min="0" id="notificacionesDenegadas" value="0">
+        </div>
+        <div class="input-row">
+          <label for="modificacionesFavorables">Modif. Telemáticas</label>
+          <span class="label-inline">Favorables</span>
+          <input type="number" min="0" id="modificacionesFavorables" value="0" class="input-small">
+          <span class="label-inline">Desfavorables</span>
+          <input type="number" min="0" id="modificacionesDesfavorables" value="0" class="input-small">
+        </div>
+        <div class="input-row">
+          <label for="oficios">Oficios</label>
+          <input type="number" min="0" id="oficios" value="0">
+        </div>
+        <div class="input-row">
+          <label for="correosProtcInternacional">Correos Prot. Int.</label>
+          <input type="number" min="0" id="correosProtcInternacional" value="0">
+        </div>
+        <div class="input-row">
+          <label for="telefonemas">Telefonemas</label>
+          <input type="number" min="0" id="telefonemas" value="0">
+        </div>
+        <div class="input-row">
+          <label for="correoSubdelegacion">Correo Subdelegación</label>
+          <input type="number" min="0" id="correoSubdelegacion" value="0">
+        </div>
+        <div class="input-row">
+          <label for="anulacion">Anulaciones</label>
+          <input type="number" min="0" id="anulacion" value="0">
+        </div>
+      </section>
+
+       <section class="panel-seccion">
+        <h2 class="seccion-titulo">Observaciones</h2>
+        <div class="input-row">
+          <textarea id="observaciones" rows="3" placeholder="Observaciones, incidencias, última fecha de cita..."></textarea>
         </div>
       </section>
     </form>
