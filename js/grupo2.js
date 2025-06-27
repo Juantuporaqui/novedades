@@ -213,57 +213,78 @@ const nacionalidadesFiliadas = document.getElementById('nacionalidadesFiliadas')
 const listadoInspecciones = document.getElementById('listadoInspecciones');
 
 btnAñadirInspeccion.addEventListener('click', async () => {
-  if (!idOperacionActual) return showToast("Guarda la operación antes.");
-  const casa = nombreCasa.value.trim();
-  const fecha = fechaInspeccion.value;
-  const num = parseInt(numFiliadas.value, 10) || 0;
-  const nacs = nacionalidadesFiliadas.value.split(',').map(n => n.trim()).filter(n => n);
+    if (!idOperacionActual) return showToast("Guarda la operación antes.");
+    const casa = nombreCasa.value.trim();
+    const fecha = fechaInspeccion.value;
+    const num = parseInt(numFiliadas.value, 10) || 0;
+    const nacs = nacionalidadesFiliadas.value.split(',').map(n => n.trim()).filter(n => n);
 
-  if (!casa || !fecha) {
-    return showToast("El nombre de la casa y la fecha son obligatorios.");
-  }
-  const data = {
-    casa,
-    fechaInspeccion: fecha,
-    numFiliadas: num,
-    nacionalidadesFiliadas: nacs,
-    ts: new Date().toISOString()
-  };
-  await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").add(data);
-  nombreCasa.value = "";
-  fechaInspeccion.value = "";
-  numFiliadas.value = "";
-  nacionalidadesFiliadas.value = "";
-  cargarListadoInspecciones();
+    if (!casa || !fecha) {
+        showToast("El nombre de la casa y la fecha son obligatorios.");
+        return;
+    }
+
+    const data = {
+        casa,
+        fechaInspeccion: fecha,
+        numFiliadas: num,
+        nacionalidadesFiliadas: nacs,
+        ts: new Date().toISOString()
+    };
+
+    try {
+        await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").add(data);
+        showToast("Inspección añadida correctamente.", "success");
+        nombreCasa.value = "";
+        fechaInspeccion.value = "";
+        numFiliadas.value = "";
+        nacionalidadesFiliadas.value = "";
+        cargarListadoInspecciones();
+    } catch (e) {
+        console.error("Error añadiendo inspección:", e);
+        showToast("No se pudo añadir la inspección. Consulta consola.", "error");
+    }
 });
 
 async function cargarListadoInspecciones() {
-  if (!idOperacionActual) return listadoInspecciones.innerHTML = "";
-  const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").orderBy("fechaInspeccion", "desc").get();
-  listadoInspecciones.innerHTML = "";
-  snap.forEach(doc => {
-    const d = doc.data();
-    const div = document.createElement("div");
-    div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
-    div.innerHTML = `<span>
-      <b>${d.casa || ""}</b> - ${formatoFecha(d.fechaInspeccion)}
-      <br>
-      Nº Filiadas: <b>${d.numFiliadas || 0}</b>
-      <br>
-      <span class="text-muted">Nacionalidades: ${(d.nacionalidadesFiliadas || []).join(', ') || "N/A"}</span>
-    </span>
-    <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumentoInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button>`;
-    listadoInspecciones.appendChild(div);
-  });
+    if (!idOperacionActual) {
+        listadoInspecciones.innerHTML = "";
+        return;
+    }
+    try {
+        const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").orderBy("fechaInspeccion", "desc").get();
+        listadoInspecciones.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement("div");
+            div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+            div.innerHTML = `<span>
+                <b>${d.casa || ""}</b> - ${formatoFecha(d.fechaInspeccion)}
+                <br>
+                Nº Filiadas: <b>${d.numFiliadas || 0}</b>
+                <br>
+                <span class="text-muted">Nacionalidades: ${(d.nacionalidadesFiliadas || []).join(', ') || "N/A"}</span>
+            </span>
+            <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumentoInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button>`;
+            listadoInspecciones.appendChild(div);
+        });
+    } catch (e) {
+        console.error("Error cargando inspecciones:", e);
+        showToast("No se pudo cargar el listado de inspecciones.", "error");
+    }
 }
 
-// Opción para eliminar inspecciones individuales
 window.eliminarSubdocumentoInspeccion = async function(docid) {
-  if (!idOperacionActual) return;
-  await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").doc(docid).delete();
-  cargarListadoInspecciones();
+    if (!idOperacionActual) return;
+    try {
+        await db.collection("grupo2_operaciones").doc(idOperacionActual).collection("inspecciones").doc(docid).delete();
+        showToast("Inspección eliminada.", "success");
+        cargarListadoInspecciones();
+    } catch (e) {
+        console.error("Error eliminando inspección:", e);
+        showToast("No se pudo eliminar la inspección.", "error");
+    }
 };
-
 // ======= HISTÓRICO DE JUZGADOS =======
 const btnAñadirHistoricoJuzgado = document.getElementById('btnAñadirHistoricoJuzgado');
 const fechaHistoricoJuzgado = document.getElementById('fechaHistoricoJuzgado');
