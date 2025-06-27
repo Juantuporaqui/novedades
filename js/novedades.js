@@ -1,132 +1,71 @@
-// js/novedades.js
-
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('inputDocx').addEventListener('change', handleDocxUpload);
-});
-
-function mostrarEstado(mensaje, tipo = "info") {
-    let statusDiv = document.getElementById("estadoCarga");
-    if (!statusDiv) {
-        statusDiv = document.createElement("div");
-        statusDiv.id = "estadoCarga";
-        statusDiv.style.position = "fixed";
-        statusDiv.style.top = "10px";
-        statusDiv.style.right = "10px";
-        statusDiv.style.padding = "12px 22px";
-        statusDiv.style.borderRadius = "10px";
-        statusDiv.style.background = tipo === "error" ? "#e74646" : "#28b063";
-        statusDiv.style.color = "#fff";
-        statusDiv.style.zIndex = 9999;
-        statusDiv.style.boxShadow = "0 4px 24px #0002";
-        document.body.appendChild(statusDiv);
-    }
-    statusDiv.innerText = mensaje;
-    setTimeout(() => { if (statusDiv) statusDiv.remove(); }, 4000);
-}
-
-function mostrarSpinner(visible = true) {
-    let sp = document.getElementById("spinnerCarga");
-    if (!sp && visible) {
-        sp = document.createElement("div");
-        sp.id = "spinnerCarga";
-        sp.innerHTML = '<div style="width:80px;height:80px;border:10px solid #e4f6fd;border-top:10px solid #079cd8;border-radius:50%;animation:spin 1s linear infinite;margin:auto"></div>';
-        sp.style.position = "fixed";
-        sp.style.left = "0"; sp.style.top = "0";
-        sp.style.width = "100vw"; sp.style.height = "100vh";
-        sp.style.background = "#fff8";
-        sp.style.zIndex = 10000;
-        sp.style.display = "flex";
-        sp.style.justifyContent = "center";
-        sp.style.alignItems = "center";
-        document.body.appendChild(sp);
-        const style = document.createElement("style");
-        style.innerHTML = "@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
-        document.head.appendChild(style);
-    } else if (sp && !visible) {
-        sp.remove();
-    }
-}
-
-async function handleDocxUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return mostrarEstado("No se ha seleccionado archivo", "error");
-    mostrarSpinner(true);
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-        const novedadesEstructuradas = extraerYMapearDatos(result.value);
-        autocompletarYMostrarFormularios(novedadesEstructuradas);
-        await guardarTodasNovedades(novedadesEstructuradas);
-        mostrarEstado("¡Importación y guardado completados!");
-    } catch (err) {
-        mostrarEstado("Error procesando DOCX: " + err, "error");
-        console.error(err);
-    } finally {
-        mostrarSpinner(false);
-    }
-}
-
-function extraerYMapearDatos(html) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-
-    // Detecta todos los títulos de grupo y sus tablas siguientes
-    const novedadesPorGrupo = {};
-    const titulos = Array.from(tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5')).filter(e => /grupo|puerto|cie/i.test(e.textContent));
-    titulos.forEach((titulo, i) => {
-        const tabla = titulo.nextElementSibling && tabla.nextElementSibling.tagName === "TABLE"
-            ? titulo.nextElementSibling
-            : null;
-        if (tabla) {
-            const grupo = titulo.textContent.trim().replace(":", "").toUpperCase();
-            novedadesPorGrupo[grupo] = tablaAObjetos(tabla);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIREX - Carga de Novedades DOCX</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+        .upload-card {
+            max-width: 700px;
+            margin: 4rem auto;
+            border: 3px dashed #0d6efd;
+            border-radius: 1rem;
+            background-color: #fff;
+            transition: all 0.3s ease;
         }
-    });
-    return novedadesPorGrupo;
-}
-
-function tablaAObjetos(tabla) {
-    const filas = Array.from(tabla.querySelectorAll('tr'));
-    if (filas.length < 2) return [];
-    const encabezados = Array.from(filas[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toLowerCase());
-    return filas.slice(1).map(fila => {
-        const celdas = Array.from(fila.querySelectorAll('td')).map(td => td.textContent.trim());
-        let obj = {};
-        encabezados.forEach((h, i) => { obj[h] = celdas[i] || ""; });
-        return obj;
-    });
-}
-
-function autocompletarYMostrarFormularios(novedadesPorGrupo) {
-    const cont = document.getElementById('formularios-grupos');
-    cont.innerHTML = '';
-    Object.entries(novedadesPorGrupo).forEach(([grupo, novedades]) => {
-        const form = document.createElement('form');
-        form.innerHTML = `<h3 style="color:#079cd8">${grupo}</h3>`;
-        novedades.forEach((n, idx) => {
-            form.innerHTML += `
-                <div style="margin:6px 0;border-bottom:1px solid #ddd;padding-bottom:6px">
-                    <b>Asunto:</b> <input readonly value="${n.asunto || ""}" style="width:40%">
-                    <b>Gestión:</b> <input readonly value="${n.gestión || n.gestion || ""}" style="width:40%">
-                    <b>Observaciones:</b> <input readonly value="${n.observaciones || n.obs || ""}" style="width:40%">
-                </div>
-            `;
-        });
-        cont.appendChild(form);
-    });
-}
-
-async function guardarTodasNovedades(novedadesPorGrupo) {
-    // Almacena bajo colección "novedades_diarias/{fecha}/grupo"
-    const fechaStr = (new Date()).toISOString().slice(0, 10);
-    for (const [grupo, novedades] of Object.entries(novedadesPorGrupo)) {
-        const colRef = db.collection(`novedades_diarias`).doc(fechaStr).collection(grupo.replace(/\s+/g, '_').toLowerCase());
-        for (const novedad of novedades) {
-            await colRef.add({
-                ...novedad,
-                fecha: fechaStr,
-                timestamp: new Date()
-            });
+        .upload-card:hover {
+            border-color: #0a58ca;
+            transform: translateY(-5px);
         }
-    }
-}
+        .upload-icon {
+            font-size: 5rem;
+            color: #0d6efd;
+        }
+        .form-container {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <span class="navbar-brand fs-4 fw-bold">SIREX · Carga de Novedades desde DOCX</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow-sm upload-card">
+            <div class="card-body text-center p-5">
+                <i class="bi bi-file-earmark-word-fill upload-icon"></i>
+                <h2 class="card-title mt-3">Carga de Novedades</h2>
+                <p class="text-muted">Selecciona el archivo DOCX de novedades del día. El sistema leerá los datos y los mostrará para tu confirmación.</p>
+                <button type="button" class="btn btn-primary btn-lg mt-3" onclick="document.getElementById('inputDocx').click();">
+                    <i class="bi bi-upload"></i> Seleccionar Archivo DOCX
+                </button>
+                <input type="file" id="inputDocx" class="d-none" accept=".docx">
+            </div>
+        </div>
+        
+        <div id="formularios-container" class="mt-4">
+            <!-- Los formularios autocompletados aparecerán aquí -->
+        </div>
+
+    </div>
+    
+    <!-- Librerías JS -->
+    <!-- Mammoth.js para leer DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- Tu script principal, cargado como módulo -->
+    <script type="module" src="js/novedades.js"></script>
+
+</body>
+</html>
