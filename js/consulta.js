@@ -124,7 +124,12 @@ const GROUP_STRATEGIES = {
             const snap = await db.collection("grupo_cie").where(firebase.firestore.FieldPath.documentId(), '>=', desde).where(firebase.firestore.FieldPath.documentId(), '<=', hasta).get();
             return snap.docs.map(doc => ({ fecha: doc.id, ...doc.data() }));
         },
-        formatter: (item) => `Fecha: ${item.fecha} - Internos: ${item.internosNac||0}, Salidas: ${item.salidas||0}`
+        formatter: (item) => {
+            // CORRECCIÓN: Se suman los totales de los arrays de ingresos y salidas.
+            const totalIngresos = (item.ingresos || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
+            const totalSalidas = (item.salidas || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
+            return `Fecha: ${item.fecha} - Total Internos: <b>${item.nInternos || 0}</b>, Ingresos: ${totalIngresos}, Salidas: ${totalSalidas}`;
+        }
     },
     cecorex: {
         query: async (desde, hasta) => {
@@ -133,15 +138,12 @@ const GROUP_STRATEGIES = {
         },
         formatter: (item) => `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`
     },
-    // CORRECCIÓN: Estrategia actualizada para el nuevo sistema de "Gestión"
     gestion: {
         query: async (desde, hasta) => {
-            // Apunta a la nueva colección y filtra por el campo 'fecha'
             const snap = await db.collection("gestion_avanzada").where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
             return snap.docs.map(doc => doc.data());
         },
         formatter: (item) => {
-            // Crea un resumen con los campos más relevantes del nuevo formulario
             const resumen = [
                 `Trámite: <b>${item.tipoTramite || 'N/A'}</b>`,
                 `Citas: ${item.citas || 0}`,
@@ -157,7 +159,6 @@ const GROUP_STRATEGIES = {
 // Asignar estrategias a los grupos correspondientes
 GROUP_STRATEGIES.grupo2 = GROUP_STRATEGIES.investigacion;
 GROUP_STRATEGIES.grupo3 = GROUP_STRATEGIES.investigacion;
-// La estrategia 'gestion' ya está definida arriba, por lo que no necesita la 'default'.
 GROUP_STRATEGIES.estadistica = GROUP_STRATEGIES.default;
 
 
