@@ -101,16 +101,31 @@ const GROUP_STRATEGIES = {
     },
     grupo4: {
         query: async (desde, hasta) => {
+            // La colección es 'grupo4_gestion' y el ID es 'gestion_YYYYMMDD'
             const snap = await db.collection("grupo4_gestion").get();
             const results = [];
             snap.forEach(doc => {
                 let fechaStr = doc.id.replace("gestion_", "");
                 if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
-                if (fechaStr >= desde && fechaStr <= hasta) results.push({ fecha: fechaStr, ...doc.data() });
+                if (fechaStr >= desde && fechaStr <= hasta) {
+                    // Se añade la fecha extraída del ID al objeto de datos
+                    results.push({ fecha: fechaStr, ...doc.data() });
+                }
             });
             return results;
         },
-        formatter: (item) => `Fecha: ${item.fecha} - Gestiones: ${item.gestiones||0}, Citados: ${item.citados||0}, Colaboraciones: ${item.colaboraciones||0}`
+        formatter: (item) => {
+            // CORRECCIÓN: Sumar las cantidades de los arrays internos.
+            const sumCantidad = (arr) => (arr || []).reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+            
+            const totalDetenidos = sumCantidad(item.detenidos);
+            const totalCitados = sumCantidad(item.citados);
+            const totalColaboraciones = sumCantidad(item.colaboraciones);
+            const totalGestiones = sumCantidad(item.gestiones);
+            const totalInspecciones = sumCantidad(item.inspeccionesTrabajo) + sumCantidad(item.otrasInspecciones);
+
+            return `Fecha: ${item.fecha} - Detenidos: <b>${totalDetenidos}</b>, Citados: <b>${totalCitados}</b>, Colaboraciones: <b>${totalColaboraciones}</b>, Inspecciones: <b>${totalInspecciones}</b>`;
+        }
     },
     puerto: {
         query: async (desde, hasta) => {
@@ -125,7 +140,6 @@ const GROUP_STRATEGIES = {
             return snap.docs.map(doc => ({ fecha: doc.id, ...doc.data() }));
         },
         formatter: (item) => {
-            // CORRECCIÓN: Se suman los totales de los arrays de ingresos y salidas.
             const totalIngresos = (item.ingresos || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
             const totalSalidas = (item.salidas || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
             return `Fecha: ${item.fecha} - Total Internos: <b>${item.nInternos || 0}</b>, Ingresos: ${totalIngresos}, Salidas: ${totalSalidas}`;
