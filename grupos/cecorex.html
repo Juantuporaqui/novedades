@@ -17,98 +17,148 @@
     </div>
     <button class="btn-menu" onclick="window.location.href='../index.html'">&larr; Menú</button>
   </header>
+
   <main>
     <section class="panel panel-glass">
-      <!-- Botonera superior -->
       <div class="botonera">
-        <select id="registroSelect" class="form-control"></select>
-        <input type="date" id="fechaRegistro" required class="form-control">
-        <button type="button" class="btn-azul" id="btnBuscar"><i class="bi bi-search"></i> Cargar</button>
-        <button type="button" class="btn-gris" id="btnNuevo"><i class="bi bi-plus-circle"></i> Nuevo</button>
-        <button type="button" class="btn-verde" id="btnGuardarTop"><i class="bi bi-save2"></i> Guardar</button>
+        <select id="registroSelect" class="form-control" title="Seleccionar un registro existente"></select>
+        <input type="date" id="fechaRegistro" required class="form-control" title="Fecha del registro a cargar o guardar">
+        <button type="button" class="btn-azul" id="btnBuscar" title="Cargar registro de la fecha seleccionada"><i class="bi bi-search"></i> Cargar</button>
+        <button type="button" class="btn-gris" id="btnNuevo" title="Limpiar formulario para un nuevo registro"><i class="bi bi-plus-circle"></i> Nuevo</button>
       </div>
 
       <form id="cecorexForm" autocomplete="off">
-        <div class="row-cols">
-          <label for="turno">Turno</label>
-          <select id="turno" class="form-control" required>
-            <option value="">--Seleccione--</option>
-            <option>Mañana</option>
-            <option>Tarde</option>
-            <option>Noche</option>
-          </select>
-        </div>
-        <div class="row-cols">
-          <label for="incoacciones">Incoacciones</label>
-          <input type="text" id="incoacciones" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="consultasTel">Consultas telefónicas</label>
-          <input type="text" id="consultasTel" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="consultasEquipo">Consultas equipo</label>
-          <input type="text" id="consultasEquipo" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="diligenciasInforme">Diligencias informe</label>
-          <input type="text" id="diligenciasInforme" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="ciesConcedidos">CIEs concedidos (por nacionalidad)</label>
-          <input type="text" id="ciesConcedidos" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="ciesDenegados">CIEs denegados (por nacionalidad)</label>
-          <input type="text" id="ciesDenegados" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="menas">MENAs</label>
-          <input type="text" id="menas" class="form-control">
-        </div>
-        <div class="row-cols">
-          <label for="observaciones">Observaciones / Incidencias</label>
-          <textarea id="observaciones" class="form-control"></textarea>
-        </div>
-        <div class="row-cols">
-          <label for="adjuntos">Documentos/Imágenes</label>
-          <input type="file" id="adjuntos" class="form-control" multiple>
-        </div>
-        <div class="row-cols">
-          <label for="tareaPendiente"><b>¿Queda alguna tarea pendiente?</b></label>
-          <select id="tareaPendiente" class="form-control">
-            <option>No</option>
-            <option>Sí</option>
-          </select>
-        </div>
-        <!-- Botón Guardar inferior -->
-        <div class="row-cols" style="text-align:right">
-          <button type="submit" class="btn-verde"><i class="bi bi-save2"></i> Guardar</button>
+        
+        <section class="sub-panel">
+          <h2 class="sub-panel-titulo">Contadores Principales</h2>
+          <div class="grid-counters">
+            <div class="input-group">
+              <label for="turno">Turno</label>
+              <select id="turno" class="form-control" required>
+                <option value="">--Seleccione--</option>
+                <option>Mañana</option>
+                <option>Tarde</option>
+                <option>Noche</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="citados">Citados</label>
+              <input type="number" id="citados" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="notificaciones">Notificaciones</label>
+                <input type="number" id="notificaciones" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="remisiones">Remisiones Subdelegación</label>
+                <input type="number" id="remisiones" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="alegaciones">Alegaciones Abogados</label>
+                <input type="number" id="alegaciones" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="decretos">Decretos Expulsión</label>
+                <input type="number" id="decretos" class="form-control" value="0">
+            </div>
+             <div class="input-group">
+                <label for="prohibiciones">Prohibiciones Entrada</label>
+                <input type="number" id="prohibiciones" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="audiencias">Trámites Audiencia</label>
+                <input type="number" id="audiencias" class="form-control" value="0">
+            </div>
+            <div class="input-group">
+                <label for="oficios">Oficios Juzgado</label>
+                <input type="number" id="oficios" class="form-control" value="0">
+            </div>
+          </div>
+        </section>
+
+        <section class="sub-panel">
+            <h2 class="sub-panel-titulo">Detenidos e Incoaciones</h2>
+            <div id="detenido-adder" class="adder-form">
+                <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" class="form-control">
+                <input type="text" id="detenidoMotivo" placeholder="Motivo (ILE, Hurto...)" class="form-control">
+                <input type="text" id="detenidoGrupo" placeholder="Grupo/Lugar (K-Centro...)" class="form-control">
+                <input type="text" id="detenidoResultado" placeholder="Resultado (Libertad, CIE...)" class="form-control">
+                <button type="button" id="btnAddDetenido" class="btn-add">➕ Añadir</button>
+            </div>
+            <div id="listaDetenidos" class="dynamic-list"></div>
+        </section>
+
+        <section class="sub-panel">
+          <h2 class="sub-panel-titulo">Consultas y Diligencias</h2>
+          <div class="grid-counters">
+              <div class="input-group">
+                  <label for="consultasTel">Consultas Telefónicas</label>
+                  <input type="number" id="consultasTel" class="form-control" value="0">
+              </div>
+              <div class="input-group">
+                  <label for="consultasEquipo">Consultas por Equipo</label>
+                  <input type="number" id="consultasEquipo" class="form-control" value="0">
+              </div>
+              <div class="input-group">
+                  <label for="diligenciasInforme">Diligencias de Informe</label>
+                  <input type="number" id="diligenciasInforme" class="form-control" value="0">
+              </div>
+          </div>
+        </section>
+
+        <section class="sub-panel">
+          <h2 class="sub-panel-titulo">CIEs y MENAs</h2>
+           <div class="grid-counters">
+                <div class="input-group">
+                    <label for="ciesConcedidos">Solicitudes CIE Concedidas</label>
+                    <input type="number" id="ciesConcedidos" class="form-control" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="ciesDenegados">Solicitudes CIE Denegadas</label>
+                    <input type="number" id="ciesDenegados" class="form-control" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="menas">MENAs gestionados</label>
+                    <input type="number" id="menas" class="form-control" value="0">
+                </div>
+           </div>
+        </section>
+
+        <section class="sub-panel">
+          <h2 class="sub-panel-titulo">Observaciones y Tareas</h2>
+          <div class="input-group">
+            <label for="observaciones">Observaciones / Incidencias</label>
+            <textarea id="observaciones" class="form-control"></textarea>
+          </div>
+          <div class="input-group">
+            <label for="adjuntos">Documentos/Imágenes</label>
+            <input type="file" id="adjuntos" class="form-control" multiple>
+          </div>
+          <div class="input-group">
+            <label for="tareaPendiente"><b>¿Queda alguna tarea pendiente?</b></label>
+            <select id="tareaPendiente" class="form-control">
+              <option>No</option>
+              <option>Sí</option>
+            </select>
+          </div>
+        </section>
+
+        <div class="submit-wrapper">
+          <button type="submit" class="btn-verde"><i class="bi bi-save2"></i> Guardar Registro Completo</button>
         </div>
       </form>
     </section>
 
-    <!-- Resumen por fechas -->
-    <section class="panel panel-glass" id="panelResumenFechas">
-      <h3>Resumen entre fechas</h3>
-      <div class="resumen-fechas-bar">
-        <input type="date" id="desdeResumen" class="form-control">
-        <input type="date" id="hastaResumen" class="form-control">
-        <button class="btn-azul" id="btnResumenFechas"><i class="bi bi-table"></i> Mostrar resumen</button>
-      </div>
-      <div id="resumenFechas"></div>
-    </section>
-
-    <!-- Resumen registro -->
     <section class="panel panel-glass" id="panelResumen" style="display:none;">
-      <h3>Resumen del registro</h3>
+      <h3>Resumen del Día</h3>
       <div id="resumen"></div>
     </section>
+
   </main>
   <footer class="footer">
     SIREX · CECOREX &copy; 2025
   </footer>
-  <!-- Firebase SDKs -->
+
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <script src="../js/cecorex.js"></script>
