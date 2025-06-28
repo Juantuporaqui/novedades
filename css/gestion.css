@@ -1,5 +1,5 @@
 /* SIREX Gestión - Glassmorphism, Responsive y Modo Oscuro */
-/* VERSIÓN MEJORADA CON SECCIONES Y CORRECCIÓN PARA MÓVILES */
+/* VERSIÓN MEJORADA CON SOLUCIÓN DEFINITIVA PARA CAMPOS MÓVILES */
 
 :root {
   --primary-color: #1976d2;
@@ -150,7 +150,7 @@ body {
   min-width: 0;
   transition: border 0.2s;
   background: var(--input-bg);
-  flex: 1;
+  flex: 1; /* <-- ESTA PROPIEDAD CAUSABA EL PROBLEMA EN MÓVIL */
 }
 .input-row input[type="number"] { flex: 0 1 120px; }
 .input-small { max-width: 80px; text-align: center; }
@@ -225,11 +225,11 @@ body.dark-mode .btn-menu:hover { background: #ffd600; color: #222; }
 body.dark-mode .btn-pdf { background: #ffd600; color: #0d2540; }
 body.dark-mode .btn-pdf:hover { background: #fff9c4; }
 
+
 /* =============================================================== */
-/* ==                INICIO DE LA CORRECCIÓN MÓVIL              == */
+/* ==       SOLUCIÓN DEFINITIVA PARA CAMPOS EN VISTA MÓVIL      == */
 /* =============================================================== */
 
-/* Responsive */
 @media (max-width: 800px) {
   .registro-bar, .panel-seccion, .panel-glass {
     margin: 10px 8px;
@@ -241,26 +241,32 @@ body.dark-mode .btn-pdf:hover { background: #fff9c4; }
   .input-row, .input-row-group {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 8px; /* Un poco más de espacio vertical entre etiqueta y campo */
   }
   .input-row label, .input-row-group > label {
     width: 100%;
   }
-  .sub-input-row {
-    width: 100%;
-  }
-
-  /* --- ESTA ES LA REGLA CORREGIDA --- */
-  /* Antes, se aplicaba width:100% a TODOS los inputs. */
-  /* Ahora, solo se aplica a los de texto, que sí necesitan ser anchos. */
+  
+  /* 1. Campos de texto y textarea: ocupan el 100% del ancho. */
   .input-row input[type="text"],
   .input-row textarea {
     width: 100%;
-    max-width: none;
+    box-sizing: border-box; /* Previene desbordamiento por padding/border */
   }
 
-  /* A los inputs numéricos les damos un ancho máximo para que no se vean enormes */
+  /* 2. SOLUCIÓN: Campos numéricos. Se les da un ancho fijo y se evita que crezcan. */
   .input-row input[type="number"] {
-      max-width: 150px; /* Un ancho máximo razonable en móvil */
+    width: 140px;      /* Ancho fijo y más que suficiente para un número. */
+    flex-grow: 0;      /* ¡LA CLAVE! Evita que el campo se estire para llenar el espacio. */
+  }
+
+  /* 3. Para las filas con varios inputs pequeños, se mantienen en línea. */
+  .sub-input-row {
+    width: 100%;
+    justify-content: flex-start; /* Alinea los elementos al inicio */
+  }
+  .sub-input-row .input-small {
+      width: 80px; /* Asegura que los campos pequeños tengan su tamaño */
+      flex-grow: 0;
   }
 }
