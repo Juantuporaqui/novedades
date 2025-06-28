@@ -1,5 +1,5 @@
 /* SIREX Gestión - Glassmorphism, Responsive y Modo Oscuro */
-/* VERSIÓN MEJORADA CON SECCIONES */
+/* VERSIÓN MEJORADA CON SECCIONES Y CORRECCIÓN PARA MÓVILES */
 
 :root {
   --primary-color: #1976d2;
@@ -225,12 +225,42 @@ body.dark-mode .btn-menu:hover { background: #ffd600; color: #222; }
 body.dark-mode .btn-pdf { background: #ffd600; color: #0d2540; }
 body.dark-mode .btn-pdf:hover { background: #fff9c4; }
 
+/* =============================================================== */
+/* ==                INICIO DE LA CORRECCIÓN MÓVIL              == */
+/* =============================================================== */
+
 /* Responsive */
 @media (max-width: 800px) {
-  .registro-bar, .panel-seccion, .panel-glass { margin: 10px 8px; padding: 12px 10px; }
-  .header { padding: 11px 10px;}
-  .input-row, .input-row-group { flex-direction: column; align-items: flex-start; gap: 5px; }
-  .input-row label, .input-row-group > label { width: 100%; }
-  .input-row input, .input-row textarea { width: 100%; max-width: none; }
-  .sub-input-row { width: 100%; }
+  .registro-bar, .panel-seccion, .panel-glass {
+    margin: 10px 8px;
+    padding: 12px 10px;
+  }
+  .header {
+    padding: 11px 10px;
+  }
+  .input-row, .input-row-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .input-row label, .input-row-group > label {
+    width: 100%;
+  }
+  .sub-input-row {
+    width: 100%;
+  }
+
+  /* --- ESTA ES LA REGLA CORREGIDA --- */
+  /* Antes, se aplicaba width:100% a TODOS los inputs. */
+  /* Ahora, solo se aplica a los de texto, que sí necesitan ser anchos. */
+  .input-row input[type="text"],
+  .input-row textarea {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* A los inputs numéricos les damos un ancho máximo para que no se vean enormes */
+  .input-row input[type="number"] {
+      max-width: 150px; /* Un ancho máximo razonable en móvil */
+  }
 }
