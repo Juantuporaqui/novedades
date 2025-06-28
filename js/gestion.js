@@ -1,5 +1,5 @@
 /****************************************************************************************
-* SIREX · Gestión Avanzada - VERSIÓN MEJORADA Y COMPLETA
+* SIREX · Gestión Avanzada - VERSIÓN MEJORADA (SIN DATOS GENERALES)
 * Formulario reestructurado y con todos los campos de los partes diarios.
 * Funcionalidad de guardado, carga, resumen y exportación 100% compatible.
 ****************************************************************************************/
@@ -20,8 +20,9 @@ const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
 // ---- IDs de todos los campos del formulario ----
+// Eliminados: "tipoTramite", "datosGestionado", "descripcionTramite"
 const formFields = [
-    "tipoTramite", "datosGestionado", "descripcionTramite", "observaciones",
+    "observaciones",
     "entrevistasAsilo", "entrevistasAsiloFallos", "citas", "citasFaltan", "renunciasAsilo",
     "citasTelAsilo", "citasTelCartas", "renunciasUcrania", "correosUcrania",
     "cartasConcedidas", "cartasDenegadas", "cartasFallan", "devolucionesTasas",
@@ -129,9 +130,6 @@ function mostrarResumen() {
     return;
   }
   $("resumenRegistro").innerHTML = `
-    <b>Tipo de trámite:</b> ${d.tipoTramite || "—"}<br>
-    <b>Datos gestionado:</b> ${d.datosGestionado || "—"}<br>
-    <hr>
     <b>Asilo y Citas:</b> Entrevistas: ${d.entrevistasAsilo} (fallan ${d.entrevistasAsiloFallos}) | Citas: ${d.citas} (faltan ${d.citasFaltan}) | Renuncias Asilo: ${d.renunciasAsilo}<br>
     <b>Cartas Invitación:</b> Concedidas: ${d.cartasConcedidas}, Denegadas: ${d.cartasDenegadas}, Fallan: ${d.cartasFallan}<br>
     <b>Subdelegación/Bailén:</b> Citas Sub.: ${d.citasSubdelegacion}, Tarjetas: ${d.tarjetasSubdelegacion}, CUEs: ${d.cues}, Certificados: ${d.certificadosBailen}<br>
@@ -199,14 +197,10 @@ function generateHTMLReport(resumenes) {
     <h4>Del ${formatoFechaCorta($("resumenDesde").value)} al ${formatoFechaCorta($("resumenHasta").value)}</h4>`;
     resumenes.forEach(r => {
         html += `<hr><b>${formatoFechaCorta(r.fecha)}</b><ul>`;
-        if (r.tipoTramite) html += `<li><b>Trámite:</b> ${r.tipoTramite}</li>`;
-        if (r.datosGestionado) html += `<li><b>Gestionado:</b> ${r.datosGestionado}</li>`;
-        
-        const numericFieldsToShow = numericFields.filter(f => r[f]); // Mostrar solo campos con valor
+        const numericFieldsToShow = formFields.filter(f => $(f) && $(f).type === 'number' && r[f]);
         numericFieldsToShow.forEach(field => {
             html += `<li><b>${$(field).labels[0].innerText}:</b> ${r[field]}</li>`;
         });
-
         if (r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
         html += `</ul>`;
     });
@@ -265,20 +259,20 @@ $("btnExportarCSV").onclick = function() {
 
 // ---- Buscador y Modo oscuro ----
 $("btnBuscar").onclick = async function() {
-  let q = prompt("¿Qué palabra quieres buscar en registros (en 'Datos gestionado' u 'Observaciones')?");
+  let q = prompt("¿Qué palabra quieres buscar en las observaciones?");
   if (!q) return;
   const col = db.collection(NOMBRE_COLECCION);
   const snap = await col.get();
   let resultados = [];
   snap.forEach(docSnap => {
     let d = docSnap.data();
-    let str = [d.datosGestionado, d.observaciones].join(" ").toLowerCase();
+    let str = (d.observaciones || "").toLowerCase();
     if (str.includes(q.toLowerCase())) resultados.push(d);
   });
   if (!resultados.length) return alert("No se encontraron resultados.");
   $("divResumenFechas").innerHTML = resultados.map(r =>
     `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-      <b>${r.fecha}</b> · ${(r.datosGestionado||"").slice(0,50)}...
+      <b>${r.fecha}</b> · ${(r.observaciones||"").slice(0,70)}...
       <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
     </div>`
   ).join("");
