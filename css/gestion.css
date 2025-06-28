@@ -1,5 +1,5 @@
 /* SIREX Gestión - Glassmorphism, Responsive y Modo Oscuro */
-/* VERSIÓN MEJORADA CON SOLUCIÓN DEFINITIVA PARA CAMPOS MÓVILES */
+/* VERSIÓN CON SOLUCIÓN FINAL Y DEFINITIVA PARA CAMPOS MÓVILES */
 
 :root {
   --primary-color: #1976d2;
@@ -67,7 +67,7 @@ body {
 .registro-bar input[type="date"] {
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 5px 9px;
+  padding: 8px 12px;
   font-size: 1rem;
   transition: border 0.2s;
   background: #f6fafd;
@@ -79,7 +79,7 @@ body {
   font-weight: 600;
   border-radius: 10px;
   border: none;
-  padding: 7px 18px;
+  padding: 9px 18px;
   margin-left: 0;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
@@ -139,6 +139,7 @@ body {
   font-weight: 600;
   font-size: 1rem;
   color: #334;
+  flex-shrink: 0; /* Evita que la etiqueta se encoja */
 }
 .input-row-group > label { padding-top: 7px; }
 
@@ -150,17 +151,17 @@ body {
   min-width: 0;
   transition: border 0.2s;
   background: var(--input-bg);
-  flex: 1; /* <-- ESTA PROPIEDAD CAUSABA EL PROBLEMA EN MÓVIL */
+  flex: 1; 
 }
-.input-row input[type="number"] { flex: 0 1 120px; }
-.input-small { max-width: 80px; text-align: center; }
+.input-row input[type="number"] { flex-grow: 0; flex-basis: 120px; }
+.input-small { flex-basis: 80px !important; }
 .sub-input-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .label-inline { font-weight: 600; font-size: 0.95rem; }
 
 .input-row input:focus, .input-row textarea:focus { border: 1.5px solid var(--primary-color); outline: none; }
 .input-row textarea { resize: vertical; min-height: 40px; }
 .ayuda-btn {
-    display: none; /* Ocultamos botones de ayuda para un look más limpio */
+    display: none;
 }
 
 /* Paneles de resumen */
@@ -180,7 +181,7 @@ body {
   font-size: 1rem;
   border-radius: 7px;
   border: 1px solid var(--border-color);
-  padding: 5px 9px;
+  padding: 8px 12px;
   background-color: var(--input-bg);
   color: var(--text-color);
 }
@@ -227,46 +228,55 @@ body.dark-mode .btn-pdf:hover { background: #fff9c4; }
 
 
 /* =============================================================== */
-/* ==       SOLUCIÓN DEFINITIVA PARA CAMPOS EN VISTA MÓVIL      == */
+/* ==       SOLUCIÓN FINAL Y DEFINITIVA PARA VISTA MÓVIL        == */
 /* =============================================================== */
 
 @media (max-width: 800px) {
   .registro-bar, .panel-seccion, .panel-glass {
     margin: 10px 8px;
-    padding: 12px 10px;
+    padding: 15px 12px;
   }
   .header {
-    padding: 11px 10px;
+    padding: 12px 15px;
   }
   .input-row, .input-row-group {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px; /* Un poco más de espacio vertical entre etiqueta y campo */
+    align-items: stretch; /* Ocupa todo el ancho */
+    gap: 8px;
   }
   .input-row label, .input-row-group > label {
     width: 100%;
+    margin-bottom: 0;
   }
   
-  /* 1. Campos de texto y textarea: ocupan el 100% del ancho. */
+  /* 1. Resetear el comportamiento flex de todos los inputs dentro de una fila en móvil */
+  .input-row > input, 
+  .input-row > textarea {
+    flex: none !important; /* ¡IMPORTANTE! Anula el 'flex: 1' del escritorio */
+  }
+
+  /* 2. Los campos de texto y textarea ocupan el ancho completo */
   .input-row input[type="text"],
   .input-row textarea {
     width: 100%;
-    box-sizing: border-box; /* Previene desbordamiento por padding/border */
+    box-sizing: border-box;
   }
 
-  /* 2. SOLUCIÓN: Campos numéricos. Se les da un ancho fijo y se evita que crezcan. */
+  /* 3. SOLUCIÓN: Los campos numéricos tienen un ANCHO y ALTO fijos y controlados */
   .input-row input[type="number"] {
-    width: 140px;      /* Ancho fijo y más que suficiente para un número. */
-    flex-grow: 0;      /* ¡LA CLAVE! Evita que el campo se estire para llenar el espacio. */
+    width: 100% !important;     /* Ocupa el ancho disponible */
+    max-width: 150px !important; /* PERO con un máximo razonable */
+    height: 45px !important;     /* Altura fija para que no se deforme */
+    box-sizing: border-box;
   }
-
-  /* 3. Para las filas con varios inputs pequeños, se mantienen en línea. */
+  
+  /* 4. Para filas con varios inputs pequeños (ej. Citas Telefónicas) */
   .sub-input-row {
     width: 100%;
-    justify-content: flex-start; /* Alinea los elementos al inicio */
+    justify-content: flex-start;
   }
   .sub-input-row .input-small {
-      width: 80px; /* Asegura que los campos pequeños tengan su tamaño */
-      flex-grow: 0;
+      flex: 1 !important; /* Permite que los campos pequeños compartan espacio */
+      height: 45px !important;
   }
 }
