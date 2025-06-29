@@ -47,7 +47,7 @@ body {
 
 .grupo-btn {
   width: 185px;
-  height: 172px;
+  height: 190px; /* Aumentado para acomodar ilustración más grande */
   border-radius: 2.3rem;
   background: linear-gradient(135deg, #fff 60%, #e6edfa 100%);
   box-shadow: 0 7px 24px #202d5122, 0 1px 1.5px #fff inset;
@@ -74,8 +74,8 @@ body {
 }
 
 .grupo-ico {
-  width: 90px;
-  height: 90px;
+  width: 110px;    /* Antes: 90px */
+  height: 110px;   /* Antes: 90px */
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -83,8 +83,8 @@ body {
 }
 
 .grupo-ico img {
-  width: 88px;
-  height: 88px;
+  width: 106px;    /* Antes: 88px */
+  height: 106px;   /* Antes: 88px */
   object-fit: contain;
   border-radius: 17px;
   box-shadow: 0 1px 8px #24305e18;
@@ -92,7 +92,7 @@ body {
   transition: transform .13s;
 }
 
-/* Botones 3D para menú principal */
+ /* Botones 3D para menú principal */
 .grupo-card {
   box-shadow: 0 6px 24px #075aaf33, 0 1.5px 2.5px #fff9 inset;
   border-radius: 2rem;
