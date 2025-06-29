@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.7 - Versión fina y robusta)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.8 - Detección universal de fechas, versión definitiva)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -240,11 +240,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         data.metadata = metadata;
         
-        // --- Detección fina de la fecha ---
+        // --- Detección universal de la fecha ---
+        // Reconoce DD/MM/YYYY, DD-MM-YYYY, DD MM YYYY, DD.MM.YYYY, DD/MM/YY, DD-MM-YY, DD MM YY, DD.MM.YY
+        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/;
         const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
         let dateMatch = null;
-        const dateRegex = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/;
-
         if (tituloTag) dateMatch = tituloTag.textContent.match(dateRegex);
         if (!dateMatch) dateMatch = htmlRoot.textContent.match(dateRegex);
         if (!dateMatch) {
@@ -259,8 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const month = dateMatch[2].padStart(2, '0');
             let year = dateMatch[3];
             if (year.length === 2) {
-                const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100;
-                year = currentCentury + parseInt(year, 10);
+                year = (parseInt(year, 10) > 50 ? "19" : "20") + year;
             }
             data.fecha = `${year}-${month}-${day}`;
         } else {
