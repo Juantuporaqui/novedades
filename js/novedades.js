@@ -1,7 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.4 - Compatibilidad DOCX robusta)
-// Búsqueda de tablas tolerante a errores de formato, saltos y espaciado.
-// Mapeo automático a formularios de grupo (CIE adaptado, resto fácilmente ampliable)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.7 - Versión fina y robusta)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -57,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResults(parsedData) {
         if (!resultsContainer) return;
         resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
-        
         for (const key in parsedData) {
             const dataContent = parsedData[key];
             if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
@@ -86,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            
             parsedDataForConfirmation = parseAllSections(result.value);
 
             if (Object.keys(parsedDataForConfirmation).length <= 2) {
@@ -111,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus('No hay datos para guardar.', 'error');
             return;
         }
-        
         showSpinner(true);
         showConfirmationUI(false);
         showStatus('Guardando datos en Firebase, por favor espera...', 'info');
@@ -141,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // PARSERS
     // ==================================================================
-    
     function normalizeText(str) {
         if (!str) return '';
         return str
@@ -246,29 +240,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         data.metadata = metadata;
         
+        // --- Detección fina de la fecha ---
         const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
         let dateMatch = null;
-        
         const dateRegex = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/;
 
-        if (tituloTag) {
-            dateMatch = tituloTag.textContent.match(dateRegex);
-        }
-        
+        if (tituloTag) dateMatch = tituloTag.textContent.match(dateRegex);
+        if (!dateMatch) dateMatch = htmlRoot.textContent.match(dateRegex);
         if (!dateMatch) {
-            dateMatch = htmlRoot.textContent.match(dateRegex);
+            const tables = Array.from(htmlRoot.querySelectorAll('table'));
+            if (tables.length) {
+                const tableText = tables[0].textContent;
+                dateMatch = tableText.match(dateRegex);
+            }
         }
-
         if (dateMatch) {
             const day = dateMatch[1].padStart(2, '0');
             const month = dateMatch[2].padStart(2, '0');
             let year = dateMatch[3];
-
             if (year.length === 2) {
                 const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100;
                 year = currentCentury + parseInt(year, 10);
             }
-            
             data.fecha = `${year}-${month}-${day}`;
         } else {
             const today = new Date();
@@ -295,42 +288,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // === ADAPTADOR ESPECIAL PARA CIE ===
+        // === ADAPTADORES PARA LOS GRUPOS ===
+        // --- CIE ---
         if (data.cie) {
             let internosNac = [];
             let ingresos = [];
             let salidas = [];
             let nInternos = 0;
             let observaciones = "";
-
             Object.entries(data.cie).forEach(([key, val]) => {
-                if (key.toLowerCase().includes("internos") && !isNaN(val)) {
-                    nInternos = val;
-                }
-                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) {
-                    observaciones = val;
-                }
-                if (key.toLowerCase().includes("ingreso")) {
-                    ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
-                }
-                if (key.toLowerCase().includes("salida")) {
-                    salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
-                }
-                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) {
-                    internosNac.push({ nacionalidad: key, numero: val });
-                }
+                if (key.toLowerCase().includes("internos") && !isNaN(val)) nInternos = val;
+                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) observaciones = val;
+                if (key.toLowerCase().includes("ingreso")) ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
+                if (key.toLowerCase().includes("salida")) salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
+                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) internosNac.push({ nacionalidad: key, numero: val });
             });
-
-            data.cie = {
-                nInternos,
-                internosNac,
-                ingresos,
-                salidas,
-                observaciones
-            };
+            data.cie = { nInternos, internosNac, ingresos, salidas, observaciones };
         }
-
-        // Puedes repetir este esquema para CECOREX y GESTIÓN aquí...
+        // --- CECOREX: si hay campo tipo "detenidos" como array, pásalo como tal (para el futuro)
+        if (data.cecorex && Array.isArray(data.cecorex.detenidos)) {
+            data.cecorex.detenidos = data.cecorex.detenidos.map(e => ({
+                nombre: e.nombre || "",
+                nacionalidad: e.nacionalidad || "",
+                motivo: e.motivo || "",
+                observaciones: e.observaciones || ""
+            }));
+        }
+        // --- GESTIÓN: puedes añadir aquí mapeos especiales si en el futuro tienes listas
 
         return data;
     }
@@ -338,7 +322,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // LÓGICA DE GUARDADO Y TRADUCCIÓN
     // ==================================================================
-    
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
@@ -354,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
             investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
             casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
         };
-        
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
@@ -369,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         await batch.commit();
     }
-    
     function formatDataForFirebase(key, parsedData) {
         const translationMap = {
             cecorex: {
