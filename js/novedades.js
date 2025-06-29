@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.5 - Con Traductor)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.6 - Verificado)
 // Esta versión traduce los nombres de la plantilla a los nombres de campo
 // que esperan los scripts antiguos de cada grupo, garantizando la compatibilidad.
 // =================================================================================
@@ -321,27 +321,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Añadir más traducciones para otros grupos si es necesario
         };
 
-        // Si no hay un mapa de traducción para este grupo, devolvemos los datos como están.
         if (!translationMap[key]) {
-             // Para datos en formato array (investigacion, grupo4, etc.)
             if(Array.isArray(parsedData)) return { datos: parsedData };
-            // Para datos en formato objeto (grupo1, puerto)
             return { ...parsedData };
         }
 
-        // Si hay mapa, traducimos las claves
         const translatedData = {};
         for (const [oldKey, value] of Object.entries(parsedData)) {
             const newKey = translationMap[key][oldKey];
             if (newKey) {
                 translatedData[newKey] = value;
             } else {
-                // Si una clave no está en el mapa, la mantenemos por si acaso
                 translatedData[oldKey] = value;
             }
         }
         return translatedData;
     }
 });
-```
-
