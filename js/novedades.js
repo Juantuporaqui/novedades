@@ -1,7 +1,8 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.2 - Final)
 // Lee un archivo .docx estandarizado, extrae los datos de cada grupo
 // y los guarda en sus respectivas colecciones de Firebase.
+// Esta versión está corregida para manejar correctamente los metadatos vacíos.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -54,13 +55,14 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsContainer.innerHTML = '<h3><i class="bi bi-check-circle-fill text-success"></i> Datos Extraídos</h3>';
         
         for (const key in parsedData) {
-            if (Object.keys(parsedData[key]).length > 0 || (Array.isArray(parsedData[key]) && parsedData[key].length > 0)) {
+            const dataContent = parsedData[key];
+            if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
                 const card = document.createElement('div');
-                card.className = 'card mb-3';
+                card.className = 'card mb-3 shadow-sm';
                 card.innerHTML = `
-                    <div class="card-header"><strong>${key.toUpperCase()}</strong></div>
+                    <div class="card-header bg-light"><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong></div>
                     <div class="card-body">
-                        <pre style="white-space: pre-wrap; word-wrap: break-word;">${JSON.stringify(parsedData[key], null, 2)}</pre>
+                        <pre class="results-card">${JSON.stringify(dataContent, null, 2)}</pre>
                     </div>
                 `;
                 resultsContainer.appendChild(card);
@@ -91,8 +93,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 1. Parsear el HTML para extraer todos los datos
             const parsedData = parseAllSections(html);
 
-            if (Object.keys(parsedData).length === 0) {
-                throw new Error("No se pudo extraer ninguna sección. Revisa que los títulos de los grupos en el DOCX son correctos.");
+            if (Object.keys(parsedData).length <= 2) { // metadata y fecha
+                throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que los títulos en el DOCX (ej: 'GRUPO 1') son correctos.");
             }
 
             showResults(parsedData);
@@ -115,16 +117,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARSERS (El "cerebro" que interpreta el HTML)
     // =================================================
 
-    /**
-     * Busca un título (h1, h2, h3) en el documento y devuelve la tabla que le sigue.
-     */
     function findTableAfterTitle(htmlRoot, titleText) {
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p > strong'));
+        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => h.textContent.trim().toUpperCase().includes(titleText.toUpperCase()));
         
         if (targetHeader) {
-            // Buscamos la tabla como un elemento siguiente
-            let nextElement = targetHeader.closest('p')?.nextElementSibling || targetHeader.nextElementSibling;
+            let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
             while(nextElement) {
                 if (nextElement.tagName === 'TABLE') {
                     return nextElement;
@@ -132,40 +130,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 nextElement = nextElement.nextElementSibling;
             }
         }
-        return null; // Si no se encuentra
+        console.warn(`No se encontró la tabla para la sección: ${titleText}`);
+        return null;
     }
 
-    /**
-     * Convierte una tabla de dos columnas (Concepto, Valor) en un objeto.
-     * Ideal para GESTIÓN, CECOREX, GRUPO 1.
-     */
-    function mapKeyValueTable(table) {
+    function mapKeyValueTable(table, keyColumn = 0, valueColumn = 1) {
         const data = {};
         const rows = table.querySelectorAll('tr');
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            if (cells.length >= 2) {
-                const key = cells[0].textContent.trim();
-                const value = cells[1].textContent.trim();
-                if (key) { // Solo si la celda de concepto no está vacía
-                    data[key] = !isNaN(parseFloat(value)) && isFinite(value) ? parseFloat(value) : value;
+            if (cells.length > valueColumn) {
+                const key = cells[keyColumn].textContent.trim();
+                const value = cells[valueColumn].textContent.trim();
+                if (key) {
+                    data[key] = !isNaN(parseFloat(value)) && isFinite(value) && value !== '' ? parseFloat(value) : value;
                 }
             }
         });
         return data;
     }
 
-    /**
-     * Convierte una tabla donde cada fila es un registro, en un array de objetos.
-     * Ideal para INVESTIGACIÓN, CIE, GRUPO 4.
-     */
     function mapArrayTable(table) {
         const data = [];
-        const headers = Array.from(table.querySelectorAll('th, td'))
-            .slice(0, table.querySelector('tr').children.length)
-            .map(th => th.textContent.trim().toLowerCase().replace(/ /g, '_').replace(/\./g, ''));
+        const headerRow = table.querySelector('tr');
+        if (!headerRow) return data;
+
+        const headers = Array.from(headerRow.children)
+            .map(th => th.textContent.trim().toLowerCase().replace(/ /g, '_').replace(/\//g, '_').replace(/º/g,'').replace(/\./g, ''));
             
-        const rows = Array.from(table.querySelectorAll('tr')).slice(1); // Omitir cabecera
+        const rows = Array.from(table.querySelectorAll('tr')).slice(1);
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
             if (cells.length > 0 && Array.from(cells).some(c => c.textContent.trim() !== '')) {
@@ -182,106 +175,102 @@ document.addEventListener('DOMContentLoaded', function() {
         return data;
     }
 
-    /**
-     * Orquesta el parseo de todas las secciones del documento.
-     */
     function parseAllSections(html) {
         const htmlRoot = document.createElement('div');
         htmlRoot.innerHTML = html;
 
         const data = {};
         
-        // --- Metadata ---
-        const pTags = Array.from(htmlRoot.querySelectorAll('p'));
-        const turnoTag = pTags.find(p => p.textContent.includes('Turno (M/T/N):'));
-        if (turnoTag) {
-            data.metadata = {
-                turno: turnoTag.textContent.split(',')[0].replace('Turno (M/T/N):', '').trim(),
-                responsable: turnoTag.textContent.split('Responsable:')[1]?.trim()
-            };
-        }
-
-        const tituloTag = pTags.find(p => p.textContent.startsWith('NOVEDADES B.P.E.F.'));
-        if(tituloTag) {
-            const match = tituloTag.textContent.match(/\[(.*?)\]/);
-            if(match && match[1]) {
-                const dateParts = match[1].split('/');
-                if (dateParts.length === 3) {
-                     data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
-                }
+        // --- INICIO DE LA SECCIÓN CORREGIDA ---
+        const metadata = {};
+        const firstTable = htmlRoot.querySelector('table');
+        if (firstTable && firstTable.textContent.includes('Turno')) {
+            const cells = firstTable.querySelectorAll('td');
+            // En el DOCX: Turno (celda 0) | Valor (celda 1) | Responsable (celda 2) | Valor (celda 3)
+            if (cells.length > 1 && cells[1].textContent.trim()) {
+                metadata.turno = cells[1].textContent.trim();
+            }
+            if (cells.length > 3 && cells[3].textContent.trim()) {
+                metadata.responsable = cells[3].textContent.trim();
             }
         }
-        if(!data.fecha) { // Fallback a hoy si no encuentra fecha
+        data.metadata = metadata;
+        // --- FIN DE LA SECCIÓN CORREGIDA ---
+
+        const tituloTag = Array.from(htmlRoot.querySelectorAll('p')).find(p => p.textContent.startsWith('NOVEDADES B.P.E.F.'));
+        if(tituloTag) {
+            const match = tituloTag.textContent.match(/\[(.*?)\]/);
+            // Si no encuentra fecha en el título, usa la fecha del día
+            const dateStr = match ? match[1] : new Date().toLocaleDateString('es-ES');
+            const dateParts = dateStr.split('/');
+            if (dateParts.length === 3) {
+                 data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
+            }
+        }
+        if(!data.fecha) {
             const today = new Date();
             data.fecha = today.toISOString().slice(0, 10);
             console.warn("No se encontró fecha en el título, usando fecha actual.");
         }
 
-
-        // --- Parseo por Grupos ---
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
             investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
             casas_citas: { title: "CONTROL CASA DE CITAS", type: 'array' },
             grupo4: { title: "GRUPO 4", type: 'array' },
-            puerto: { title: "PUERTO", type: 'puerto' },
-            cecorex: { title: "CECOREX", type: 'key-value' },
+            puerto: { title: "PUERTO", type: 'key-value' },
+            cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
             cie: { title: "CIE", type: 'array' },
-            gestion: { title: "GESTIÓN", type: 'key-value' }
+            gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
         };
 
         for (const [key, config] of Object.entries(secciones)) {
             const table = findTableAfterTitle(htmlRoot, config.title);
             if (table) {
                 if (config.type === 'key-value') {
-                    data[key] = mapKeyValueTable(table);
+                    data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
                 } else if (config.type === 'array') {
                     data[key] = mapArrayTable(table);
-                } else if (config.type === 'puerto') { // Parser especial para Puerto
-                    data[key] = mapKeyValueTable(table); // La estructura ahora es simple
                 }
             }
         }
         return data;
     }
 
-
     // =================================================
     // LÓGICA DE GUARDADO EN FIREBASE
     // =================================================
     
-    /**
-     * Recibe el objeto con todos los datos parseados y lo guarda en Firebase.
-     */
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
         
         const fechaSinGuiones = fecha.replace(/-/g, "");
-
         const batch = db.batch();
 
-        // Mapeo de claves de datos a colecciones y formatos de ID de Firebase
         const firebaseMap = {
             cecorex: { collection: "cecorex", id: `cecorex_${fecha}` },
             cie: { collection: "grupo_cie", id: fecha },
             gestion: { collection: "gestion_avanzada", id: `gestion_${fechaSinGuiones}` },
             puerto: { collection: "grupoPuerto_registros", id: `puerto_${fecha}` },
-            grupo1: { collection: "grupo1_diario", id: `g1_${fecha}` }, // Asumimos colecciones nuevas
+            grupo1: { collection: "grupo1_diario", id: `g1_${fecha}` },
             grupo4: { collection: "grupo4_operativo", id: `g4_${fecha}` },
             investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
             casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
         };
         
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
-            if (data[key] && (Object.keys(data[key]).length > 0 || data[key].length > 0)) {
+            if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 
-                // Formateamos los datos antes de guardarlos para que coincidan con las apps existentes si es necesario
+                // --- INICIO DE LA SECCIÓN CORREGIDA ---
                 let dataToSave = {
                     fecha: fecha,
-                    ...data.metadata, // añadimos turno y responsable
+                    // Se expande el objeto metadata de forma segura, solo se añaden las claves si existen
+                    ...(data.metadata.turno && { turno: data.metadata.turno }),
+                    ...(data.metadata.responsable && { responsable: data.metadata.responsable }),
                     ...formatDataForFirebase(key, data[key])
                 };
+                // --- FIN DE LA SECCIÓN CORREGIDA ---
 
                 const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
                 batch.set(docRef, dataToSave, { merge: true });
@@ -291,24 +280,17 @@ document.addEventListener('DOMContentLoaded', function() {
         await batch.commit();
     }
     
-    /**
-     * Transforma los datos parseados a la estructura que cada app espera.
-     * Esta función es CLAVE para la compatibilidad.
-     */
     function formatDataForFirebase(key, parsedData) {
-        // Para la mayoría, la estructura parseada es suficiente.
-        // Hacemos ajustes solo para las que lo necesiten.
         switch(key) {
-            case 'cecorex':
-                 // El parser ya devuelve { "Remisiones": 4, ... } que es un formato bueno.
-                 // Podríamos mapear los nombres a los IDs de los campos si fuera necesario.
-                 return { ...parsedData };
             case 'cie':
-                 // El parser devuelve un array de objetos, que es una buena forma de guardarlo.
                  return { novedades: parsedData };
-            // Añadir más casos si otros formularios necesitan una estructura de datos específica
+            case 'investigacion':
+                 return { operaciones: parsedData };
+            case 'grupo4':
+                 return { partes: parsedData };
             default:
-                return { datos: parsedData };
+                // La función mapKeyValueTable ya devuelve un objeto plano, así que lo expandimos
+                return { ...parsedData };
         }
     }
 
