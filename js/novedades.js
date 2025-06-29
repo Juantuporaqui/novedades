@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.1 - Definitivo)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.2 - Limpieza de Texto Mejorada)
 // Búsqueda de títulos y fechas tolerante a errores de formato y espaciado.
 // =================================================================================
 
@@ -141,10 +141,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARSERS
     // ==================================================================
     
+    /**
+     * --- FUNCIÓN MEJORADA ---
+     * Normaliza un texto: quita acentos, convierte a mayúsculas y limpia espacios.
+     * @param {string} str El texto a normalizar.
+     * @returns {string} El texto normalizado.
+     */
     function normalizeText(str) {
         if (!str) return '';
-        // Quita acentos y convierte a mayúsculas
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        return str
+            .replace(/&nbsp;/g, ' ')      // Reemplaza non-breaking spaces
+            .replace(/\s+/g, ' ')         // Reemplaza múltiples espacios por uno solo
+            .trim()                       // Quita espacios al principio y al final
+            .normalize("NFD")             // Quita acentos
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase();
     }
 
     function findTableAfterTitle(htmlRoot, titleText) {
@@ -152,8 +163,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const normalizedSearchText = normalizeText(titleText);
         
         const targetHeader = headers.find(h => {
-            // Normaliza y limpia el texto del documento antes de comparar
-            const normalizedHeaderText = normalizeText(h.textContent.trim());
+            // Se normaliza el texto del documento antes de comparar
+            const normalizedHeaderText = normalizeText(h.textContent);
             return normalizedHeaderText.startsWith(normalizedSearchText);
         });
         
