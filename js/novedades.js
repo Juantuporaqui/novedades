@@ -1,6 +1,7 @@
 // =================================================================================
 // SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.3 - Búsqueda y Limpieza Mejoradas)
-// Búsqueda de títulos tolerante a errores de formato y espaciado.
+// Búsqueda de títulos tolerante a errores de formato y espaciado. Adaptado para plantillas DOCX
+// con títulos en celdas de tabla o en el propio texto.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -159,21 +160,29 @@ document.addEventListener('DOMContentLoaded', function() {
             .toUpperCase();
     }
 
+    // --- FUNCIÓN TOTALMENTE MEJORADA ---
     function findTableAfterTitle(htmlRoot, titleText) {
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const normalizedSearchText = normalizeText(titleText);
-        
+
+        // 1. Busca primero como hasta ahora (tras el título)
+        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => {
             const normalizedHeaderText = normalizeText(h.textContent);
-            // --- CAMBIO IMPORTANTE: Usamos includes() para ser más flexibles ---
             return normalizedHeaderText.includes(normalizedSearchText);
         });
-        
         if (targetHeader) {
             let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
             while(nextElement) {
                 if (nextElement.tagName === 'TABLE') return nextElement;
                 nextElement = nextElement.nextElementSibling;
+            }
+        }
+        // 2. Busca en todas las tablas si la primera celda coincide con el título
+        const tables = Array.from(htmlRoot.querySelectorAll('table'));
+        for (const table of tables) {
+            const firstCell = table.querySelector('tr td');
+            if (firstCell && normalizeText(firstCell.textContent).includes(normalizedSearchText)) {
+                return table;
             }
         }
         console.warn(`No se encontró la tabla para la sección: ${titleText}`);
