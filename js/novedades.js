@@ -1,6 +1,7 @@
 // =================================================================================
 // SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.4 - Compatibilidad DOCX robusta)
 // Búsqueda de tablas tolerante a errores de formato, saltos y espaciado.
+// Mapeo automático a formularios de grupo (CIE adaptado, resto fácilmente ampliable)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -141,11 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARSERS
     // ==================================================================
     
-    /**
-     * Normaliza un texto de forma agresiva para asegurar la coincidencia.
-     * @param {string} str El texto a normalizar.
-     * @returns {string} El texto normalizado.
-     */
     function normalizeText(str) {
         if (!str) return '';
         return str
@@ -158,9 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .toUpperCase();
     }
 
-    /**
-     * Busca la tabla situada tras un título, saltando saltos, líneas vacías y nodos basura.
-     */
     function findTableAfterTitle(htmlRoot, titleText) {
         const normalizedSearchText = normalizeText(titleText);
 
@@ -171,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return normalizedHeaderText.includes(normalizedSearchText);
         });
         if (targetHeader) {
-            // Busca la tabla en los siguientes 6 elementos (saltando líneas vacías)
             let nextElement = targetHeader;
             for (let i = 0; i < 6; i++) {
                 nextElement = nextElement.nextElementSibling;
@@ -179,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nextElement.tagName === 'TABLE') return nextElement;
             }
         }
-        // Busca tabla cuya primera celda sea el título (backup)
         const tables = Array.from(htmlRoot.querySelectorAll('table'));
         for (const table of tables) {
             const firstCell = table.querySelector('tr td');
@@ -187,7 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return table;
             }
         }
-        // Extra: si el título es el texto anterior a una tabla
         const paragraphs = Array.from(htmlRoot.querySelectorAll('p'));
         for (const p of paragraphs) {
             if (normalizeText(p.textContent).includes(normalizedSearchText)) {
@@ -304,6 +294,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (config.type === 'array') data[key] = mapArrayTable(table);
             }
         }
+
+        // === ADAPTADOR ESPECIAL PARA CIE ===
+        if (data.cie) {
+            let internosNac = [];
+            let ingresos = [];
+            let salidas = [];
+            let nInternos = 0;
+            let observaciones = "";
+
+            Object.entries(data.cie).forEach(([key, val]) => {
+                if (key.toLowerCase().includes("internos") && !isNaN(val)) {
+                    nInternos = val;
+                }
+                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) {
+                    observaciones = val;
+                }
+                if (key.toLowerCase().includes("ingreso")) {
+                    ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
+                }
+                if (key.toLowerCase().includes("salida")) {
+                    salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
+                }
+                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) {
+                    internosNac.push({ nacionalidad: key, numero: val });
+                }
+            });
+
+            data.cie = {
+                nInternos,
+                internosNac,
+                ingresos,
+                salidas,
+                observaciones
+            };
+        }
+
+        // Puedes repetir este esquema para CECOREX y GESTIÓN aquí...
+
         return data;
     }
     
