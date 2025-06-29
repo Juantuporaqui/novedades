@@ -1,6 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.3 - Búsqueda y Limpieza Mejoradas)
-// Búsqueda de títulos tolerante a errores de formato y espaciado.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.9 - Detección universal de fechas + prompt manual)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -56,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function showResults(parsedData) {
         if (!resultsContainer) return;
         resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
-        
         for (const key in parsedData) {
             const dataContent = parsedData[key];
             if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
@@ -85,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            
             parsedDataForConfirmation = parseAllSections(result.value);
 
             if (Object.keys(parsedDataForConfirmation).length <= 2) {
@@ -110,7 +107,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus('No hay datos para guardar.', 'error');
             return;
         }
-        
         showSpinner(true);
         showConfirmationUI(false);
         showStatus('Guardando datos en Firebase, por favor espera...', 'info');
@@ -140,40 +136,52 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     // PARSERS
     // ==================================================================
-    
-    /**
-     * --- FUNCIÓN MEJORADA ---
-     * Normaliza un texto de forma agresiva para asegurar la coincidencia.
-     * @param {string} str El texto a normalizar.
-     * @returns {string} El texto normalizado.
-     */
     function normalizeText(str) {
         if (!str) return '';
         return str
-            .replace(/&nbsp;/g, ' ')      // Reemplaza non-breaking spaces
-            .normalize("NFD")             // Quita acentos
+            .replace(/&nbsp;/g, ' ')
+            .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-zA-Z0-9\s]/g, '') // Elimina caracteres no alfanuméricos (excepto espacios)
-            .replace(/\s+/g, ' ')         // Reemplaza múltiples espacios por uno solo
-            .trim()                       // Quita espacios al principio y al final
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
             .toUpperCase();
     }
 
     function findTableAfterTitle(htmlRoot, titleText) {
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const normalizedSearchText = normalizeText(titleText);
-        
+
+        // Busca título en los headers
+        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => {
             const normalizedHeaderText = normalizeText(h.textContent);
-            // --- CAMBIO IMPORTANTE: Usamos includes() para ser más flexibles ---
             return normalizedHeaderText.includes(normalizedSearchText);
         });
-        
         if (targetHeader) {
-            let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
-            while(nextElement) {
-                if (nextElement.tagName === 'TABLE') return nextElement;
+            let nextElement = targetHeader;
+            for (let i = 0; i < 6; i++) {
                 nextElement = nextElement.nextElementSibling;
+                if (!nextElement) break;
+                if (nextElement.tagName === 'TABLE') return nextElement;
+            }
+        }
+        const tables = Array.from(htmlRoot.querySelectorAll('table'));
+        for (const table of tables) {
+            const firstCell = table.querySelector('tr td');
+            if (firstCell && normalizeText(firstCell.textContent).includes(normalizedSearchText)) {
+                return table;
+            }
+        }
+        const paragraphs = Array.from(htmlRoot.querySelectorAll('p'));
+        for (const p of paragraphs) {
+            if (normalizeText(p.textContent).includes(normalizedSearchText)) {
+                let node = p.nextElementSibling;
+                while (node && node.tagName !== 'TABLE') {
+                    node = node.nextElementSibling;
+                }
+                if (node && node.tagName === 'TABLE') {
+                    return node;
+                }
             }
         }
         console.warn(`No se encontró la tabla para la sección: ${titleText}`);
@@ -232,36 +240,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         data.metadata = metadata;
         
+        // --- Detección universal de la fecha + prompt manual ---
+        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/;
         const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
         let dateMatch = null;
-        
-        const dateRegex = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/;
-
-        if (tituloTag) {
-            dateMatch = tituloTag.textContent.match(dateRegex);
-        }
-        
+        if (tituloTag) dateMatch = tituloTag.textContent.match(dateRegex);
+        if (!dateMatch) dateMatch = htmlRoot.textContent.match(dateRegex);
         if (!dateMatch) {
-            dateMatch = htmlRoot.textContent.match(dateRegex);
+            const tables = Array.from(htmlRoot.querySelectorAll('table'));
+            if (tables.length) {
+                const tableText = tables[0].textContent;
+                dateMatch = tableText.match(dateRegex);
+            }
         }
-
         if (dateMatch) {
             const day = dateMatch[1].padStart(2, '0');
             const month = dateMatch[2].padStart(2, '0');
             let year = dateMatch[3];
-
             if (year.length === 2) {
-                const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100;
-                year = currentCentury + parseInt(year, 10);
+                year = (parseInt(year, 10) > 50 ? "19" : "20") + year;
             }
-            
             data.fecha = `${year}-${month}-${day}`;
         } else {
+            // Pregunta la fecha manualmente si no la encuentra
             const today = new Date();
-            data.fecha = today.toISOString().slice(0, 10);
-            console.warn("No se encontró ninguna fecha en el documento, usando fecha actual.");
+            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (YYYY-MM-DD):", today.toISOString().slice(0,10));
+            data.fecha = fechaManual ? fechaManual : today.toISOString().slice(0, 10);
+            console.warn("No se encontró ninguna fecha en el documento, usando fecha manual o actual.");
         }
 
+        // --- SECCIONES ---
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
             investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
@@ -279,13 +287,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (config.type === 'array') data[key] = mapArrayTable(table);
             }
         }
+
+        // === ADAPTADORES PARA LOS GRUPOS ===
+        // --- CIE ---
+        if (data.cie) {
+            let internosNac = [];
+            let ingresos = [];
+            let salidas = [];
+            let nInternos = 0;
+            let observaciones = "";
+            Object.entries(data.cie).forEach(([key, val]) => {
+                if (key.toLowerCase().includes("internos") && !isNaN(val)) nInternos = val;
+                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) observaciones = val;
+                if (key.toLowerCase().includes("ingreso")) ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
+                if (key.toLowerCase().includes("salida")) salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
+                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) internosNac.push({ nacionalidad: key, numero: val });
+            });
+            data.cie = { nInternos, internosNac, ingresos, salidas, observaciones };
+        }
+        // --- CECOREX: si hay campo tipo "detenidos" como array, pásalo como tal (para el futuro)
+        if (data.cecorex && Array.isArray(data.cecorex.detenidos)) {
+            data.cecorex.detenidos = data.cecorex.detenidos.map(e => ({
+                nombre: e.nombre || "",
+                nacionalidad: e.nacionalidad || "",
+                motivo: e.motivo || "",
+                observaciones: e.observaciones || ""
+            }));
+        }
+        // --- GESTIÓN: puedes añadir aquí mapeos especiales si en el futuro tienes listas
+
         return data;
     }
     
     // ==================================================================
     // LÓGICA DE GUARDADO Y TRADUCCIÓN
     // ==================================================================
-    
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
@@ -301,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
             investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
             casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
         };
-        
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
@@ -316,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         await batch.commit();
     }
-    
     function formatDataForFirebase(key, parsedData) {
         const translationMap = {
             cecorex: {
