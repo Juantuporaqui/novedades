@@ -1,294 +1,191 @@
-// =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.1 - Corregido)
-// Lee un archivo .docx estandarizado, extrae los datos de cada grupo
-// y los guarda en sus respectivas colecciones de Firebase.
-// =================================================================================
+body {
+  background: #eef1f6;
+  font-family: 'Inter', Segoe UI, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
 
-document.addEventListener('DOMContentLoaded', function() {
+.sirex-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.2rem 0 1.1rem 0;
+  user-select: none;
+}
 
-    // --- CONFIGURACIÓN FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-        authDomain: "ucrif-5bb75.firebaseapp.com",
-        projectId: "ucrif-5bb75",
-        storageBucket: "ucrif-5bb75.appspot.com",
-        messagingSenderId: "241698436443",
-        appId: "1:241698436443:web:1f333b3ae3f813b755167e"
-    };
+.sirex-title {
+  font-size: 4.2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #1a2c64;
+  line-height: 1.0;
+  text-shadow: 0 2px 22px #00d4ff18, 0 1.5px 0 #ffd94a77;
+  margin-bottom: .18rem;
+}
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.firestore();
+.sirex-desc {
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #245c7c;
+  letter-spacing: .5px;
+  opacity: 0.87;
+  margin-bottom: 0;
+  margin-top: 0.1rem;
+  text-align: center;
+}
 
-    // --- ELEMENTOS DOM ---
-    const inputDocx = document.getElementById('inputDocx');
-    const statusContainer = document.getElementById('status-container');
-    const resultsContainer = document.getElementById('results-container');
+.grupos-menu {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.1rem 0 2.2rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem 2.1rem;
+  justify-content: center;
+}
 
-    // --- MANEJO DE EVENTOS ---
-    if (inputDocx) {
-        inputDocx.addEventListener('change', handleDocxUpload);
-    }
+.grupo-btn {
+  width: 185px;
+  height: 200px; /* Aumentado para ilustración más grande */
+  border-radius: 2.3rem;
+  background: linear-gradient(135deg, #fff 60%, #e6edfa 100%);
+  box-shadow: 0 7px 24px #202d5122, 0 1px 1.5px #fff inset;
+  border: none;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 0 18px 0;
+  position: relative;
+  transition: box-shadow .18s, transform .18s;
+  cursor: pointer;
+  overflow: hidden;
+  text-decoration: none;
+}
 
-    // =================================================
-    // FUNCIONES DE UI (SPINNER Y MENSAJES)
-    // =================================================
-    function showStatus(message, type = 'info') {
-        if (!statusContainer) return;
-        let alertClass = 'alert-info';
-        if (type === 'success') alertClass = 'alert-success';
-        if (type === 'error') alertClass = 'alert-danger';
-        statusContainer.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
-    }
+.grupo-btn:hover, .grupo-btn:focus {
+  box-shadow: 0 16px 36px #1a2c6444, 0 3px 12px #ffd94a33;
+  transform: translateY(-6px) scale(1.04) rotate(-1.7deg);
+  text-decoration: none;
+  color: #182246;
+}
 
-    function showSpinner(visible) {
-        const spinner = document.getElementById('spinner-area');
-        if (spinner) {
-            spinner.style.display = visible ? 'flex' : 'none';
-        }
-    }
+.grupo-ico {
+  width: 110px;   /* Antes: 90px */
+  height: 110px;  /* Antes: 90px */
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    function showResults(parsedData) {
-        if (!resultsContainer) return;
-        resultsContainer.innerHTML = '<h3><i class="bi bi-check-circle-fill text-success"></i> Datos Extraídos</h3>';
-        
-        for (const key in parsedData) {
-            const dataContent = parsedData[key];
-            if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
-                const card = document.createElement('div');
-                card.className = 'card mb-3 shadow-sm';
-                card.innerHTML = `
-                    <div class="card-header bg-light"><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong></div>
-                    <div class="card-body">
-                        <pre class="results-card">${JSON.stringify(dataContent, null, 2)}</pre>
-                    </div>
-                `;
-                resultsContainer.appendChild(card);
-            }
-        }
-    }
+.grupo-ico img {
+  width: 108px;   /* Antes: 88px */
+  height: 108px;  /* Antes: 88px */
+  object-fit: contain;
+  border-radius: 17px;
+  box-shadow: 0 1px 8px #24305e18;
+  background: #fafdff;
+  transition: transform .13s;
+}
 
+/* Botones 3D para menú principal */
+.grupo-card {
+  box-shadow: 0 6px 24px #075aaf33, 0 1.5px 2.5px #fff9 inset;
+  border-radius: 2rem;
+  background: linear-gradient(120deg, #eaf3fc 70%, #dbedfa 100%);
+  transition: box-shadow .16s, transform .12s;
+  border: 2px solid #0459ad15;
+  min-height: 170px;
+}
+.grupo-card:hover {
+  box-shadow: 0 16px 40px #156be430, 0 2px 8px #fff9 inset;
+  transform: scale(1.04) translateY(-5px);
+  background: linear-gradient(120deg, #eaf6ff 0%, #c3e1ff 100%);
+  border-color: #0b59bb60;
+}
+.grupo-card .display-4 {
+  font-size: 3.7rem;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 4px 8px #3c8be860);
+}
 
-    // =================================================
-    // LÓGICA PRINCIPAL DE PROCESAMIENTO
-    // =================================================
-    async function handleDocxUpload(event) {
-        const file = event.target.files[0];
-        if (!file || !file.name.endsWith('.docx')) {
-            showStatus('Por favor, selecciona un archivo .docx válido.', 'error');
-            return;
-        }
+.grupo-btn:hover .grupo-ico img, .grupo-btn:focus .grupo-ico img {
+  transform: scale(1.1) rotate(-2deg);
+}
 
-        showSpinner(true);
-        resultsContainer.innerHTML = '';
-        showStatus('Procesando archivo...', 'info');
+.grupo-label {
+  font-size: 1.16rem;
+  font-weight: 700;
+  color: #24305e;
+  margin-bottom: 0;
+  letter-spacing: .5px;
+  text-shadow: 0 1px 0 #fff;
+}
 
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.convertToHtml({ arrayBuffer });
-            const html = result.value;
+.btn-consulta {
+  display: inline-block;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #1a2c64 60%, #00c3ff 100%);
+  border: none;
+  border-radius: 1.2rem;
+  padding: 12px 36px;
+  margin-top: 0.6rem;
+  box-shadow: 0 4px 24px #24305e28;
+  text-decoration: none;
+  letter-spacing: .6px;
+  transition: box-shadow .16s, transform .13s, background .13s;
+}
+.btn-consulta:hover, .btn-consulta:focus {
+  background: linear-gradient(90deg, #17305e 70%, #00e2fa 100%);
+  box-shadow: 0 7px 32px #143e8a32;
+  transform: scale(1.04);
+  color: #fff;
+  text-decoration: none;
+}
 
-            // 1. Parsear el HTML para extraer todos los datos
-            const parsedData = parseAllSections(html);
+.footer {
+  background: #1a2c64;
+  color: #fff;
+  font-size: 1.02rem;
+  text-align: center;
+  padding: 18px 0 12px 0;
+  letter-spacing: .6px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  margin-top: 2rem;
+}
 
-            if (Object.keys(parsedData).length <= 2) { // metadata y fecha
-                throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que los títulos en el DOCX (ej: 'GRUPO 1') son correctos.");
-            }
-
-            showResults(parsedData);
-
-            // 2. Guardar los datos en Firebase
-            await saveAllToFirebase(parsedData);
-            
-            showStatus('¡Proceso completado! Todos los datos han sido guardados en Firebase.', 'success');
-
-        } catch (err) {
-            console.error("Error en el procesamiento:", err);
-            showStatus(`Error: ${err.message}`, 'error');
-        } finally {
-            showSpinner(false);
-            inputDocx.value = ''; // Reset input
-        }
-    }
-    
-    // =================================================
-    // PARSERS (El "cerebro" que interpreta el HTML)
-    // =================================================
-
-    function findTableAfterTitle(htmlRoot, titleText) {
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
-        const targetHeader = headers.find(h => h.textContent.trim().toUpperCase().includes(titleText.toUpperCase()));
-        
-        if (targetHeader) {
-            let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
-            while(nextElement) {
-                if (nextElement.tagName === 'TABLE') {
-                    return nextElement;
-                }
-                nextElement = nextElement.nextElementSibling;
-            }
-        }
-        console.warn(`No se encontró la tabla para la sección: ${titleText}`);
-        return null;
-    }
-
-    function mapKeyValueTable(table, keyColumn = 0, valueColumn = 1) {
-        const data = {};
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length > valueColumn) {
-                const key = cells[keyColumn].textContent.trim();
-                const value = cells[valueColumn].textContent.trim();
-                if (key) {
-                    data[key] = !isNaN(parseFloat(value)) && isFinite(value) && value !== '' ? parseFloat(value) : value;
-                }
-            }
-        });
-        return data;
-    }
-
-    function mapArrayTable(table) {
-        const data = [];
-        const headerRow = table.querySelector('tr');
-        if (!headerRow) return data;
-
-        const headers = Array.from(headerRow.children)
-            .map(th => th.textContent.trim().toLowerCase().replace(/ /g, '_').replace(/\//g, '_').replace(/º/g,'').replace(/\./g, ''));
-            
-        const rows = Array.from(table.querySelectorAll('tr')).slice(1);
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length > 0 && Array.from(cells).some(c => c.textContent.trim() !== '')) {
-                const entry = {};
-                cells.forEach((cell, index) => {
-                    const header = headers[index];
-                    if(header) {
-                       entry[header] = cell.textContent.trim();
-                    }
-                });
-                data.push(entry);
-            }
-        });
-        return data;
-    }
-
-    function parseAllSections(html) {
-        const htmlRoot = document.createElement('div');
-        htmlRoot.innerHTML = html;
-
-        const data = {};
-        
-        // --- CORRECCIÓN ---
-        // Parseo de Metadata adaptado a tabla y a prueba de undefined
-        const metadata = {};
-        const firstTable = htmlRoot.querySelector('table');
-        if (firstTable && firstTable.textContent.includes('Turno')) {
-            const cells = firstTable.querySelectorAll('td');
-            // En el DOCX: Turno (celda 0) | Valor (celda 1) | Responsable (celda 2) | Valor (celda 3)
-            if (cells.length > 1 && cells[1].textContent.trim()) {
-                metadata.turno = cells[1].textContent.trim();
-            }
-            if (cells.length > 3 && cells[3].textContent.trim()) {
-                metadata.responsable = cells[3].textContent.trim();
-            }
-        }
-        data.metadata = metadata; // Se añade el objeto (vacío si no se encuentra nada, pero nunca undefined)
-
-        const tituloTag = Array.from(htmlRoot.querySelectorAll('p')).find(p => p.textContent.startsWith('NOVEDADES B.P.E.F.'));
-        if(tituloTag) {
-            const match = tituloTag.textContent.match(/\[(.*?)\]/);
-            const dateStr = match ? match[1] : new Date().toLocaleDateString('es-ES');
-            const dateParts = dateStr.split('/');
-            if (dateParts.length === 3) {
-                 data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
-            }
-        }
-        if(!data.fecha) {
-            const today = new Date();
-            data.fecha = today.toISOString().slice(0, 10);
-            console.warn("No se encontró fecha en el título, usando fecha actual.");
-        }
-
-        const secciones = {
-            grupo1: { title: "GRUPO 1", type: 'key-value' },
-            investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
-            casas_citas: { title: "CONTROL CASA DE CITAS", type: 'array' },
-            grupo4: { title: "GRUPO 4", type: 'array' },
-            puerto: { title: "PUERTO", type: 'key-value' },
-            cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
-            cie: { title: "CIE", type: 'array' },
-            gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
-        };
-
-        for (const [key, config] of Object.entries(secciones)) {
-            const table = findTableAfterTitle(htmlRoot, config.title);
-            if (table) {
-                if (config.type === 'key-value') {
-                    data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
-                } else if (config.type === 'array') {
-                    data[key] = mapArrayTable(table);
-                }
-            }
-        }
-        return data;
-    }
-
-    // =================================================
-    // LÓGICA DE GUARDADO EN FIREBASE
-    // =================================================
-    
-    async function saveAllToFirebase(data) {
-        const fecha = data.fecha;
-        if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
-        
-        const fechaSinGuiones = fecha.replace(/-/g, "");
-        const batch = db.batch();
-
-        const firebaseMap = {
-            cecorex: { collection: "cecorex", id: `cecorex_${fecha}` },
-            cie: { collection: "grupo_cie", id: fecha },
-            gestion: { collection: "gestion_avanzada", id: `gestion_${fechaSinGuiones}` },
-            puerto: { collection: "grupoPuerto_registros", id: `puerto_${fecha}` },
-            grupo1: { collection: "grupo1_diario", id: `g1_${fecha}` },
-            grupo4: { collection: "grupo4_operativo", id: `g4_${fecha}` },
-            investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
-            casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
-        };
-        
-        for (const [key, fbConfig] of Object.entries(firebaseMap)) {
-            if (data[key] && (Object.keys(data[key]).length > 0 || data[key].length > 0)) {
-                
-                let dataToSave = {
-                    fecha: fecha,
-                    // --- CORRECCIÓN --- 
-                    // Se expande el objeto metadata de forma segura
-                    ...(data.metadata.turno && { turno: data.metadata.turno }),
-                    ...(data.metadata.responsable && { responsable: data.metadata.responsable }),
-                    ...formatDataForFirebase(key, data[key])
-                };
-
-                const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
-                batch.set(docRef, dataToSave, { merge: true });
-            }
-        }
-        
-        await batch.commit();
-    }
-    
-    function formatDataForFirebase(key, parsedData) {
-        switch(key) {
-            case 'cie':
-                 return { novedades: parsedData };
-            case 'investigacion':
-                 return { operaciones: parsedData };
-            case 'grupo4':
-                 return { partes: parsedData };
-            // El formato key-value es muy versátil y puede que no necesite formateo
-            default:
-                return { ...parsedData };
-        }
-    }
-
-});
+/* Aumenta tamaño logos en móvil */
+@media (max-width: 650px) {
+  .grupo-card .display-4 {
+    font-size: 4.7rem;
+    margin-bottom: 0.6rem;
+  }
+  .grupo-card {
+    min-height: 130px;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+  .grupo-ico {
+    width: 80vw;
+    height: 80vw;
+    max-width: 135px;
+    max-height: 135px;
+  }
+  .grupo-ico img {
+    width: 100%;
+    height: 100%;
+  }
+  .grupo-btn {
+    width: 98vw;
+    max-width: 180px;
+    height: auto;
+    min-height: 160px;
+  }
+}
