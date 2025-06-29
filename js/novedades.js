@@ -1,6 +1,6 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.2 - Limpieza de Texto Mejorada)
-// Búsqueda de títulos y fechas tolerante a errores de formato y espaciado.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.3 - Búsqueda y Limpieza Mejoradas)
+// Búsqueda de títulos tolerante a errores de formato y espaciado.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     /**
      * --- FUNCIÓN MEJORADA ---
-     * Normaliza un texto: quita acentos, convierte a mayúsculas y limpia espacios.
+     * Normaliza un texto de forma agresiva para asegurar la coincidencia.
      * @param {string} str El texto a normalizar.
      * @returns {string} El texto normalizado.
      */
@@ -151,10 +151,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!str) return '';
         return str
             .replace(/&nbsp;/g, ' ')      // Reemplaza non-breaking spaces
-            .replace(/\s+/g, ' ')         // Reemplaza múltiples espacios por uno solo
-            .trim()                       // Quita espacios al principio y al final
             .normalize("NFD")             // Quita acentos
             .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9\s]/g, '') // Elimina caracteres no alfanuméricos (excepto espacios)
+            .replace(/\s+/g, ' ')         // Reemplaza múltiples espacios por uno solo
+            .trim()                       // Quita espacios al principio y al final
             .toUpperCase();
     }
 
@@ -163,9 +164,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const normalizedSearchText = normalizeText(titleText);
         
         const targetHeader = headers.find(h => {
-            // Se normaliza el texto del documento antes de comparar
             const normalizedHeaderText = normalizeText(h.textContent);
-            return normalizedHeaderText.startsWith(normalizedSearchText);
+            // --- CAMBIO IMPORTANTE: Usamos includes() para ser más flexibles ---
+            return normalizedHeaderText.includes(normalizedSearchText);
         });
         
         if (targetHeader) {
