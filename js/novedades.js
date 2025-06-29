@@ -1,6 +1,7 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.4)
-// Compatible con la última versión de la plantilla.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.5 - Con Traductor)
+// Esta versión traduce los nombres de la plantilla a los nombres de campo
+// que esperan los scripts antiguos de cada grupo, garantizando la compatibilidad.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -28,19 +29,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnConfirmarGuardado = document.getElementById('btnConfirmarGuardado');
     const btnCancelar = document.getElementById('btnCancelar');
 
-    // Variable para guardar los datos parseados temporalmente
     let parsedDataForConfirmation = null;
 
     // --- MANEJO DE EVENTOS ---
-    if (inputDocx) {
-        inputDocx.addEventListener('change', handleDocxUpload);
-    }
-    if(btnConfirmarGuardado) {
-        btnConfirmarGuardado.addEventListener('click', onConfirmSave);
-    }
-    if(btnCancelar) {
-        btnCancelar.addEventListener('click', onCancel);
-    }
+    if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
+    if(btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
+    if(btnCancelar) btnCancelar.addEventListener('click', onCancel);
 
     // --- FUNCIONES DE UI ---
     function showStatus(message, type = 'info') {
@@ -101,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showResults(parsedDataForConfirmation);
             showStatus('Datos extraídos. Por favor, revisa la información y confirma para guardar.', 'info');
-            
             showConfirmationUI(true);
 
         } catch (err) {
@@ -146,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==================================================================
-    // PARSERS Y LÓGICA DE GUARDADO
+    // PARSERS
     // ==================================================================
     
     function findTableAfterTitle(htmlRoot, titleText) {
@@ -156,9 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (targetHeader) {
             let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
             while(nextElement) {
-                if (nextElement.tagName === 'TABLE') {
-                    return nextElement;
-                }
+                if (nextElement.tagName === 'TABLE') return nextElement;
                 nextElement = nextElement.nextElementSibling;
             }
         }
@@ -197,9 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const entry = {};
                 cells.forEach((cell, index) => {
                     const header = headers[index];
-                    if(header) {
-                       entry[header] = cell.textContent.trim();
-                    }
+                    if(header) entry[header] = cell.textContent.trim();
                 });
                 data.push(entry);
             }
@@ -238,10 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
             grupo4: { title: "GRUPO 4", type: 'array' },
             puerto: { title: "PUERTO", type: 'key-value' },
             cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
-            cie: { title: "CIE", type: 'array' },
-            // --- INICIO DE LA LÍNEA CORREGIDA ---
+            cie: { title: "CIE", type: 'key-value' },
             gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
-            // --- FIN DE LA LÍNEA CORREGIDA ---
         };
         for (const [key, config] of Object.entries(secciones)) {
             const table = findTableAfterTitle(htmlRoot, config.title);
@@ -252,6 +239,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return data;
     }
+    
+    // ==================================================================
+    // LÓGICA DE GUARDADO Y TRADUCCIÓN
+    // ==================================================================
     
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
@@ -268,6 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
             casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
         };
+        
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
@@ -283,12 +275,73 @@ document.addEventListener('DOMContentLoaded', function() {
         await batch.commit();
     }
     
+    /**
+     * TRADUCTOR UNIVERSAL
+     * Convierte los datos parseados a la estructura que cada app antigua espera.
+     */
     function formatDataForFirebase(key, parsedData) {
-        switch(key) {
-            case 'cie': return { novedades: parsedData };
-            case 'investigacion': return { operaciones: parsedData };
-            case 'grupo4': return { partes: parsedData };
-            default: return { ...parsedData };
+        // Mapa de traducción de claves de la plantilla a claves de los scripts antiguos
+        const translationMap = {
+            cecorex: {
+                'Remisiones a Subdelegación': 'remisiones',
+                'Alegaciones de Abogados': 'alegaciones',
+                'Decretos expulsión grabados': 'decretos',
+                'Citados en Oficina': 'citados',
+                'Diligencias de informe': 'diligenciasInforme',
+                'Consultas (Equipo)': 'consultasEquipo',
+                'Consultas (Telefónicas)': 'consultasTel',
+                'Prohibiciones de entrada grabadas': 'prohibiciones',
+                'Trámites de audiencia': 'audiencias',
+                'Detenidos ILE': 'detenidosILE',
+                'Notificaciones con Letrado': 'notificaciones',
+                'MENAs': 'menas',
+                'Observaciones': 'observaciones'
+            },
+            gestion: {
+                'Entrevistas de Asilo realizadas': 'entrevistasAsilo',
+                'Fallos en Entrevistas de Asilo': 'entrevistasAsiloFallos',
+                'Cartas Concedidas': 'cartasConcedidas',
+                'Cartas Denegadas': 'cartasDenegadas',
+                'Citas Subdelegación': 'citasSubdelegacion',
+                'Tarjetas recogidas en Subdelegación': 'tarjetasSubdelegacion',
+                'Notificaciones Concedidas': 'notificacionesConcedidas',
+                'Notificaciones Denegadas': 'notificacionesDenegadas',
+                'Citas ofertadas': 'citas',
+                'Citas que faltan': 'citasFaltan',
+                'CUEs (Certificados UE)': 'cues',
+                'Asignaciones de NIE': 'asignaciones',
+                'Modificaciones telem. Favorables': 'modificacionesFavorables',
+                'Modificaciones telem. Desfavorables': 'modificacionesDesfavorables',
+                'Declaración Entrada': 'declaracionEntrada',
+                'Oficios realizados': 'oficios',
+                'Telefonemas Asilo': 'citasTelAsilo',
+                'Telefonemas Cartas': 'citasTelCartas',
+                'Renuncias Ucrania / Asilo': 'renunciasAsilo'
+            },
+            // Añadir más traducciones para otros grupos si es necesario
+        };
+
+        // Si no hay un mapa de traducción para este grupo, devolvemos los datos como están.
+        if (!translationMap[key]) {
+             // Para datos en formato array (investigacion, grupo4, etc.)
+            if(Array.isArray(parsedData)) return { datos: parsedData };
+            // Para datos en formato objeto (grupo1, puerto)
+            return { ...parsedData };
         }
+
+        // Si hay mapa, traducimos las claves
+        const translatedData = {};
+        for (const [oldKey, value] of Object.entries(parsedData)) {
+            const newKey = translationMap[key][oldKey];
+            if (newKey) {
+                translatedData[newKey] = value;
+            } else {
+                // Si una clave no está en el mapa, la mantenemos por si acaso
+                translatedData[oldKey] = value;
+            }
+        }
+        return translatedData;
     }
 });
+```
+
