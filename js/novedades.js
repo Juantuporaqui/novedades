@@ -1,6 +1,6 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.0 - Detección de Fechas Avanzada)
-// Esta versión es tolerante a múltiples formatos de fecha, incluyendo años de 2 dígitos y diferentes separadores.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.1 - Definitivo)
+// Búsqueda de títulos y fechas tolerante a errores de formato y espaciado.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -143,15 +143,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function normalizeText(str) {
         if (!str) return '';
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        // Quita acentos y convierte a mayúsculas
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     }
 
     function findTableAfterTitle(htmlRoot, titleText) {
         const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
-        const normalizedSearchText = normalizeText(titleText.toUpperCase());
+        const normalizedSearchText = normalizeText(titleText);
         
         const targetHeader = headers.find(h => {
-            const normalizedHeaderText = normalizeText(h.textContent.trim().toUpperCase());
+            // Normaliza y limpia el texto del documento antes de comparar
+            const normalizedHeaderText = normalizeText(h.textContent.trim());
             return normalizedHeaderText.startsWith(normalizedSearchText);
         });
         
@@ -218,11 +220,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         data.metadata = metadata;
         
-        // --- INICIO DE LA LÓGICA DE FECHAS MEJORADA ---
         const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
         let dateMatch = null;
         
-        // Expresión regular para buscar fechas en formatos variados (dd/mm/aaaa, dd.mm.aa, etc.)
         const dateRegex = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/;
 
         if (tituloTag) {
@@ -238,9 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const month = dateMatch[2].padStart(2, '0');
             let year = dateMatch[3];
 
-            // Convertir año de 2 dígitos a 4 dígitos
             if (year.length === 2) {
-                const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100; // e.g., 2000
+                const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100;
                 year = currentCentury + parseInt(year, 10);
             }
             
@@ -250,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function() {
             data.fecha = today.toISOString().slice(0, 10);
             console.warn("No se encontró ninguna fecha en el documento, usando fecha actual.");
         }
-        // --- FIN DE LA LÓGICA DE FECHAS MEJORADA ---
 
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
