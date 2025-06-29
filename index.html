@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <!-- Estilo para los nuevos botones globales -->
+  <!-- Estilo para los nuevos botones globales y botones de grupo -->
   <style>
     .global-actions {
       display: flex;
@@ -35,6 +35,87 @@
     .btn-consulta {
       background-color: #0d6efd; /* Asul */
     }
+
+    /* === NUEVO ESTILO PARA LOS BOTONES DE GRUPO === */
+    .grupos-menu {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 18px;
+      margin: 2em 0 2.5em 0;
+    }
+    .grupo-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 6px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(80,80,80,0.04);
+      text-decoration: none;
+      transition: box-shadow 0.18s, transform 0.18s;
+      min-width: 110px;
+      max-width: 130px;
+      min-height: 130px;
+      margin: 8px;
+      border: none;
+    }
+    .grupo-btn:hover,
+    .grupo-btn:focus {
+      box-shadow: 0 6px 18px rgba(80,80,80,0.12);
+      transform: translateY(-3px) scale(1.03);
+    }
+    .grupo-ico {
+      width: 82px;
+      height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5em;
+    }
+    .grupo-ico img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(60,60,60,0.04);
+    }
+    .grupo-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #232323;
+      text-align: center;
+      margin-top: 0.4em;
+      line-height: 1.1;
+    }
+    /* CABECERA Y FOOTER (opcionalmente puedes mantener tu CSS original para estos) */
+    .sirex-header {
+      text-align: center;
+      margin: 2em 0 1.2em 0;
+    }
+    .sirex-title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 0.01em;
+      color: #0d6efd;
+      margin-bottom: 0.2em;
+    }
+    .sirex-desc {
+      font-size: 1.2rem;
+      color: #555;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+    .footer {
+      text-align: center;
+      color: #aaa;
+      font-size: 0.98em;
+      margin-top: 2.5em;
+      padding: 1em 0 0.4em 0;
+    }
   </style>
 </head>
 <body>
@@ -50,56 +131,56 @@
       <!-- GRUPO 1: Expulsiones -->
       <a href="grupos/grupo1.html" class="grupo-btn" title="Expulsiones">
         <span class="grupo-ico">
-          <img src="img/grupo1.png" alt="Grupo 1 Expulsiones" width="70" height="70" loading="lazy">
+          <img src="img/grupo1.png" alt="Grupo 1 Expulsiones" loading="lazy">
         </span>
         <span class="grupo-label">Expulsiones</span>
       </a>
       <!-- GRUPO 2: Investigación 1 -->
       <a href="grupos/grupo2.html" class="grupo-btn" title="Investigación 1">
         <span class="grupo-ico">
-          <img src="img/grupo2.png" alt="Grupo 2 Investigación" width="70" height="70" loading="lazy">
+          <img src="img/grupo2.png" alt="Grupo 2 Investigación" loading="lazy">
         </span>
         <span class="grupo-label">Investigación 1</span>
       </a>
       <!-- GRUPO 3: Investigación 2 -->
       <a href="grupos/grupo3.html" class="grupo-btn" title="Investigación 2">
         <span class="grupo-ico">
-          <img src="img/grupo3.png" alt="Grupo 3 Investigación" width="70" height="70" loading="lazy">
+          <img src="img/grupo3.png" alt="Grupo 3 Investigación" loading="lazy">
         </span>
         <span class="grupo-label">Investigación 2</span>
       </a>
       <!-- GRUPO 4: Operativo -->
       <a href="grupos/grupo4.html" class="grupo-btn" title="Operativo">
         <span class="grupo-ico">
-          <img src="img/grupo4.png" alt="Grupo 4 Operativo" width="70" height="70" loading="lazy">
+          <img src="img/grupo4.png" alt="Grupo 4 Operativo" loading="lazy">
         </span>
         <span class="grupo-label">Operativo</span>
       </a>
       <!-- PUERTO -->
       <a href="grupos/puerto.html" class="grupo-btn" title="Puerto">
         <span class="grupo-ico">
-          <img src="img/puerto.png" alt="Puerto" width="70" height="70" loading="lazy">
+          <img src="img/puerto.png" alt="Puerto" loading="lazy">
         </span>
         <span class="grupo-label">Puerto</span>
       </a>
       <!-- GESTIÓN -->
       <a href="grupos/gestion.html" class="grupo-btn" title="Gestión">
         <span class="grupo-ico">
-          <img src="img/gestion.png" alt="Gestión" width="70" height="70" loading="lazy">
+          <img src="img/gestion.png" alt="Gestión" loading="lazy">
         </span>
         <span class="grupo-label">Gestión</span>
       </a>
       <!-- CECOREX -->
       <a href="grupos/cecorex.html" class="grupo-btn" title="Cecorex">
         <span class="grupo-ico">
-          <img src="img/cecorex.png" alt="Cecorex" width="70" height="70" loading="lazy">
+          <img src="img/cecorex.png" alt="Cecorex" loading="lazy">
         </span>
         <span class="grupo-label">CECOREX</span>
       </a>
       <!-- CIE -->
       <a href="grupos/cie.html" class="grupo-btn" title="CIE">
         <span class="grupo-ico">
-          <img src="img/cie.png" alt="CIE" width="70" height="70" loading="lazy">
+          <img src="img/cie.png" alt="CIE" loading="lazy">
         </span>
         <span class="grupo-label">CIE</span>
       </a>
