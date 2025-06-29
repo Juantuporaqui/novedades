@@ -1,7 +1,6 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.3 - Búsqueda y Limpieza Mejoradas)
-// Búsqueda de títulos tolerante a errores de formato y espaciado. Adaptado para plantillas DOCX
-// con títulos en celdas de tabla o en el propio texto.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.4 - Compatibilidad DOCX robusta)
+// Búsqueda de tablas tolerante a errores de formato, saltos y espaciado.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -143,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==================================================================
     
     /**
-     * --- FUNCIÓN MEJORADA ---
      * Normaliza un texto de forma agresiva para asegurar la coincidencia.
      * @param {string} str El texto a normalizar.
      * @returns {string} El texto normalizado.
@@ -151,38 +149,55 @@ document.addEventListener('DOMContentLoaded', function() {
     function normalizeText(str) {
         if (!str) return '';
         return str
-            .replace(/&nbsp;/g, ' ')      // Reemplaza non-breaking spaces
-            .normalize("NFD")             // Quita acentos
+            .replace(/&nbsp;/g, ' ')
+            .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-zA-Z0-9\s]/g, '') // Elimina caracteres no alfanuméricos (excepto espacios)
-            .replace(/\s+/g, ' ')         // Reemplaza múltiples espacios por uno solo
-            .trim()                       // Quita espacios al principio y al final
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
             .toUpperCase();
     }
 
-    // --- FUNCIÓN TOTALMENTE MEJORADA ---
+    /**
+     * Busca la tabla situada tras un título, saltando saltos, líneas vacías y nodos basura.
+     */
     function findTableAfterTitle(htmlRoot, titleText) {
         const normalizedSearchText = normalizeText(titleText);
 
-        // 1. Busca primero como hasta ahora (tras el título)
+        // Busca título en los headers
         const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => {
             const normalizedHeaderText = normalizeText(h.textContent);
             return normalizedHeaderText.includes(normalizedSearchText);
         });
         if (targetHeader) {
-            let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
-            while(nextElement) {
-                if (nextElement.tagName === 'TABLE') return nextElement;
+            // Busca la tabla en los siguientes 6 elementos (saltando líneas vacías)
+            let nextElement = targetHeader;
+            for (let i = 0; i < 6; i++) {
                 nextElement = nextElement.nextElementSibling;
+                if (!nextElement) break;
+                if (nextElement.tagName === 'TABLE') return nextElement;
             }
         }
-        // 2. Busca en todas las tablas si la primera celda coincide con el título
+        // Busca tabla cuya primera celda sea el título (backup)
         const tables = Array.from(htmlRoot.querySelectorAll('table'));
         for (const table of tables) {
             const firstCell = table.querySelector('tr td');
             if (firstCell && normalizeText(firstCell.textContent).includes(normalizedSearchText)) {
                 return table;
+            }
+        }
+        // Extra: si el título es el texto anterior a una tabla
+        const paragraphs = Array.from(htmlRoot.querySelectorAll('p'));
+        for (const p of paragraphs) {
+            if (normalizeText(p.textContent).includes(normalizedSearchText)) {
+                let node = p.nextElementSibling;
+                while (node && node.tagName !== 'TABLE') {
+                    node = node.nextElementSibling;
+                }
+                if (node && node.tagName === 'TABLE') {
+                    return node;
+                }
             }
         }
         console.warn(`No se encontró la tabla para la sección: ${titleText}`);
@@ -271,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn("No se encontró ninguna fecha en el documento, usando fecha actual.");
         }
 
+        // --- SECCIONES ---
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
             investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
