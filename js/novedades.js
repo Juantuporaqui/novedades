@@ -1,7 +1,6 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.6 - Verificado)
-// Esta versión traduce los nombres de la plantilla a los nombres de campo
-// que esperan los scripts antiguos de cada grupo, garantizando la compatibilidad.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.0 - Detección de Fechas Avanzada)
+// Esta versión es tolerante a múltiples formatos de fecha, incluyendo años de 2 dígitos y diferentes separadores.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -142,9 +141,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARSERS
     // ==================================================================
     
+    function normalizeText(str) {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     function findTableAfterTitle(htmlRoot, titleText) {
         const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
-        const targetHeader = headers.find(h => h.textContent.trim().toUpperCase().includes(titleText.toUpperCase()));
+        const normalizedSearchText = normalizeText(titleText.toUpperCase());
+        
+        const targetHeader = headers.find(h => {
+            const normalizedHeaderText = normalizeText(h.textContent.trim().toUpperCase());
+            return normalizedHeaderText.startsWith(normalizedSearchText);
+        });
         
         if (targetHeader) {
             let nextElement = targetHeader.closest('p, h1, h2, h3, h4')?.nextElementSibling || targetHeader.nextElementSibling;
@@ -208,18 +217,41 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cells.length > 3 && cells[3].textContent.trim()) metadata.responsable = cells[3].textContent.trim();
         }
         data.metadata = metadata;
-        const tituloTag = Array.from(htmlRoot.querySelectorAll('p')).find(p => p.textContent.startsWith('PARTE DIARIO DE NOVEDADES'));
-        if(tituloTag) {
-            const match = tituloTag.textContent.match(/\[(.*?)\]/);
-            const dateStr = match ? match[1] : new Date().toLocaleDateString('es-ES');
-            const dateParts = dateStr.split('/');
-            if (dateParts.length === 3) data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
+        
+        // --- INICIO DE LA LÓGICA DE FECHAS MEJORADA ---
+        const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
+        let dateMatch = null;
+        
+        // Expresión regular para buscar fechas en formatos variados (dd/mm/aaaa, dd.mm.aa, etc.)
+        const dateRegex = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/;
+
+        if (tituloTag) {
+            dateMatch = tituloTag.textContent.match(dateRegex);
         }
-        if(!data.fecha) {
+        
+        if (!dateMatch) {
+            dateMatch = htmlRoot.textContent.match(dateRegex);
+        }
+
+        if (dateMatch) {
+            const day = dateMatch[1].padStart(2, '0');
+            const month = dateMatch[2].padStart(2, '0');
+            let year = dateMatch[3];
+
+            // Convertir año de 2 dígitos a 4 dígitos
+            if (year.length === 2) {
+                const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100; // e.g., 2000
+                year = currentCentury + parseInt(year, 10);
+            }
+            
+            data.fecha = `${year}-${month}-${day}`;
+        } else {
             const today = new Date();
             data.fecha = today.toISOString().slice(0, 10);
-            console.warn("No se encontró fecha en el título, usando fecha actual.");
+            console.warn("No se encontró ninguna fecha en el documento, usando fecha actual.");
         }
+        // --- FIN DE LA LÓGICA DE FECHAS MEJORADA ---
+
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
             investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
@@ -275,12 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         await batch.commit();
     }
     
-    /**
-     * TRADUCTOR UNIVERSAL
-     * Convierte los datos parseados a la estructura que cada app antigua espera.
-     */
     function formatDataForFirebase(key, parsedData) {
-        // Mapa de traducción de claves de la plantilla a claves de los scripts antiguos
         const translationMap = {
             cecorex: {
                 'Remisiones a Subdelegación': 'remisiones',
@@ -318,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Telefonemas Cartas': 'citasTelCartas',
                 'Renuncias Ucrania / Asilo': 'renunciasAsilo'
             },
-            // Añadir más traducciones para otros grupos si es necesario
         };
 
         if (!translationMap[key]) {
