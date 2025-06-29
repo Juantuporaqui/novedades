@@ -1,8 +1,6 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.2 - Final)
-// Lee un archivo .docx estandarizado, extrae los datos de cada grupo
-// y los guarda en sus respectivas colecciones de Firebase.
-// Esta versión está corregida para manejar correctamente los metadatos vacíos.
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v1.4)
+// Compatible con la última versión de la plantilla.
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -26,15 +24,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputDocx = document.getElementById('inputDocx');
     const statusContainer = document.getElementById('status-container');
     const resultsContainer = document.getElementById('results-container');
+    const confirmationButtons = document.getElementById('confirmation-buttons');
+    const btnConfirmarGuardado = document.getElementById('btnConfirmarGuardado');
+    const btnCancelar = document.getElementById('btnCancelar');
+
+    // Variable para guardar los datos parseados temporalmente
+    let parsedDataForConfirmation = null;
 
     // --- MANEJO DE EVENTOS ---
     if (inputDocx) {
         inputDocx.addEventListener('change', handleDocxUpload);
     }
+    if(btnConfirmarGuardado) {
+        btnConfirmarGuardado.addEventListener('click', onConfirmSave);
+    }
+    if(btnCancelar) {
+        btnCancelar.addEventListener('click', onCancel);
+    }
 
-    // =================================================
-    // FUNCIONES DE UI (SPINNER Y MENSAJES)
-    // =================================================
+    // --- FUNCIONES DE UI ---
     function showStatus(message, type = 'info') {
         if (!statusContainer) return;
         let alertClass = 'alert-info';
@@ -45,14 +53,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showSpinner(visible) {
         const spinner = document.getElementById('spinner-area');
-        if (spinner) {
-            spinner.style.display = visible ? 'flex' : 'none';
-        }
+        if (spinner) spinner.style.display = visible ? 'flex' : 'none';
+    }
+
+    function showConfirmationUI(show) {
+        if (confirmationButtons) confirmationButtons.style.display = show ? 'block' : 'none';
     }
 
     function showResults(parsedData) {
         if (!resultsContainer) return;
-        resultsContainer.innerHTML = '<h3><i class="bi bi-check-circle-fill text-success"></i> Datos Extraídos</h3>';
+        resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
         
         for (const key in parsedData) {
             const dataContent = parsedData[key];
@@ -69,54 +79,76 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-
-
-    // =================================================
-    // LÓGICA PRINCIPAL DE PROCESAMIENTO
-    // =================================================
+    
+    // --- LÓGICA PRINCIPAL ---
     async function handleDocxUpload(event) {
         const file = event.target.files[0];
-        if (!file || !file.name.endsWith('.docx')) {
-            showStatus('Por favor, selecciona un archivo .docx válido.', 'error');
-            return;
-        }
+        if (!file) return;
 
+        onCancel(); 
         showSpinner(true);
-        resultsContainer.innerHTML = '';
         showStatus('Procesando archivo...', 'info');
 
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            const html = result.value;
+            
+            parsedDataForConfirmation = parseAllSections(result.value);
 
-            // 1. Parsear el HTML para extraer todos los datos
-            const parsedData = parseAllSections(html);
-
-            if (Object.keys(parsedData).length <= 2) { // metadata y fecha
-                throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que los títulos en el DOCX (ej: 'GRUPO 1') son correctos.");
+            if (Object.keys(parsedDataForConfirmation).length <= 2) {
+                throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que el DOCX sigue la plantilla.");
             }
 
-            showResults(parsedData);
-
-            // 2. Guardar los datos en Firebase
-            await saveAllToFirebase(parsedData);
+            showResults(parsedDataForConfirmation);
+            showStatus('Datos extraídos. Por favor, revisa la información y confirma para guardar.', 'info');
             
-            showStatus('¡Proceso completado! Todos los datos han sido guardados en Firebase.', 'success');
+            showConfirmationUI(true);
 
         } catch (err) {
             console.error("Error en el procesamiento:", err);
             showStatus(`Error: ${err.message}`, 'error');
         } finally {
             showSpinner(false);
-            inputDocx.value = ''; // Reset input
+            inputDocx.value = '';
         }
     }
     
-    // =================================================
-    // PARSERS (El "cerebro" que interpreta el HTML)
-    // =================================================
+    async function onConfirmSave() {
+        if (!parsedDataForConfirmation) {
+            showStatus('No hay datos para guardar.', 'error');
+            return;
+        }
+        
+        showSpinner(true);
+        showConfirmationUI(false);
+        showStatus('Guardando datos en Firebase, por favor espera...', 'info');
+        resultsContainer.innerHTML = '';
 
+        try {
+            await saveAllToFirebase(parsedDataForConfirmation);
+            showStatus('¡Éxito! Todos los datos han sido guardados en Firebase.', 'success');
+        } catch (err) {
+            console.error("Error al guardar en Firebase:", err);
+            showStatus(`Error al guardar: ${err.message}`, 'error');
+            showResults(parsedDataForConfirmation);
+            showConfirmationUI(true);
+        } finally {
+            showSpinner(false);
+            parsedDataForConfirmation = null;
+        }
+    }
+
+    function onCancel() {
+        resultsContainer.innerHTML = '';
+        statusContainer.innerHTML = '';
+        showConfirmationUI(false);
+        parsedDataForConfirmation = null;
+    }
+
+    // ==================================================================
+    // PARSERS Y LÓGICA DE GUARDADO
+    // ==================================================================
+    
     function findTableAfterTitle(htmlRoot, titleText) {
         const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => h.textContent.trim().toUpperCase().includes(titleText.toUpperCase()));
@@ -178,41 +210,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function parseAllSections(html) {
         const htmlRoot = document.createElement('div');
         htmlRoot.innerHTML = html;
-
         const data = {};
-        
-        // --- INICIO DE LA SECCIÓN CORREGIDA ---
         const metadata = {};
         const firstTable = htmlRoot.querySelector('table');
         if (firstTable && firstTable.textContent.includes('Turno')) {
             const cells = firstTable.querySelectorAll('td');
-            // En el DOCX: Turno (celda 0) | Valor (celda 1) | Responsable (celda 2) | Valor (celda 3)
-            if (cells.length > 1 && cells[1].textContent.trim()) {
-                metadata.turno = cells[1].textContent.trim();
-            }
-            if (cells.length > 3 && cells[3].textContent.trim()) {
-                metadata.responsable = cells[3].textContent.trim();
-            }
+            if (cells.length > 1 && cells[1].textContent.trim()) metadata.turno = cells[1].textContent.trim();
+            if (cells.length > 3 && cells[3].textContent.trim()) metadata.responsable = cells[3].textContent.trim();
         }
         data.metadata = metadata;
-        // --- FIN DE LA SECCIÓN CORREGIDA ---
-
-        const tituloTag = Array.from(htmlRoot.querySelectorAll('p')).find(p => p.textContent.startsWith('NOVEDADES B.P.E.F.'));
+        const tituloTag = Array.from(htmlRoot.querySelectorAll('p')).find(p => p.textContent.startsWith('PARTE DIARIO DE NOVEDADES'));
         if(tituloTag) {
             const match = tituloTag.textContent.match(/\[(.*?)\]/);
-            // Si no encuentra fecha en el título, usa la fecha del día
             const dateStr = match ? match[1] : new Date().toLocaleDateString('es-ES');
             const dateParts = dateStr.split('/');
-            if (dateParts.length === 3) {
-                 data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
-            }
+            if (dateParts.length === 3) data.fecha = `${dateParts[2]}-${dateParts[1].padStart(2,'0')}-${dateParts[0].padStart(2,'0')}`;
         }
         if(!data.fecha) {
             const today = new Date();
             data.fecha = today.toISOString().slice(0, 10);
             console.warn("No se encontró fecha en el título, usando fecha actual.");
         }
-
         const secciones = {
             grupo1: { title: "GRUPO 1", type: 'key-value' },
             investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
@@ -221,33 +239,25 @@ document.addEventListener('DOMContentLoaded', function() {
             puerto: { title: "PUERTO", type: 'key-value' },
             cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
             cie: { title: "CIE", type: 'array' },
+            // --- INICIO DE LA LÍNEA CORREGIDA ---
             gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
+            // --- FIN DE LA LÍNEA CORREGIDA ---
         };
-
         for (const [key, config] of Object.entries(secciones)) {
             const table = findTableAfterTitle(htmlRoot, config.title);
             if (table) {
-                if (config.type === 'key-value') {
-                    data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
-                } else if (config.type === 'array') {
-                    data[key] = mapArrayTable(table);
-                }
+                if (config.type === 'key-value') data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
+                else if (config.type === 'array') data[key] = mapArrayTable(table);
             }
         }
         return data;
     }
-
-    // =================================================
-    // LÓGICA DE GUARDADO EN FIREBASE
-    // =================================================
     
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
-        
         const fechaSinGuiones = fecha.replace(/-/g, "");
         const batch = db.batch();
-
         const firebaseMap = {
             cecorex: { collection: "cecorex", id: `cecorex_${fecha}` },
             cie: { collection: "grupo_cie", id: fecha },
@@ -258,40 +268,27 @@ document.addEventListener('DOMContentLoaded', function() {
             investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
             casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
         };
-        
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
-                
-                // --- INICIO DE LA SECCIÓN CORREGIDA ---
                 let dataToSave = {
                     fecha: fecha,
-                    // Se expande el objeto metadata de forma segura, solo se añaden las claves si existen
                     ...(data.metadata.turno && { turno: data.metadata.turno }),
                     ...(data.metadata.responsable && { responsable: data.metadata.responsable }),
                     ...formatDataForFirebase(key, data[key])
                 };
-                // --- FIN DE LA SECCIÓN CORREGIDA ---
-
                 const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
                 batch.set(docRef, dataToSave, { merge: true });
             }
         }
-        
         await batch.commit();
     }
     
     function formatDataForFirebase(key, parsedData) {
         switch(key) {
-            case 'cie':
-                 return { novedades: parsedData };
-            case 'investigacion':
-                 return { operaciones: parsedData };
-            case 'grupo4':
-                 return { partes: parsedData };
-            default:
-                // La función mapKeyValueTable ya devuelve un objeto plano, así que lo expandimos
-                return { ...parsedData };
+            case 'cie': return { novedades: parsedData };
+            case 'investigacion': return { operaciones: parsedData };
+            case 'grupo4': return { partes: parsedData };
+            default: return { ...parsedData };
         }
     }
-
 });
