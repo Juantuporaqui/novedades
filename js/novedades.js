@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.8 - Detección universal de fechas, versión definitiva)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.9 - Detección universal de fechas + prompt manual)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -240,8 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         data.metadata = metadata;
         
-        // --- Detección universal de la fecha ---
-        // Reconoce DD/MM/YYYY, DD-MM-YYYY, DD MM YYYY, DD.MM.YYYY, DD/MM/YY, DD-MM-YY, DD MM YY, DD.MM.YY
+        // --- Detección universal de la fecha + prompt manual ---
         const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/;
         const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
         let dateMatch = null;
@@ -263,9 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             data.fecha = `${year}-${month}-${day}`;
         } else {
+            // Pregunta la fecha manualmente si no la encuentra
             const today = new Date();
-            data.fecha = today.toISOString().slice(0, 10);
-            console.warn("No se encontró ninguna fecha en el documento, usando fecha actual.");
+            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (YYYY-MM-DD):", today.toISOString().slice(0,10));
+            data.fecha = fechaManual ? fechaManual : today.toISOString().slice(0, 10);
+            console.warn("No se encontró ninguna fecha en el documento, usando fecha manual o actual.");
         }
 
         // --- SECCIONES ---
