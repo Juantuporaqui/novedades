@@ -6,7 +6,7 @@
 
 // 1. Firebase INIT + helpers
 
-const NOMBRE_COLECCION = "grupo4_gestion"; // Cambia si tu colección se llama diferente
+const NOMBRE_COLECCION = "grupo4_operativo"; // ATENCIÓN: Cambia aquí el nombre de la colección si hace falta
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
@@ -91,7 +91,8 @@ window.eliminarItem = function(tipo, idx) {
 async function guardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  // ATENCIÓN: ID SÓLO LA FECHA, sin prefijo ni sufijo
+  const docId = fecha; 
   await db.collection(NOMBRE_COLECCION).doc(docId).set({
     fecha,
     ...state,
@@ -104,7 +105,8 @@ async function guardarRegistro() {
 async function cargarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  // ATENCIÓN: ID SÓLO LA FECHA
+  const docId = fecha;
   const doc = await db.collection(NOMBRE_COLECCION).doc(docId).get();
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const data = doc.data();
@@ -127,7 +129,7 @@ async function eliminarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!confirm("¿Eliminar el registro de esta fecha?")) return;
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const docId = fecha; // ID SOLO FECHA
   await db.collection(NOMBRE_COLECCION).doc(docId).delete();
   Object.keys(state).forEach(k => state[k] = []);
   $('observaciones').value = "";
@@ -375,9 +377,9 @@ $('btnExportarCSV').onclick = function() {
   a.click();
   setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 };
+
 // --------- Extras y helpers ---------
 
-// Mensaje de estado de Firebase
 window.addEventListener('load', function() {
   const statusDiv = $('statusFirebase');
   if (!statusDiv) return;
@@ -414,7 +416,7 @@ async function robustGuardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!validateBeforeSave()) return;
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const docId = fecha; // SOLO LA FECHA
   await db.collection(NOMBRE_COLECCION).doc(docId).set({
     fecha,
     ...state,
@@ -432,12 +434,11 @@ window.onload = (function(origOnload){
   }
 })(window.onload);
 
-// Ayuda accesible en resumen fechas y exportar
 if ($('btnExportarPDF')) $('btnExportarPDF').title = "Exportar el resumen a PDF (abre ventana de impresión)";
 if ($('btnExportarCSV')) $('btnExportarCSV').title = "Exportar el resumen a hoja de cálculo CSV";
 if ($('btnWhatsapp')) $('btnWhatsapp').title = "Copiar resumen al portapapeles para WhatsApp (pega en la app)";
 
-// Pequeña mejora para mostrar/ocultar resumen de registro si no hay datos
+// Mostrar/ocultar resumen si no hay datos
 function mostrarResumen() {
   const d = state;
   if (
