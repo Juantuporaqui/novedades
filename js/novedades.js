@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v3.0 - Fecha editable y formato español)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (ID solo con fecha, estándar)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -345,18 +345,19 @@ document.addEventListener('DOMContentLoaded', function() {
     async function saveAllToFirebase(data) {
         const fecha = data.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
-        const fechaSinGuiones = fecha.replace(/-/g, "");
-        const batch = db.batch();
+
+        // ====== SOLO FECHA COMO ID ======
         const firebaseMap = {
-            cecorex: { collection: "cecorex", id: `cecorex_${fecha}` },
+            cecorex: { collection: "cecorex", id: fecha },
             cie: { collection: "grupo_cie", id: fecha },
-            gestion: { collection: "gestion_avanzada", id: `gestion_${fechaSinGuiones}` },
-            puerto: { collection: "grupoPuerto_registros", id: `puerto_${fecha}` },
-            grupo1: { collection: "grupo1_diario", id: `g1_${fecha}` },
-            grupo4: { collection: "grupo4_operativo", id: `g4_${fecha}` },
-            investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
-            casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
+            gestion: { collection: "gestion_avanzada", id: fecha },
+            puerto: { collection: "grupoPuerto_registros", id: fecha },
+            grupo1: { collection: "grupo1_diario", id: fecha },
+            grupo4: { collection: "grupo4_operativo", id: fecha },
+            investigacion: { collection: "investigacion_diario", id: fecha },
+            casas_citas: { collection: "control_casas_citas", id: fecha }
         };
+
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
@@ -371,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         await batch.commit();
     }
+
     function formatDataForFirebase(key, parsedData) {
         const translationMap = {
             cecorex: {
