@@ -95,8 +95,7 @@ let fechaActual = null;
 // ====== Helpers Firestore ======
 function getDocIdDia(fecha) {
     if (!fecha) return null;
-    const fechaISO = new Date(fecha).toISOString().slice(0, 10);
-    return `expulsiones_${fechaISO}`;
+    return new Date(fecha).toISOString().slice(0, 10); // SOLO FECHA, sin prefijo
 }
 function getDocRefDia(fecha) {
     return db.collection("grupo1_expulsiones").doc(getDocIdDia(fecha));
@@ -313,7 +312,6 @@ btnNuevo.addEventListener('click', () => {
     if (!fechaDiaInput.value) { showToast("Introduce la fecha para el nuevo registro."); return; }
     fechaActual = fechaDiaInput.value;
     limpiarTodo();
-    // No borres la fecha del input
 });
 
 // ====== Formularios: eventos ======
@@ -339,7 +337,7 @@ generarResumenBtn.addEventListener('click', async () => {
     let resumen = [];
     snapshot.forEach(docSnap => {
         const docId = docSnap.id;
-        const fechaStr = docId.replace("expulsiones_", "");
+        const fechaStr = docId; // Solo la fecha (sin prefijo)
         if (fechaStr >= desde && fechaStr <= hasta) {
             resumen.push({ fecha: fechaStr, ...docSnap.data() });
         }
