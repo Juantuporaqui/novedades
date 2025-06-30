@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             investigacion: { collection: "investigacion_diario", id: fecha },
             casas_citas: { collection: "control_casas_citas", id: fecha }
         };
-
+        const batch = db.batch();
         for (const [key, fbConfig] of Object.entries(firebaseMap)) {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
