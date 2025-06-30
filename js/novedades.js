@@ -1,5 +1,5 @@
 // =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.9 - Detección universal de fechas + prompt manual)
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v3.0 - Fecha editable y formato español)
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmationButtons = document.getElementById('confirmation-buttons');
     const btnConfirmarGuardado = document.getElementById('btnConfirmarGuardado');
     const btnCancelar = document.getElementById('btnCancelar');
+    const fechaEdicionDiv = document.getElementById('fecha-edicion');
+    const fechaManualInput = document.getElementById('fechaManualInput');
 
     let parsedDataForConfirmation = null;
 
@@ -56,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!resultsContainer) return;
         resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
         for (const key in parsedData) {
+            if (key === 'fecha') continue; // No la mostramos aquí, la muestra el input editable
             const dataContent = parsedData[key];
             if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
                 const card = document.createElement('div');
@@ -70,7 +73,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
+    function showFechaEditable(fecha) {
+        if (!fechaEdicionDiv || !fechaManualInput) return;
+        // Mostrar la fecha en formato español DD/MM/YYYY
+        if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+            const [yy, mm, dd] = fecha.split('-');
+            fechaManualInput.value = `${dd}/${mm}/${yy}`;
+        } else {
+            fechaManualInput.value = fecha;
+        }
+        fechaEdicionDiv.style.display = "block";
+    }
+
+    function obtenerFechaFormateada() {
+        let val = fechaManualInput.value.trim();
+        let regexES = /^(\d{1,2})[\/\- ](\d{1,2})[\/\- ](\d{2,4})$/;
+        let match = val.match(regexES);
+        if (match) {
+            let dd = match[1].padStart(2, '0');
+            let mm = match[2].padStart(2, '0');
+            let yyyy = match[3];
+            if (yyyy.length === 2) yyyy = (parseInt(yyyy, 10) > 50 ? '19' : '20') + yyyy;
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        // Si el usuario mete lo que sea, retorna lo que haya (pero preferimos el formato correcto)
+        return val;
+    }
+
     // --- LÓGICA PRINCIPAL ---
     async function handleDocxUpload(event) {
         const file = event.target.files[0];
@@ -85,12 +115,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await mammoth.convertToHtml({ arrayBuffer });
             parsedDataForConfirmation = parseAllSections(result.value);
 
+            // Mostramos la fecha extraída o manual
+            showFechaEditable(parsedDataForConfirmation.fecha);
+
             if (Object.keys(parsedDataForConfirmation).length <= 2) {
                 throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que el DOCX sigue la plantilla.");
             }
 
             showResults(parsedDataForConfirmation);
-            showStatus('Datos extraídos. Por favor, revisa la información y confirma para guardar.', 'info');
+            showStatus('Datos extraídos. Por favor, revisa la información, corrige la fecha si quieres y confirma para guardar.', 'info');
             showConfirmationUI(true);
 
         } catch (err) {
@@ -101,12 +134,16 @@ document.addEventListener('DOMContentLoaded', function() {
             inputDocx.value = '';
         }
     }
-    
+
     async function onConfirmSave() {
         if (!parsedDataForConfirmation) {
             showStatus('No hay datos para guardar.', 'error');
             return;
         }
+        // Tomar la fecha del campo editable y normalizar formato
+        let fechaFinal = obtenerFechaFormateada();
+        parsedDataForConfirmation.fecha = fechaFinal;
+
         showSpinner(true);
         showConfirmationUI(false);
         showStatus('Guardando datos en Firebase, por favor espera...', 'info');
@@ -123,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } finally {
             showSpinner(false);
             parsedDataForConfirmation = null;
+            fechaEdicionDiv.style.display = "none";
         }
     }
 
@@ -131,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statusContainer.innerHTML = '';
         showConfirmationUI(false);
         parsedDataForConfirmation = null;
+        if (fechaEdicionDiv) fechaEdicionDiv.style.display = "none";
     }
 
     // ==================================================================
@@ -148,10 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .toUpperCase();
     }
 
+    // --------- BÚSQUEDA ROBUSTA DE TABLAS ---------
     function findTableAfterTitle(htmlRoot, titleText) {
         const normalizedSearchText = normalizeText(titleText);
 
-        // Busca título en los headers
+        // Busca el header como antes
         const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
         const targetHeader = headers.find(h => {
             const normalizedHeaderText = normalizeText(h.textContent);
@@ -165,25 +205,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nextElement.tagName === 'TABLE') return nextElement;
             }
         }
-        const tables = Array.from(htmlRoot.querySelectorAll('table'));
-        for (const table of tables) {
-            const firstCell = table.querySelector('tr td');
-            if (firstCell && normalizeText(firstCell.textContent).includes(normalizedSearchText)) {
-                return table;
+
+        // Búsqueda secundaria: busca una tabla con columna típica de la sección
+        const sectionHints = {
+            'CECOREX': ['Remisiones a Subdelegación', 'Alegaciones de Abogados'],
+            'CIE': ['Internos', 'Ingresos'],
+            'GESTIÓN': ['Entrevistas de Asilo realizadas', 'Cartas Concedidas']
+        };
+        const hintList = sectionHints[titleText.toUpperCase()] || [];
+        if (hintList.length > 0) {
+            const tables = Array.from(htmlRoot.querySelectorAll('table'));
+            for (const table of tables) {
+                const cells = Array.from(table.querySelectorAll('td, th'));
+                for (const cell of cells) {
+                    const cellText = normalizeText(cell.textContent);
+                    if (hintList.some(hint => cellText.includes(normalizeText(hint)))) {
+                        return table;
+                    }
+                }
             }
         }
-        const paragraphs = Array.from(htmlRoot.querySelectorAll('p'));
-        for (const p of paragraphs) {
-            if (normalizeText(p.textContent).includes(normalizedSearchText)) {
-                let node = p.nextElementSibling;
-                while (node && node.tagName !== 'TABLE') {
-                    node = node.nextElementSibling;
-                }
-                if (node && node.tagName === 'TABLE') {
-                    return node;
-                }
-            }
-        }
+
         console.warn(`No se encontró la tabla para la sección: ${titleText}`);
         return null;
     }
@@ -241,17 +283,12 @@ document.addEventListener('DOMContentLoaded', function() {
         data.metadata = metadata;
         
         // --- Detección universal de la fecha + prompt manual ---
-        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/;
-        const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
+        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/g;
+        let allText = htmlRoot.textContent || '';
+        let allDates = [...allText.matchAll(dateRegex)];
         let dateMatch = null;
-        if (tituloTag) dateMatch = tituloTag.textContent.match(dateRegex);
-        if (!dateMatch) dateMatch = htmlRoot.textContent.match(dateRegex);
-        if (!dateMatch) {
-            const tables = Array.from(htmlRoot.querySelectorAll('table'));
-            if (tables.length) {
-                const tableText = tables[0].textContent;
-                dateMatch = tableText.match(dateRegex);
-            }
+        if (allDates.length > 0) {
+            dateMatch = allDates[0];
         }
         if (dateMatch) {
             const day = dateMatch[1].padStart(2, '0');
@@ -262,10 +299,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             data.fecha = `${year}-${month}-${day}`;
         } else {
-            // Pregunta la fecha manualmente si no la encuentra
             const today = new Date();
-            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (YYYY-MM-DD):", today.toISOString().slice(0,10));
-            data.fecha = fechaManual ? fechaManual : today.toISOString().slice(0, 10);
+            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (dd/mm/yyyy):", `${today.getDate().toString().padStart(2,'0')}/${(today.getMonth()+1).toString().padStart(2,'0')}/${today.getFullYear()}`);
+            if (fechaManual && fechaManual.match(/^\d{1,2}[\/\- ]\d{1,2}[\/\- ]\d{2,4}$/)) {
+                let match = fechaManual.match(/^(\d{1,2})[\/\- ](\d{1,2})[\/\- ](\d{2,4})$/);
+                let dd = match[1].padStart(2, '0');
+                let mm = match[2].padStart(2, '0');
+                let yyyy = match[3];
+                if (yyyy.length === 2) yyyy = (parseInt(yyyy, 10) > 50 ? '19' : '20') + yyyy;
+                data.fecha = `${yyyy}-${mm}-${dd}`;
+            } else {
+                data.fecha = today.toISOString().slice(0, 10);
+            }
             console.warn("No se encontró ninguna fecha en el documento, usando fecha manual o actual.");
         }
 
@@ -288,33 +333,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // === ADAPTADORES PARA LOS GRUPOS ===
-        // --- CIE ---
-        if (data.cie) {
-            let internosNac = [];
-            let ingresos = [];
-            let salidas = [];
-            let nInternos = 0;
-            let observaciones = "";
-            Object.entries(data.cie).forEach(([key, val]) => {
-                if (key.toLowerCase().includes("internos") && !isNaN(val)) nInternos = val;
-                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) observaciones = val;
-                if (key.toLowerCase().includes("ingreso")) ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
-                if (key.toLowerCase().includes("salida")) salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
-                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) internosNac.push({ nacionalidad: key, numero: val });
-            });
-            data.cie = { nInternos, internosNac, ingresos, salidas, observaciones };
-        }
-        // --- CECOREX: si hay campo tipo "detenidos" como array, pásalo como tal (para el futuro)
-        if (data.cecorex && Array.isArray(data.cecorex.detenidos)) {
-            data.cecorex.detenidos = data.cecorex.detenidos.map(e => ({
-                nombre: e.nombre || "",
-                nacionalidad: e.nacionalidad || "",
-                motivo: e.motivo || "",
-                observaciones: e.observaciones || ""
-            }));
-        }
-        // --- GESTIÓN: puedes añadir aquí mapeos especiales si en el futuro tienes listas
+        // LOG de depuración para ver exactamente qué grupos saca
+        console.log("DATA EXTRAÍDA:", data);
 
         return data;
     }
@@ -341,8 +361,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
                 let dataToSave = {
                     fecha: fecha,
-                    ...(data.metadata.turno && { turno: data.metadata.turno }),
-                    ...(data.metadata.responsable && { responsable: data.metadata.responsable }),
+                    ...(data.metadata && data.metadata.turno && { turno: data.metadata.turno }),
+                    ...(data.metadata && data.metadata.responsable && { responsable: data.metadata.responsable }),
                     ...formatDataForFirebase(key, data[key])
                 };
                 const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
