@@ -1,8 +1,9 @@
 // =================================================================================
 // SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (ID solo con fecha, estándar)
+// Versión definitiva profesional, 2025 - DOCX oficial, parser robusto, batch seguro
 // =================================================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     // --- CONFIGURACIÓN FIREBASE ---
     const firebaseConfig = {
@@ -13,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
         messagingSenderId: "241698436443",
         appId: "1:241698436443:web:1f333b3ae3f813b755167e"
     };
-
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
@@ -28,25 +28,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnCancelar = document.getElementById('btnCancelar');
     const fechaEdicionDiv = document.getElementById('fecha-edicion');
     const fechaManualInput = document.getElementById('fechaManualInput');
+    const spinner = document.getElementById('spinner-area');
 
     let parsedDataForConfirmation = null;
+    let bloquesFaltantes = [];
 
     // --- MANEJO DE EVENTOS ---
     if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
-    if(btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
-    if(btnCancelar) btnCancelar.addEventListener('click', onCancel);
+    if (btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
+    if (btnCancelar) btnCancelar.addEventListener('click', onCancel);
 
     // --- FUNCIONES DE UI ---
     function showStatus(message, type = 'info') {
         if (!statusContainer) return;
         let alertClass = 'alert-info';
         if (type === 'success') alertClass = 'alert-success';
-        if (type === 'error') alertClass = 'alert-danger';
+        if (type === 'error' || type === 'danger') alertClass = 'alert-danger';
+        if (type === 'warning') alertClass = 'alert-warning';
         statusContainer.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
     }
 
     function showSpinner(visible) {
-        const spinner = document.getElementById('spinner-area');
         if (spinner) spinner.style.display = visible ? 'flex' : 'none';
     }
 
@@ -56,9 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showResults(parsedData) {
         if (!resultsContainer) return;
-        resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
+        resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos para validación</h3>';
         for (const key in parsedData) {
-            if (key === 'fecha') continue; // No la mostramos aquí, la muestra el input editable
+            if (key === 'fecha') continue; // Fecha se muestra aparte
             const dataContent = parsedData[key];
             if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
                 const card = document.createElement('div');
@@ -72,11 +74,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultsContainer.appendChild(card);
             }
         }
+        if (bloquesFaltantes.length) {
+            resultsContainer.innerHTML += `<div class="alert alert-warning mt-2">Atención: No se encontraron los siguientes bloques: <b>${bloquesFaltantes.join(', ')}</b>. Se grabará solo lo encontrado.</div>`;
+        }
     }
 
     function showFechaEditable(fecha) {
         if (!fechaEdicionDiv || !fechaManualInput) return;
-        // Mostrar la fecha en formato español DD/MM/YYYY
         if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
             const [yy, mm, dd] = fecha.split('-');
             fechaManualInput.value = `${dd}/${mm}/${yy}`;
@@ -97,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (yyyy.length === 2) yyyy = (parseInt(yyyy, 10) > 50 ? '19' : '20') + yyyy;
             return `${yyyy}-${mm}-${dd}`;
         }
-        // Si el usuario mete lo que sea, retorna lo que haya (pero preferimos el formato correcto)
         return val;
     }
 
@@ -105,25 +108,32 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleDocxUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
-
-        onCancel(); 
+        onCancel();
         showSpinner(true);
         showStatus('Procesando archivo...', 'info');
+
+        if (!file.name.toLowerCase().endsWith('.docx')) {
+            showStatus('Solo se admiten archivos DOCX con la plantilla oficial.', 'danger');
+            showSpinner(false);
+            return;
+        }
 
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            parsedDataForConfirmation = parseAllSections(result.value);
+            const { datos, fecha, faltantes } = parseAllSections(result.value);
+            parsedDataForConfirmation = datos;
+            parsedDataForConfirmation.fecha = fecha;
+            bloquesFaltantes = faltantes;
 
-            // Mostramos la fecha extraída o manual
-            showFechaEditable(parsedDataForConfirmation.fecha);
+            showFechaEditable(fecha);
 
-            if (Object.keys(parsedDataForConfirmation).length <= 2) {
+            if (Object.keys(parsedDataForConfirmation).length <= 1) {
                 throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que el DOCX sigue la plantilla.");
             }
 
             showResults(parsedDataForConfirmation);
-            showStatus('Datos extraídos. Por favor, revisa la información, corrige la fecha si quieres y confirma para guardar.', 'info');
+            showStatus('Datos extraídos. Revisa la información, corrige la fecha si quieres y confirma para guardar.', 'info');
             showConfirmationUI(true);
 
         } catch (err) {
@@ -140,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus('No hay datos para guardar.', 'error');
             return;
         }
-        // Tomar la fecha del campo editable y normalizar formato
         let fechaFinal = obtenerFechaFormateada();
         parsedDataForConfirmation.fecha = fechaFinal;
 
@@ -150,6 +159,14 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsContainer.innerHTML = '';
 
         try {
+            // Comprobar si hay algún grupo/colección ya existente para ese día
+            const yaExisten = await existeDatoParaFecha(fechaFinal, parsedDataForConfirmation);
+            if (yaExisten) {
+                showStatus('Ya existen datos para ese día en algún grupo. Revise antes de guardar. No se han grabado datos.', 'danger');
+                showResults(parsedDataForConfirmation);
+                showConfirmationUI(true);
+                return;
+            }
             await saveAllToFirebase(parsedDataForConfirmation);
             showStatus('¡Éxito! Todos los datos han sido guardados en Firebase.', 'success');
         } catch (err) {
@@ -170,77 +187,90 @@ document.addEventListener('DOMContentLoaded', function() {
         showConfirmationUI(false);
         parsedDataForConfirmation = null;
         if (fechaEdicionDiv) fechaEdicionDiv.style.display = "none";
+        bloquesFaltantes = [];
     }
 
-    // ==================================================================
-    // PARSERS
-    // ==================================================================
-    function normalizeText(str) {
-        if (!str) return '';
-        return str
-            .replace(/&nbsp;/g, ' ')
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-zA-Z0-9\s]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toUpperCase();
-    }
+    // =======================================================
+    // PARSER PLANTILLA OFICIAL (100% tablas, orden estricto)
+    // =======================================================
+    function parseAllSections(html) {
+        const htmlRoot = document.createElement('div');
+        htmlRoot.innerHTML = html;
+        const tablas = Array.from(htmlRoot.querySelectorAll('table'));
 
-    // --------- BÚSQUEDA ROBUSTA DE TABLAS ---------
-    function findTableAfterTitle(htmlRoot, titleText) {
-        const normalizedSearchText = normalizeText(titleText);
+        const grupos = [
+            { key: 'grupo1_diario', label: "GRUPO 1 – EXPULSIONES", campos: ['Detenidos', 'Identificados', 'Testigos', 'Implicados', 'Incidentes', 'Observaciones'] },
+            { key: 'investigacion1_diario', label: "GRUPO 2 – INVESTIGACIÓN 1", tabla: ['Nº', 'OPERACIÓN', 'CRONOLOGÍA', 'FUNCIONARIO', 'DILIGENCIAS REALIZADAS', 'PENDIENTES'] },
+            { key: 'investigacion2_diario', label: "GRUPO 3 – INVESTIGACIÓN 2", tabla: ['Nº', 'OPERACIÓN', 'CRONOLOGÍA', 'FUNCIONARIO', 'DILIGENCIAS REALIZADAS', 'PENDIENTES'], subtabla: ['CASA', 'FECHA INSPECCIÓN', 'Nº FILIADAS', 'NACIONALIDADES'] },
+            { key: 'grupo4_diario', label: "GRUPO 4 – OPERATIVO", tabla: ['INTERVENCIÓN', 'RESULTADO', 'LUGAR', 'OBSERVACIONES'] },
+            { key: 'puerto_diario', label: "PUERTO", campos: ['Identificados', 'Detenidos', 'Diligencias', 'Observaciones'] },
+            { key: 'cecorex_diario', label: "CECOREX", campos: ['Remisiones a Subdelegación', 'Alegaciones de Abogados', 'Decretos expulsión grabados', 'Citados en Oficina', 'MENAs', 'Observaciones'] },
+            { key: 'cie_diario', label: "CIE", campos: ['Internos total', 'Ingresos Marroquíes', 'Ingresos Argelinos', 'Salidas (traslados)', 'Observaciones/incidentes'] },
+            { key: 'gestion_diario', label: "GESTIÓN", campos: ['Entrevistas de Asilo realizadas', 'Fallos entrevistas Asilo', 'Cartas Concedidas', 'Cartas Denegadas', 'CUEs entregados', 'Asignaciones de NIE', 'Notificaciones concedidas', 'Notificaciones denegadas', 'Oficios realizados', 'Observaciones'] }
+        ];
 
-        // Busca el header como antes
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
-        const targetHeader = headers.find(h => {
-            const normalizedHeaderText = normalizeText(h.textContent);
-            return normalizedHeaderText.includes(normalizedSearchText);
-        });
-        if (targetHeader) {
-            let nextElement = targetHeader;
-            for (let i = 0; i < 6; i++) {
-                nextElement = nextElement.nextElementSibling;
-                if (!nextElement) break;
-                if (nextElement.tagName === 'TABLE') return nextElement;
+        const datos = {};
+        let fecha = '';
+        let bloquesFaltantes = [];
+
+        // --- Encabezado: SIEMPRE primera tabla ---
+        if (tablas.length > 0) {
+            const encabezado = mapKeyValueTable(tablas[0]);
+            if (encabezado['Fecha']) {
+                fecha = normalizaFecha(encabezado['Fecha']);
             }
+            datos['encabezado'] = encabezado;
         }
 
-        // Búsqueda secundaria: busca una tabla con columna típica de la sección
-        const sectionHints = {
-            'CECOREX': ['Remisiones a Subdelegación', 'Alegaciones de Abogados'],
-            'CIE': ['Internos', 'Ingresos'],
-            'GESTIÓN': ['Entrevistas de Asilo realizadas', 'Cartas Concedidas']
-        };
-        const hintList = sectionHints[titleText.toUpperCase()] || [];
-        if (hintList.length > 0) {
-            const tables = Array.from(htmlRoot.querySelectorAll('table'));
-            for (const table of tables) {
-                const cells = Array.from(table.querySelectorAll('td, th'));
-                for (const cell of cells) {
-                    const cellText = normalizeText(cell.textContent);
-                    if (hintList.some(hint => cellText.includes(normalizeText(hint)))) {
-                        return table;
+        // --- Para cada grupo ---
+        let idxTabla = 1; // Empezamos después de encabezado
+        grupos.forEach((g, gi) => {
+            let encontrado = false;
+            for (; idxTabla < tablas.length; idxTabla++) {
+                const t = tablas[idxTabla];
+                const firstRow = t.querySelector('tr');
+                if (!firstRow) continue;
+                const firstCellText = firstRow.textContent.trim().toUpperCase();
+
+                // Si coincide la cabecera esperada de tabla
+                if (g.campos && g.campos.some(c => firstRow.innerHTML.toUpperCase().includes(c.toUpperCase()))) {
+                    datos[g.key] = mapKeyValueTable(t);
+                    encontrado = true;
+                    idxTabla++;
+                    break;
+                }
+                if (g.tabla && g.tabla.every(c => firstRow.innerHTML.toUpperCase().includes(c.toUpperCase()))) {
+                    datos[g.key] = mapArrayTable(t);
+                    encontrado = true;
+                    idxTabla++;
+                    // Subtabla especial (solo Grupo 3)
+                    if (g.subtabla && idxTabla < tablas.length) {
+                        const nextT = tablas[idxTabla];
+                        const nextRow = nextT.querySelector('tr');
+                        if (nextRow && g.subtabla.every(c => nextRow.innerHTML.toUpperCase().includes(c.toUpperCase()))) {
+                            datos[g.key + '_casas_de_citas'] = mapArrayTable(nextT);
+                            idxTabla++;
+                        }
                     }
+                    break;
                 }
             }
-        }
+            if (!encontrado) bloquesFaltantes.push(g.label);
+        });
 
-        console.warn(`No se encontró la tabla para la sección: ${titleText}`);
-        return null;
+        return { datos, fecha, faltantes: bloquesFaltantes };
     }
 
-    function mapKeyValueTable(table, keyColumn = 0, valueColumn = 1) {
+    function mapKeyValueTable(table) {
         const data = {};
-        const rows = table.querySelectorAll('tr');
+        const rows = Array.from(table.querySelectorAll('tr'));
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            if (cells.length > valueColumn) {
-                const key = cells[keyColumn].textContent.trim();
-                const value = cells[valueColumn].textContent.trim();
-                if (key) {
-                    data[key] = !isNaN(parseFloat(value)) && isFinite(value) && value !== '' ? parseFloat(value) : value;
-                }
+            if (cells.length > 1) {
+                const key = cells[0].textContent.trim();
+                const value = cells[1].textContent.trim();
+                if (key) data[key] = value;
+                if (cells.length > 2) data[key + '_obs'] = cells[2].textContent.trim();
             }
         });
         return data;
@@ -248,186 +278,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function mapArrayTable(table) {
         const data = [];
-        const headerRow = table.querySelector('tr');
-        if (!headerRow) return data;
-
-        const headers = Array.from(headerRow.children)
-            .map(th => th.textContent.trim().toLowerCase().replace(/ /g, '_').replace(/\//g, '_').replace(/º/g,'').replace(/\./g, ''));
-            
-        const rows = Array.from(table.querySelectorAll('tr')).slice(1);
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length > 0 && Array.from(cells).some(c => c.textContent.trim() !== '')) {
-                const entry = {};
-                cells.forEach((cell, index) => {
-                    const header = headers[index];
-                    if(header) entry[header] = cell.textContent.trim();
-                });
-                data.push(entry);
+        const rows = Array.from(table.querySelectorAll('tr'));
+        if (rows.length < 2) return data;
+        const headers = Array.from(rows[0].querySelectorAll('td,th')).map(h => h.textContent.trim());
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].querySelectorAll('td');
+            if (!cells.length) continue;
+            const rowObj = {};
+            for (let j = 0; j < headers.length; j++) {
+                rowObj[headers[j]] = (cells[j] ? cells[j].textContent.trim() : '');
             }
-        });
+            // Evita filas vacías
+            if (Object.values(rowObj).some(v => v)) data.push(rowObj);
+        }
         return data;
     }
 
-    function parseAllSections(html) {
-        const htmlRoot = document.createElement('div');
-        htmlRoot.innerHTML = html;
-        const data = {};
-        const metadata = {};
-        const firstTable = htmlRoot.querySelector('table');
-        if (firstTable && firstTable.textContent.includes('Turno')) {
-            const cells = firstTable.querySelectorAll('td');
-            if (cells.length > 1 && cells[1].textContent.trim()) metadata.turno = cells[1].textContent.trim();
-            if (cells.length > 3 && cells[3].textContent.trim()) metadata.responsable = cells[3].textContent.trim();
-        }
-        data.metadata = metadata;
-        
-        // --- Detección universal de la fecha + prompt manual ---
-        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/g;
-        let allText = htmlRoot.textContent || '';
-        let allDates = [...allText.matchAll(dateRegex)];
-        let dateMatch = null;
-        if (allDates.length > 0) {
-            dateMatch = allDates[0];
-        }
-        if (dateMatch) {
-            const day = dateMatch[1].padStart(2, '0');
-            const month = dateMatch[2].padStart(2, '0');
-            let year = dateMatch[3];
-            if (year.length === 2) {
-                year = (parseInt(year, 10) > 50 ? "19" : "20") + year;
-            }
-            data.fecha = `${year}-${month}-${day}`;
-        } else {
-            const today = new Date();
-            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (dd/mm/yyyy):", `${today.getDate().toString().padStart(2,'0')}/${(today.getMonth()+1).toString().padStart(2,'0')}/${today.getFullYear()}`);
-            if (fechaManual && fechaManual.match(/^\d{1,2}[\/\- ]\d{1,2}[\/\- ]\d{2,4}$/)) {
-                let match = fechaManual.match(/^(\d{1,2})[\/\- ](\d{1,2})[\/\- ](\d{2,4})$/);
-                let dd = match[1].padStart(2, '0');
-                let mm = match[2].padStart(2, '0');
-                let yyyy = match[3];
-                if (yyyy.length === 2) yyyy = (parseInt(yyyy, 10) > 50 ? '19' : '20') + yyyy;
-                data.fecha = `${yyyy}-${mm}-${dd}`;
-            } else {
-                data.fecha = today.toISOString().slice(0, 10);
-            }
-            console.warn("No se encontró ninguna fecha en el documento, usando fecha manual o actual.");
-        }
-
-        // --- SECCIONES ---
-        const secciones = {
-            grupo1: { title: "GRUPO 1", type: 'key-value' },
-            investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
-            casas_citas: { title: "CONTROL CASA DE CITAS", type: 'array' },
-            grupo4: { title: "GRUPO 4", type: 'array' },
-            puerto: { title: "PUERTO", type: 'key-value' },
-            cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
-            cie: { title: "CIE", type: 'key-value' },
-            gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
-        };
-        for (const [key, config] of Object.entries(secciones)) {
-            const table = findTableAfterTitle(htmlRoot, config.title);
-            if (table) {
-                if (config.type === 'key-value') data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
-                else if (config.type === 'array') data[key] = mapArrayTable(table);
-            }
-        }
-
-        // LOG de depuración para ver exactamente qué grupos saca
-        console.log("DATA EXTRAÍDA:", data);
-
-        return data;
+    function normalizaFecha(texto) {
+        if (!texto) return '';
+        const m = texto.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (!m) return '';
+        const d = m[1].padStart(2, '0');
+        const mes = m[2].padStart(2, '0');
+        const a = m[3];
+        return `${a}-${mes}-${d}`;
     }
-    
-    // ==================================================================
-    // LÓGICA DE GUARDADO Y TRADUCCIÓN
-    // ==================================================================
-    async function saveAllToFirebase(data) {
-        const fecha = data.fecha;
+
+    // =======================================================
+    // GUARDADO EN FIREBASE (batch, seguro, no sobrescribe)
+    // =======================================================
+    async function existeDatoParaFecha(fecha, parsedData) {
+        // Comprueba para cada grupo si ya hay datos ese día
+        const colecciones = [
+            'grupo1_diario', 'investigacion1_diario', 'investigacion2_diario', 'grupo4_diario',
+            'puerto_diario', 'cecorex_diario', 'cie_diario', 'gestion_diario'
+        ];
+        for (const key of colecciones) {
+            if (parsedData[key]) {
+                const docRef = db.collection(key).doc(fecha);
+                const snap = await docRef.get();
+                if (snap.exists) return true;
+            }
+        }
+        return false;
+    }
+
+    async function saveAllToFirebase(parsedData) {
+        const fecha = parsedData.fecha;
         if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
 
-        // ====== SOLO FECHA COMO ID ======
-        const firebaseMap = {
-            cecorex: { collection: "cecorex", id: fecha },
-            cie: { collection: "grupo_cie", id: fecha },
-            gestion: { collection: "gestion_avanzada", id: fecha },
-            puerto: { collection: "grupoPuerto_registros", id: fecha },
-            grupo1: { collection: "grupo1_diario", id: fecha },
-            grupo4: { collection: "grupo4_operativo", id: fecha },
-            investigacion: { collection: "investigacion_diario", id: fecha },
-            casas_citas: { collection: "control_casas_citas", id: fecha }
-        };
-           const batch = db.batch();
-        
-        for (const [key, fbConfig] of Object.entries(firebaseMap)) {
-            if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
-                let dataToSave = {
-                    fecha: fecha,
-                    ...(data.metadata && data.metadata.turno && { turno: data.metadata.turno }),
-                    ...(data.metadata && data.metadata.responsable && { responsable: data.metadata.responsable }),
-                    ...formatDataForFirebase(key, data[key])
-                };
-                const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
-                batch.set(docRef, dataToSave, { merge: true });
-            }
+        const batch = db.batch();
+        // --- Guardar cada grupo existente ---
+        for (const key of Object.keys(parsedData)) {
+            if (key === 'fecha' || key === 'encabezado') continue;
+            const datosGrupo = parsedData[key];
+            if (!datosGrupo || (Array.isArray(datosGrupo) && datosGrupo.length === 0)) continue;
+            batch.set(
+                db.collection(key).doc(fecha),
+                {
+                    fecha,
+                    ...datosGrupo
+                },
+                { merge: false }
+            );
         }
         await batch.commit();
     }
 
-    function formatDataForFirebase(key, parsedData) {
-        const translationMap = {
-            cecorex: {
-                'Remisiones a Subdelegación': 'remisiones',
-                'Alegaciones de Abogados': 'alegaciones',
-                'Decretos expulsión grabados': 'decretos',
-                'Citados en Oficina': 'citados',
-                'Diligencias de informe': 'diligenciasInforme',
-                'Consultas (Equipo)': 'consultasEquipo',
-                'Consultas (Telefónicas)': 'consultasTel',
-                'Prohibiciones de entrada grabadas': 'prohibiciones',
-                'Trámites de audiencia': 'audiencias',
-                'Detenidos ILE': 'detenidosILE',
-                'Notificaciones con Letrado': 'notificaciones',
-                'MENAs': 'menas',
-                'Observaciones': 'observaciones'
-            },
-            gestion: {
-                'Entrevistas de Asilo realizadas': 'entrevistasAsilo',
-                'Fallos en Entrevistas de Asilo': 'entrevistasAsiloFallos',
-                'Cartas Concedidas': 'cartasConcedidas',
-                'Cartas Denegadas': 'cartasDenegadas',
-                'Citas Subdelegación': 'citasSubdelegacion',
-                'Tarjetas recogidas en Subdelegación': 'tarjetasSubdelegacion',
-                'Notificaciones Concedidas': 'notificacionesConcedidas',
-                'Notificaciones Denegadas': 'notificacionesDenegadas',
-                'Citas ofertadas': 'citas',
-                'Citas que faltan': 'citasFaltan',
-                'CUEs (Certificados UE)': 'cues',
-                'Asignaciones de NIE': 'asignaciones',
-                'Modificaciones telem. Favorables': 'modificacionesFavorables',
-                'Modificaciones telem. Desfavorables': 'modificacionesDesfavorables',
-                'Declaración Entrada': 'declaracionEntrada',
-                'Oficios realizados': 'oficios',
-                'Telefonemas Asilo': 'citasTelAsilo',
-                'Telefonemas Cartas': 'citasTelCartas',
-                'Renuncias Ucrania / Asilo': 'renunciasAsilo'
-            },
-        };
-
-        if (!translationMap[key]) {
-            if(Array.isArray(parsedData)) return { datos: parsedData };
-            return { ...parsedData };
-        }
-
-        const translatedData = {};
-        for (const [oldKey, value] of Object.entries(parsedData)) {
-            const newKey = translationMap[key][oldKey];
-            if (newKey) {
-                translatedData[newKey] = value;
-            } else {
-                translatedData[oldKey] = value;
-            }
-        }
-        return translatedData;
-    }
 });
