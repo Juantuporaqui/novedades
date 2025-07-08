@@ -1,6 +1,7 @@
 // =================================================================================
 // SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (ID solo con fecha, estándar)
 // Versión definitiva profesional, 2025 - DOCX oficial, parser robusto, batch seguro
+// Incluye validación avanzada de campos críticos antes de guardar
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let parsedDataForConfirmation = null;
     let bloquesFaltantes = [];
+    let erroresValidacion = [];
 
     // --- MANEJO DE EVENTOS ---
     if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
@@ -133,7 +135,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             showResults(parsedDataForConfirmation);
-            showStatus('Datos extraídos. Revisa la información, corrige la fecha si quieres y confirma para guardar.', 'info');
+
+            // === VALIDACIÓN AVANZADA INMEDIATA TRAS PREVIEW ===
+            erroresValidacion = validarDatos(parsedDataForConfirmation);
+            if (erroresValidacion.length) {
+                showStatus('⚠️ Errores de validación en campos críticos:<br><ul>' +
+                    erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>Corrige antes de guardar.', 'warning');
+                btnConfirmarGuardado.disabled = true;
+            } else {
+                showStatus('Datos extraídos. Revisa la información, corrige la fecha si quieres y confirma para guardar.', 'info');
+                btnConfirmarGuardado.disabled = false;
+            }
+
             showConfirmationUI(true);
 
         } catch (err) {
@@ -152,6 +165,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         let fechaFinal = obtenerFechaFormateada();
         parsedDataForConfirmation.fecha = fechaFinal;
+
+        // === VALIDACIÓN AVANZADA ANTES DE GUARDAR ===
+        erroresValidacion = validarDatos(parsedDataForConfirmation);
+        if (erroresValidacion.length) {
+            showStatus('⚠️ Errores de validación en campos críticos:<br><ul>' +
+                erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>Corrige antes de guardar.', 'warning');
+            btnConfirmarGuardado.disabled = true;
+            return;
+        }
 
         showSpinner(true);
         showConfirmationUI(false);
@@ -343,6 +365,31 @@ document.addEventListener('DOMContentLoaded', function () {
             );
         }
         await batch.commit();
+    }
+
+    // =======================================================
+    // VALIDACIÓN AVANZADA DE CAMPOS CRÍTICOS
+    // =======================================================
+    function validarDatos(parsedData) {
+        // Define campos críticos por bloque (amplía según necesidades reales)
+        const camposCriticos = {
+            grupo1_diario: ['Detenidos', 'Identificados', 'Testigos', 'Implicados'],
+            puerto_diario: ['Identificados', 'Detenidos', 'Diligencias'],
+            cecorex_diario: ['Remisiones a Subdelegación', 'MENAs'],
+            cie_diario: ['Internos total', 'Ingresos Marroquíes', 'Ingresos Argelinos', 'Salidas (traslados)'],
+            gestion_diario: ['Entrevistas de Asilo realizadas', 'Cartas Concedidas', 'Cartas Denegadas', 'CUEs entregados', 'Asignaciones de NIE']
+        };
+        let errores = [];
+        for (const [grupo, campos] of Object.entries(camposCriticos)) {
+            if (!parsedData[grupo]) continue;
+            for (const campo of campos) {
+                const valor = parsedData[grupo][campo];
+                if (valor === undefined || valor === "" || isNaN(Number(valor)) || Number(valor) < 0) {
+                    errores.push(`${grupo.replace('_diario','').toUpperCase()} - ${campo}: "${valor}"`);
+                }
+            }
+        }
+        return errores;
     }
 
 });
