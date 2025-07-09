@@ -139,69 +139,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function onConfirmSave() {
-        if (!parsedDataForConfirmation || !grupoDetectado) {
-            showStatus('No hay datos para guardar.', 'danger');
-            return;
-        }
-        let fechaFinal = obtenerFechaFormateada();
-        if (!fechaFinal) {
-            showStatus('Selecciona una fecha válida.', 'danger');
-            fechaManualInput.focus();
-            return;
-        }
-        parsedDataForConfirmation.fecha = fechaFinal;
+    if (!parsedDataForConfirmation || !grupoDetectado) {
+        showStatus('No hay datos para guardar.', 'danger');
+        return;
+    }
+    let fechaFinal = obtenerFechaFormateada();
+    if (!fechaFinal) {
+        showStatus('Selecciona una fecha válida.', 'danger');
+        fechaManualInput.focus();
+        return;
+    }
+    parsedDataForConfirmation.fecha = fechaFinal;
 
-        // Detección robusta del objeto de datos
-        let datosAValidar = parsedDataForConfirmation[grupoDetectado];
-        if (!datosAValidar) {
-            for (let k of Object.keys(parsedDataForConfirmation)) {
-                if (k !== 'fecha') {
-                    datosAValidar = parsedDataForConfirmation[k];
-                    break;
-                }
+    // RECOGE EL OBJETO DE DATOS SIN IMPORTAR LA CLAVE
+    let datosAValidar = null;
+    // Busca primero usando la clave esperada
+    if (parsedDataForConfirmation[grupoDetectado]) {
+        datosAValidar = parsedDataForConfirmation[grupoDetectado];
+    } else {
+        // Si no, coge la primera clave distinta de fecha
+        for (let k of Object.keys(parsedDataForConfirmation)) {
+            if (k !== 'fecha') {
+                datosAValidar = parsedDataForConfirmation[k];
+                break;
             }
-        }
-        erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
-
-        if (erroresValidacion.length) {
-            showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
-            btnConfirmarGuardado.disabled = true;
-            return;
-        }
-
-        showSpinner(true);
-        showConfirmationUI(false);
-        showStatus('Guardando en Firebase...', 'info');
-        resultsContainer.innerHTML = '';
-
-        try {
-            let colName = "";
-            if (grupoDetectado === "grupo1_expulsiones") colName = "grupo1_expulsiones";
-            else if (grupoDetectado === "grupo4_operativo") colName = "grupo4_operativo";
-            else if (grupoDetectado === "grupoPuerto") colName = "grupoPuerto_registros";
-            else throw new Error("Grupo no reconocido.");
-
-            const ref = db.collection(colName).doc(fechaFinal);
-            const snap = await ref.get();
-            if (snap.exists) {
-                showStatus(`Ya existen datos para ese día en ${grupoDetectado}. No se han guardado nuevos datos.`, 'danger');
-                showResults({ [grupoDetectado]: parsedDataForConfirmation[grupoDetectado] });
-                showConfirmationUI(true);
-                return;
-            }
-            await ref.set(parsedDataForConfirmation[grupoDetectado], { merge: false });
-            showStatus('¡Guardado con éxito en Firebase!', 'success');
-        } catch (err) {
-            console.error("Error al guardar:", err);
-            showStatus(`Error: ${err.message}`, 'danger');
-            showResults({ [grupoDetectado]: parsedDataForConfirmation[grupoDetectado] });
-            showConfirmationUI(true);
-        } finally {
-            showSpinner(false);
-            parsedDataForConfirmation = null;
-            fechaEdicionDiv.style.display = "none";
         }
     }
+
+    erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
+
+    if (erroresValidacion.length) {
+        showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+        btnConfirmarGuardado.disabled = true;
+        return;
+    }
+
+    showSpinner(true);
+    showConfirmationUI(false);
+    showStatus('Guardando en Firebase...', 'info');
+    resultsContainer.innerHTML = '';
+
+    try {
+        let colName = "";
+        if (grupoDetectado === "grupo1_expulsiones") colName = "grupo1_expulsiones";
+        else if (grupoDetectado === "grupo4_operativo") colName = "grupo4_operativo";
+        else if (grupoDetectado === "grupoPuerto") colName = "grupoPuerto_registros";
+        else throw new Error("Grupo no reconocido.");
+
+        const ref = db.collection(colName).doc(fechaFinal);
+        const snap = await ref.get();
+        if (snap.exists) {
+            showStatus(`Ya existen datos para ese día en ${grupoDetectado}. No se han guardado nuevos datos.`, 'danger');
+            showResults({ [grupoDetectado]: datosAValidar });
+            showConfirmationUI(true);
+            return;
+        }
+        await ref.set(datosAValidar, { merge: false });
+        showStatus('¡Guardado con éxito en Firebase!', 'success');
+    } catch (err) {
+        console.error("Error al guardar:", err);
+        showStatus(`Error: ${err.message}`, 'danger');
+        showResults({ [grupoDetectado]: datosAValidar });
+        showConfirmationUI(true);
+    } finally {
+        showSpinner(false);
+        parsedDataForConfirmation = null;
+        fechaEdicionDiv.style.display = "none";
+    }
+}
 
     function onCancel() {
         resultsContainer.innerHTML = '';
