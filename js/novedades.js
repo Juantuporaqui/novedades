@@ -1,6 +1,6 @@
 // ==============================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPO 1 AUTOIMPORT
-// Profesional 2025 · Importa TODO Grupo 1 menos Gestiones · DOCX oficial
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPOS 1 y 4 AUTOIMPORT
+// Profesional 2025 · Importa Grupo 1 (menos Gestiones) y Grupo 4 Operativo · DOCX oficial
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let parsedDataForConfirmation = null;
     let erroresValidacion = [];
+    let grupoDetectado = ""; // "grupo1" o "grupo4"
 
     // --- UI ---
     function showStatus(message, type = 'info') {
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
-    function showFechaEditable(fechaISO, fuente = "") {
+    function showFechaEditable(fechaISO) {
         if (!fechaEdicionDiv || !fechaManualInput) return;
         fechaEdicionDiv.style.display = "flex";
         if (fechaISO && /^\d{4}-\d{2}-\d{2}$/.test(fechaISO)) {
@@ -106,14 +107,16 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            const { grupo1, fecha, fechaBruta } = parseGrupo1Completo(result.value);
-            if (!grupo1 || Object.keys(grupo1).length === 0) throw new Error("No se han extraído datos válidos de Grupo 1.");
-            parsedDataForConfirmation = { grupo1_expulsiones: grupo1, fecha };
+            // Detecta grupo y llama a parser adecuado
+            const { detectado, datos, fecha } = autoDetectAndParse(result.value);
+            grupoDetectado = detectado;
+            if (!datos || Object.keys(datos).length === 0) throw new Error("No se han extraído datos válidos.");
+            parsedDataForConfirmation = { [detectado]: datos, fecha };
 
-            showFechaEditable(fecha, fechaBruta);
-            showResults({ grupo1_expulsiones: grupo1 });
+            showFechaEditable(fecha);
+            showResults({ [detectado]: datos });
 
-            erroresValidacion = validarDatos(grupo1);
+            erroresValidacion = validarDatos(datos, grupoDetectado);
             if (erroresValidacion.length) {
                 showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
                 btnConfirmarGuardado.disabled = true;
@@ -133,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function onConfirmSave() {
-        if (!parsedDataForConfirmation) {
+        if (!parsedDataForConfirmation || !grupoDetectado) {
             showStatus('No hay datos para guardar.', 'danger');
             return;
         }
@@ -145,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         parsedDataForConfirmation.fecha = fechaFinal;
 
-        erroresValidacion = validarDatos(parsedDataForConfirmation.grupo1_expulsiones);
+        erroresValidacion = validarDatos(parsedDataForConfirmation[grupoDetectado], grupoDetectado);
         if (erroresValidacion.length) {
             showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
             btnConfirmarGuardado.disabled = true;
@@ -158,20 +161,21 @@ document.addEventListener('DOMContentLoaded', function () {
         resultsContainer.innerHTML = '';
 
         try {
-            const ref = db.collection("grupo1_expulsiones").doc(fechaFinal);
+            const colName = grupoDetectado === "grupo1_expulsiones" ? "grupo1_expulsiones" : "grupo4_operativo";
+            const ref = db.collection(colName).doc(fechaFinal);
             const snap = await ref.get();
             if (snap.exists) {
-                showStatus('Ya existen datos para ese día en Grupo 1. No se han guardado nuevos datos.', 'danger');
-                showResults({ grupo1_expulsiones: parsedDataForConfirmation.grupo1_expulsiones });
+                showStatus(`Ya existen datos para ese día en ${grupoDetectado}. No se han guardado nuevos datos.`, 'danger');
+                showResults({ [grupoDetectado]: parsedDataForConfirmation[grupoDetectado] });
                 showConfirmationUI(true);
                 return;
             }
-            await ref.set(parsedDataForConfirmation.grupo1_expulsiones, { merge: false });
+            await ref.set(parsedDataForConfirmation[grupoDetectado], { merge: false });
             showStatus('¡Guardado con éxito en Firebase!', 'success');
         } catch (err) {
             console.error("Error al guardar:", err);
             showStatus(`Error: ${err.message}`, 'danger');
-            showResults({ grupo1_expulsiones: parsedDataForConfirmation.grupo1_expulsiones });
+            showResults({ [grupoDetectado]: parsedDataForConfirmation[grupoDetectado] });
             showConfirmationUI(true);
         } finally {
             showSpinner(false);
@@ -185,37 +189,48 @@ document.addEventListener('DOMContentLoaded', function () {
         statusContainer.innerHTML = '';
         showConfirmationUI(false);
         parsedDataForConfirmation = null;
+        grupoDetectado = "";
         if (fechaEdicionDiv) fechaEdicionDiv.style.display = "none";
     }
 
-    // --------------------------------------------------------------------------
-    // PARSER COMPLETO DE GRUPO 1 (excepto GESTIONES) con FECHA DETECCIÓN ROBUSTA
-    // --------------------------------------------------------------------------
+    // =============== PARSERS AUTOMÁTICOS =========================
+
+    function autoDetectAndParse(html) {
+        // ¿Es parte de grupo 1 o grupo 4?
+        const texto = html.toUpperCase();
+        if (texto.includes("DETENIDOS") && texto.includes("EXPULSADOS")) {
+            // Es grupo 1
+            const { grupo1, fecha } = parseGrupo1Completo(html);
+            return { detectado: "grupo1_expulsiones", datos: grupo1, fecha };
+        }
+        if (texto.includes("COLABORACIONES") && texto.includes("CITADOS")) {
+            // Es grupo 4 operativo
+            const { grupo4, fecha } = parseGrupo4Completo(html);
+            return { detectado: "grupo4_operativo", datos: grupo4, fecha };
+        }
+        // Por defecto, error
+        return { detectado: "", datos: {}, fecha: "" };
+    }
+
+    // ------------ PARSER GRUPO 1 -----------------
     function parseGrupo1Completo(html) {
         const root = document.createElement('div');
         root.innerHTML = html;
         const tablas = Array.from(root.querySelectorAll('table'));
         let fecha = '';
-        let fechaBruta = '';
-        let grupo1 = {};
-
-        // Busca fecha en el texto plano (bruto, robusto)
+        // Busca fecha robusta en todo el documento
         const textPlano = root.innerText || root.textContent || "";
         let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
         if (m) {
             fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-            fechaBruta = m[0];
         }
-
-        // --- Helper general para cada tabla, ignora si cabecera contiene 'GESTIONES' ---
+        let grupo1 = {};
         function filtrarGestiones(tabla) {
             const firstRow = tabla.querySelector('tr');
             if (!firstRow) return false;
             const txt = firstRow.textContent.toUpperCase();
             return !txt.includes('GESTIONES');
         }
-
-        // ---- Detenidos ----
         grupo1.detenidos = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -235,14 +250,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         diligencias: cells[3]?.textContent.trim() || '',
                         observaciones: cells[4]?.textContent.trim() || ''
                     };
-                    // Añade si algún campo relevante no está vacío
                     if (Object.values(obj).some(x => x)) grupo1.detenidos.push(obj);
                 }
             }
         }
         if (!grupo1.detenidos.length) delete grupo1.detenidos;
 
-        // ---- Expulsados ----
+        // Expulsados, Fletados, etc. igual que antes...
         grupo1.expulsados = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -269,7 +283,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.expulsados.length) delete grupo1.expulsados;
 
-        // ---- Fletados ----
         grupo1.fletados = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -293,7 +306,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.fletados.length) delete grupo1.fletados;
 
-        // ---- Fletados Futuros ----
         grupo1.fletadosFuturos = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -316,7 +328,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.fletadosFuturos.length) delete grupo1.fletadosFuturos;
 
-        // ---- Conducciones positivas ----
         grupo1.conduccionesPositivas = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -338,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.conduccionesPositivas.length) delete grupo1.conduccionesPositivas;
 
-        // ---- Conducciones negativas ----
         grupo1.conduccionesNegativas = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -360,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.conduccionesNegativas.length) delete grupo1.conduccionesNegativas;
 
-        // ---- Pendientes de gestión ----
         grupo1.pendientes = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -382,22 +391,106 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.pendientes.length) delete grupo1.pendientes;
 
-        return { grupo1, fecha, fechaBruta };
+        return { grupo1, fecha };
     }
 
-    // --------------------------------------------------------------------------
-    // VALIDACIÓN
-    // --------------------------------------------------------------------------
-    function validarDatos(grupo1) {
-        let errores = [];
-        if (
-            (!grupo1.detenidos || grupo1.detenidos.length === 0) &&
-            (!grupo1.expulsados || grupo1.expulsados.length === 0) &&
-            (!grupo1.fletados || grupo1.fletados.length === 0)
-        ) {
-            errores.push('Debe haber al menos un detenido, expulsado o fletado.');
+    // ------------ PARSER GRUPO 4 OPERATIVO -----------------
+    function parseGrupo4Completo(html) {
+        const root = document.createElement('div');
+        root.innerHTML = html;
+        const tablas = Array.from(root.querySelectorAll('table'));
+        let fecha = '';
+        // Busca fecha robusta en todo el documento
+        const textPlano = root.innerText || root.textContent || "";
+        let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (m) {
+            fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
         }
-        // Añade validación para la fecha
+        let grupo4 = {};
+        function mapSeccion(tablas, palabras, campos, parseFn) {
+            for (const t of tablas) {
+                const headTxt = t.querySelector('tr')?.textContent?.toUpperCase() || '';
+                if (palabras.every(w => headTxt.includes(w.toUpperCase()))) {
+                    const data = [];
+                    const rows = Array.from(t.querySelectorAll('tr'));
+                    for (let i = 1; i < rows.length; i++) {
+                        const cells = Array.from(rows[i].querySelectorAll('td'));
+                        if (cells.length < campos.length) continue;
+                        let obj = {};
+                        for (let c = 0; c < campos.length; c++) {
+                            obj[campos[c]] = cells[c]?.textContent.trim() || '';
+                        }
+                        if (parseFn) obj = parseFn(obj);
+                        if (Object.values(obj).some(x => x)) data.push(obj);
+                    }
+                    return data;
+                }
+            }
+            return [];
+        }
+        grupo4.colaboraciones = mapSeccion(tablas, ['Colaboraciones'], ['desc', 'cantidad'], x => ({
+            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.colaboraciones.length) delete grupo4.colaboraciones;
+
+        grupo4.detenidos = mapSeccion(tablas, ['Detenidos'], ['motivo', 'nacionalidad', 'cantidad'], x => ({
+            motivo: x.motivo, nacionalidad: x.nacionalidad, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.detenidos.length) delete grupo4.detenidos;
+
+        grupo4.citados = mapSeccion(tablas, ['Citados'], ['desc', 'cantidad'], x => ({
+            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.citados.length) delete grupo4.citados;
+
+        grupo4.gestiones = mapSeccion(tablas, ['Otras gestiones'], ['desc', 'cantidad'], x => ({
+            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.gestiones.length) delete grupo4.gestiones;
+
+        grupo4.inspeccionesTrabajo = mapSeccion(tablas, ['Inspecciones trabajo'], ['desc', 'cantidad'], x => ({
+            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.inspeccionesTrabajo.length) delete grupo4.inspeccionesTrabajo;
+
+        grupo4.otrasInspecciones = mapSeccion(tablas, ['Otras inspecciones'], ['desc', 'cantidad'], x => ({
+            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
+        }));
+        if (!grupo4.otrasInspecciones.length) delete grupo4.otrasInspecciones;
+
+        for (const t of tablas) {
+            const headTxt = t.querySelector('tr')?.textContent?.toUpperCase() || '';
+            if (headTxt.includes('OBSERVACIONES')) {
+                const txt = Array.from(t.querySelectorAll('tr td')).slice(1).map(td => td.textContent.trim()).join(' ');
+                if (txt) grupo4.observaciones = txt;
+            }
+        }
+
+        return { grupo4, fecha };
+    }
+
+    // ------------ VALIDACIÓN GENERAL ------------
+    function validarDatos(data, grupo) {
+        let errores = [];
+        if (grupo === "grupo1_expulsiones") {
+            if (
+                (!data.detenidos || data.detenidos.length === 0) &&
+                (!data.expulsados || data.expulsados.length === 0) &&
+                (!data.fletados || data.fletados.length === 0)
+            ) {
+                errores.push('Debe haber al menos un detenido, expulsado o fletado.');
+            }
+        }
+        if (grupo === "grupo4_operativo") {
+            if (
+                (!data.detenidos || data.detenidos.length === 0) &&
+                (!data.colaboraciones || data.colaboraciones.length === 0) &&
+                (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0)
+            ) {
+                errores.push('Debe haber al menos un registro relevante (detenidos, colaboraciones, inspecciones trabajo).');
+            }
+        }
+        // Fecha válida
         if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
             errores.push('La fecha es obligatoria y debe ser válida.');
         }
