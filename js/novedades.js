@@ -471,30 +471,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ------------ VALIDACIÓN GENERAL ------------
     function validarDatos(data, grupo) {
-        let errores = [];
-        if (grupo === "grupo1_expulsiones") {
-            if (
-                (!data.detenidos || data.detenidos.length === 0) &&
-                (!data.expulsados || data.expulsados.length === 0) &&
-                (!data.fletados || data.fletados.length === 0)
-            ) {
-                errores.push('Debe haber al menos un detenido, expulsado o fletado.');
-            }
+    let errores = [];
+    // --- Grupo 1 ---
+    if (grupo === "grupo1_expulsiones") {
+        if (
+            (!data.detenidos || data.detenidos.length === 0) &&
+            (!data.expulsados || data.expulsados.length === 0) &&
+            (!data.fletados || data.fletados.length === 0)
+        ) {
+            errores.push('Debe haber al menos un detenido, expulsado o fletado.');
         }
-        if (grupo === "grupo4_operativo") {
-            if (
-                (!data.detenidos || data.detenidos.length === 0) &&
-                (!data.colaboraciones || data.colaboraciones.length === 0) &&
-                (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0)
-            ) {
-                errores.push('Debe haber al menos un registro relevante (detenidos, colaboraciones, inspecciones trabajo).');
-            }
-        }
-        // Fecha válida
-        if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
-            errores.push('La fecha es obligatoria y debe ser válida.');
-        }
-        return errores;
     }
+    // --- Grupo 4 ---
+    if (grupo === "grupo4_operativo") {
+        // Puedes adaptar los campos requeridos a tu criterio
+        let faltan = [];
+        if (!data.colaboraciones || data.colaboraciones.length === 0) faltan.push("Colaboraciones");
+        if (!data.detenidos || data.detenidos.length === 0) faltan.push("Detenidos");
+        if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) faltan.push("Inspecciones Trabajo");
 
+        if (faltan.length === 3) {
+            errores.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
+        } else if (faltan.length > 0) {
+            errores.push('⚠️ Faltan registros en: ' + faltan.join(', '));
+        }
+    }
+    // --- Fecha válida para ambos grupos ---
+    if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
+        errores.push('La fecha es obligatoria y debe ser válida.');
+    }
+    return errores;
+}
 });
