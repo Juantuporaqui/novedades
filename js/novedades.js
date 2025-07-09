@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return { grupo4, fecha };
     }
-    // ------------ PARSER GRUPO PUERTO -----------------
+       // ------------ PARSER GRUPO PUERTO -----------------
     function parseGrupoPuertoCompleto(html) {
         const root = document.createElement('div');
         root.innerHTML = html;
@@ -498,7 +498,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
                 filas.forEach(tr => {
                     const tds = Array.from(tr.querySelectorAll('td'));
-                    // Mapeo por columna
                     [
                         {clave:'marinosArgos', palabras:['ARGOS']},
                         {clave:'controlPasaportes', palabras:['PASAPORTES']},
@@ -528,7 +527,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         pasajeros: tds[3]?tds[3].textContent.trim():'',
                         vehiculos: tds[4]?tds[4].textContent.trim():''
                     };
-                }).filter(
+                }).filter(f=>Object.values(f).some(x=>x));
+            }
+            // Observaciones
+            if (head.includes('OBSERVACIONES')) {
+                puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ');
+            }
+        });
+        // Elimina arrays vacíos y campos vacíos
+        for (let k of Object.keys(puerto)) {
+            if (Array.isArray(puerto[k]) && !puerto[k].length) delete puerto[k];
+            if (!Array.isArray(puerto[k]) && puerto[k] === '') delete puerto[k];
+        }
+        return { puerto, fecha };
+    }
 
     // ------------ VALIDACIÓN GENERAL ------------
     function validarDatos(data, grupo) {
