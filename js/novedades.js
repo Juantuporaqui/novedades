@@ -1,609 +1,521 @@
-// ==============================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPOS 1, 4 y PUERTO
-// Profesional 2025 · Importa Grupo 1 (menos Gestiones), Grupo 4 Operativo y Puerto · DOCX oficial
-// ==============================================================================
+/* --------------------------------------------------------------------------- */
+/*  SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo y Puerto)   */
+/*  Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en  */
+/*  Firebase.                                                                 */
+/* --------------------------------------------------------------------------- */
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
 
-    // --- CONFIGURACIÓN FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-        authDomain: "ucrif-5bb75.firebaseapp.com",
-        projectId: "ucrif-5bb75",
-        storageBucket: "ucrif-5bb75.appspot.com",
-        messagingSenderId: "241698436443",
-        appId: "1:241698436443:web:1f333b3ae3f813b755167e"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+/* ===========================  CONFIG FIREBASE  ============================ */
+const firebaseConfig = {
+    apiKey:            "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+    authDomain:        "ucrif-5bb75.firebaseapp.com",
+    projectId:         "ucrif-5bb75",
+    storageBucket:     "ucrif-5bb75.appspot.com",
+    messagingSenderId: "241698436443",
+    appId:             "1:241698436443:web:1f333b3ae3f813b755167e"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* =============================  CONSTANTES  =============================== */
+const GROUP1      = "grupo1_expulsiones";
+const GROUP4      = "grupo4_operativo";
+const GROUPPUERTO = "grupoPuerto";
+
+/* ============================  ELEMENTOS DOM  ============================= */
+const $ = id => document.getElementById(id);
+
+const inputDocx            = $('inputDocx');
+const statusContainer      = $('status-container');
+const resultsContainer     = $('results-container');
+const confirmationButtons  = $('confirmation-buttons');
+const btnConfirmarGuardado = $('btnConfirmarGuardado');
+const btnCancelar          = $('btnCancelar');
+const fechaEdicionDiv      = $('fecha-edicion');
+const fechaManualInput     = $('fechaManualInput');
+const fechaDetectadaBadge  = $('fechaDetectadaBadge');
+const spinnerArea          = $('spinner-area');
+
+/* ===============================  STATE  ================================== */
+let parsedDataForConfirmation = null;   // { [grupoDetectado]: datos, fecha }
+let grupoDetectado            = "";     // clave de grupo
+let erroresValidacion         = [];
+
+/* ============================  UI HELPERS  ================================ */
+const showStatus = (msg, type='info')=>{
+    const cls = {info:'alert-info',success:'alert-success',warning:'alert-warning',danger:'alert-danger',error:'alert-danger'};
+    statusContainer.innerHTML = `<div class="alert ${cls[type]||cls.info}" role="alert">${msg}</div>`;
+};
+const showSpinner        = v => spinnerArea.style.display = v?'flex':'none';
+const showConfirmationUI = v => confirmationButtons.style.display = v?'block':'none';
+
+const showResults = obj =>{
+    resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
+    Object.entries(obj).forEach(([k,datos])=>{
+        if(k==='fecha') return;
+        if(Array.isArray(datos) && !datos.length) return;
+        if(!Array.isArray(datos) && !Object.keys(datos).length) return;
+        const card = document.createElement('div');
+        card.className = 'card mb-3 shadow-sm';
+        card.innerHTML =
+            `<div class="card-header bg-light"><strong>${k.toUpperCase()}</strong></div>
+             <div class="card-body"><pre class="results-card">${JSON.stringify(datos,null,2)}</pre></div>`;
+        resultsContainer.appendChild(card);
+    });
+};
+
+const showFechaEditable = iso=>{
+    fechaEdicionDiv.style.display="flex";
+    if(/^\d{4}-\d{2}-\d{2}$/.test(iso||'')){
+        fechaManualInput.value = iso;
+        fechaDetectadaBadge.textContent = "Detectada: "+iso.split('-').reverse().join('/');
+        fechaDetectadaBadge.className   = "badge bg-success";
+    }else{
+        fechaManualInput.value = "";
+        fechaDetectadaBadge.textContent = "No detectada";
+        fechaDetectadaBadge.className   = "badge bg-secondary";
     }
-    const db = firebase.firestore();
+};
+const obtenerFechaFormateada = ()=> fechaManualInput.value||"";
 
-    // --- ELEMENTOS DOM ---
-    const inputDocx = document.getElementById('inputDocx');
-    const statusContainer = document.getElementById('status-container');
-    const resultsContainer = document.getElementById('results-container');
-    const confirmationButtons = document.getElementById('confirmation-buttons');
-    const btnConfirmarGuardado = document.getElementById('btnConfirmarGuardado');
-    const btnCancelar = document.getElementById('btnCancelar');
-    const fechaEdicionDiv = document.getElementById('fecha-edicion');
-    const fechaManualInput = document.getElementById('fechaManualInput');
-    const fechaDetectadaBadge = document.getElementById('fechaDetectadaBadge');
-    const spinner = document.getElementById('spinner-area');
+/* ==============================  EVENTOS  ================================= */
+inputDocx           .addEventListener('change', handleDocxUpload);
+btnConfirmarGuardado.addEventListener('click',   onConfirmSave);
+btnCancelar         .addEventListener('click',   onCancel);
 
-    let parsedDataForConfirmation = null;
-    let erroresValidacion = [];
-    let grupoDetectado = ""; // "grupo1_expulsiones", "grupo4_operativo" o "grupoPuerto"
-
-    // --- UI ---
-    function showStatus(message, type = 'info') {
-        if (!statusContainer) return;
-        let alertClass = 'alert-info';
-        if (type === 'success') alertClass = 'alert-success';
-        if (type === 'error' || type === 'danger') alertClass = 'alert-danger';
-        if (type === 'warning') alertClass = 'alert-warning';
-        statusContainer.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
-    }
-    function showSpinner(visible) {
-        if (spinner) spinner.style.display = visible ? 'flex' : 'none';
-    }
-    function showConfirmationUI(show) {
-        if (confirmationButtons) confirmationButtons.style.display = show ? 'block' : 'none';
-    }
-    function showResults(parsedData) {
-        if (!resultsContainer) return;
-        resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
-        for (const key in parsedData) {
-            if (key === 'fecha') continue;
-            const dataContent = parsedData[key];
-            if (dataContent && ((Array.isArray(dataContent) && dataContent.length > 0) || Object.keys(dataContent).length > 0)) {
-                const card = document.createElement('div');
-                card.className = 'card mb-3 shadow-sm';
-                card.innerHTML = `
-                    <div class="card-header bg-light"><strong>${key.toUpperCase()}</strong></div>
-                    <div class="card-body">
-                        <pre class="results-card">${JSON.stringify(dataContent, null, 2)}</pre>
-                    </div>
-                `;
-                resultsContainer.appendChild(card);
-            }
-        }
-    }
-    function showFechaEditable(fechaISO) {
-        if (!fechaEdicionDiv || !fechaManualInput) return;
-        fechaEdicionDiv.style.display = "flex";
-        if (fechaISO && /^\d{4}-\d{2}-\d{2}$/.test(fechaISO)) {
-            fechaManualInput.value = fechaISO;
-            fechaDetectadaBadge.textContent = "Detectada: " + fechaISO.split("-").reverse().join("/");
-            fechaDetectadaBadge.className = "badge bg-success";
-        } else {
-            fechaManualInput.value = "";
-            fechaDetectadaBadge.textContent = "No detectada";
-            fechaDetectadaBadge.className = "badge bg-secondary";
-        }
-    }
-    function obtenerFechaFormateada() {
-        return fechaManualInput.value || "";
-    }
-
-    // --- EVENTOS ---
-    if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
-    if (btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
-    if (btnCancelar) btnCancelar.addEventListener('click', onCancel);
-
-    // --- PRINCIPAL ---
-    async function handleDocxUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        onCancel();
-        showSpinner(true);
-        showStatus('Procesando archivo...', 'info');
-        if (!file.name.toLowerCase().endsWith('.docx')) {
-            showStatus('Solo se admiten archivos DOCX.', 'danger');
-            showSpinner(false);
-            return;
-        }
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.convertToHtml({ arrayBuffer });
-            // Detecta grupo y llama a parser adecuado
-            const { detectado, datos, fecha } = autoDetectAndParse(result.value);
-            grupoDetectado = detectado;
-            if (!datos || Object.keys(datos).length === 0) throw new Error("No se han extraído datos válidos.");
-            parsedDataForConfirmation = { [detectado]: datos, fecha };
-
-            showFechaEditable(fecha);
-            showResults({ [detectado]: datos });
-
-            // Validación en carga
-            let datosAValidar = datos;
-            erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
-
-            if (erroresValidacion.length) {
-                showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
-                btnConfirmarGuardado.disabled = true;
-            } else {
-                showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
-                btnConfirmarGuardado.disabled = false;
-            }
-            showConfirmationUI(true);
-
-        } catch (err) {
-            console.error("Error:", err);
-            showStatus(`Error: ${err.message}`, 'danger');
-        } finally {
-            showSpinner(false);
-            inputDocx.value = '';
-        }
-    }
-
-    async function onConfirmSave() {
-    if (!parsedDataForConfirmation || !grupoDetectado) {
-        showStatus('No hay datos para guardar.', 'danger');
-        return;
-    }
-    let fechaFinal = obtenerFechaFormateada();
-    if (!fechaFinal) {
-        showStatus('Selecciona una fecha válida.', 'danger');
-        fechaManualInput.focus();
-        return;
-    }
-    parsedDataForConfirmation.fecha = fechaFinal;
-
-    // RECOGE EL OBJETO DE DATOS SIN IMPORTAR LA CLAVE
-    let datosAValidar = null;
-    // Busca primero usando la clave esperada
-    if (parsedDataForConfirmation[grupoDetectado]) {
-        datosAValidar = parsedDataForConfirmation[grupoDetectado];
-    } else {
-        // Si no, coge la primera clave distinta de fecha
-        for (let k of Object.keys(parsedDataForConfirmation)) {
-            if (k !== 'fecha') {
-                datosAValidar = parsedDataForConfirmation[k];
-                break;
-            }
-        }
-    }
-
-    erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
-
-    if (erroresValidacion.length) {
-        showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
-        btnConfirmarGuardado.disabled = true;
-        return;
-    }
-
+/* ==========================  SUBIR Y PARSEAR  ============================= */
+async function handleDocxUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    onCancel();
     showSpinner(true);
-    showConfirmationUI(false);
-    showStatus('Guardando en Firebase...', 'info');
-    resultsContainer.innerHTML = '';
+    showStatus('Procesando archivo …','info');
 
-    try {
-        let colName = "";
-        if (grupoDetectado === "grupo1_expulsiones") colName = "grupo1_expulsiones";
-        else if (grupoDetectado === "grupo4_operativo") colName = "grupo4_operativo";
-        else if (grupoDetectado === "grupoPuerto") colName = "grupoPuerto_registros";
-        else throw new Error("Grupo no reconocido.");
+    if(!file.name.toLowerCase().endsWith('.docx')){
+        showStatus('Solo se admiten archivos DOCX.','danger');
+        showSpinner(false); return;
+    }
 
-        const ref = db.collection(colName).doc(fechaFinal);
-        const snap = await ref.get();
-        if (snap.exists) {
-            showStatus(`Ya existen datos para ese día en ${grupoDetectado}. No se han guardado nuevos datos.`, 'danger');
-            showResults({ [grupoDetectado]: datosAValidar });
-            showConfirmationUI(true);
-            return;
+    try{
+        const arrayBuffer   = await file.arrayBuffer();
+        const { value:html} = await mammoth.convertToHtml({arrayBuffer});
+        const { detectado, datos, fecha } = autoDetectAndParse(html);
+
+        if(!detectado) throw new Error("No se reconoció el formato del parte DOCX.");
+
+        grupoDetectado            = detectado;
+        parsedDataForConfirmation = { [detectado]: datos, fecha };
+
+        showFechaEditable(fecha);
+        showResults(parsedDataForConfirmation);
+
+        erroresValidacion = validarDatos(datos, detectado);
+        if(erroresValidacion.length){
+            showStatus('<ul>'+erroresValidacion.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
+            btnConfirmarGuardado.disabled = true;
+        }else{
+            showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
+            btnConfirmarGuardado.disabled = false;
         }
-        await ref.set(datosAValidar, { merge: false });
-        showStatus('¡Guardado con éxito en Firebase!', 'success');
-    } catch (err) {
-        console.error("Error al guardar:", err);
-        showStatus(`Error: ${err.message}`, 'danger');
-        showResults({ [grupoDetectado]: datosAValidar });
         showConfirmationUI(true);
-    } finally {
+
+    }catch(err){
+        console.error(err);
+        showStatus('Error: '+err.message,'danger');
+    }finally{
         showSpinner(false);
-        parsedDataForConfirmation = null;
-        fechaEdicionDiv.style.display = "none";
+        inputDocx.value='';
     }
 }
 
-    function onCancel() {
-        resultsContainer.innerHTML = '';
-        statusContainer.innerHTML = '';
-        showConfirmationUI(false);
-        parsedDataForConfirmation = null;
-        grupoDetectado = "";
-        if (fechaEdicionDiv) fechaEdicionDiv.style.display = "none";
+/* ==========================  CONFIRMAR GUARDADO  ========================= */
+async function onConfirmSave(){
+    if(!parsedDataForConfirmation || !grupoDetectado){
+        showStatus('No hay datos para guardar.','danger'); return;
+    }
+    const fechaFinal = obtenerFechaFormateada();
+    if(!fechaFinal){
+        showStatus('Selecciona una fecha válida.','danger');
+        fechaManualInput.focus(); return;
+    }
+    parsedDataForConfirmation.fecha = fechaFinal;
+
+    const datosAValidar = parsedDataForConfirmation[grupoDetectado];
+    erroresValidacion   = validarDatos(datosAValidar, grupoDetectado);
+    if(erroresValidacion.length){
+        showStatus('<ul>'+erroresValidacion.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
+        btnConfirmarGuardado.disabled=true; return;
     }
 
-    // =============== PARSERS AUTOMÁTICOS =========================
+    showSpinner(true); showConfirmationUI(false); showStatus('Guardando en Firebase …','info'); resultsContainer.innerHTML='';
 
-    function autoDetectAndParse(html) {
-        const texto = html.toUpperCase();
-        if (texto.includes("DETENIDOS") && texto.includes("EXPULSADOS")) {
-            const { grupo1, fecha } = parseGrupo1Completo(html);
-            return { detectado: "grupo1_expulsiones", datos: grupo1, fecha };
+    try{
+        const collectionName = ({
+            [GROUP1]:      "grupo1_expulsiones",
+            [GROUP4]:      "grupo4_operativo",
+            [GROUPPUERTO]: "grupoPuerto_registros"})[grupoDetectado];
+
+        const ref  = db.collection(collectionName).doc(fechaFinal);
+        if((await ref.get()).exists){
+            showStatus(`Ya existen datos para ese día en ${grupoDetectado}.`,'danger');
+            showResults({ [grupoDetectado]: datosAValidar }); showConfirmationUI(true); return;
         }
-        if (texto.includes("COLABORACIONES") && texto.includes("CITADOS")) {
-            const { grupo4_operativo, fecha } = parseGrupo4Completo(html);
-            return { detectado: "grupo4_operativo", datos: grupo4_operativo, fecha };
-        }
-        if (texto.includes("ARGOS") && texto.includes("FERRYS")) {
-            const { grupoPuerto, fecha } = parseGrupoPuertoCompleto(html);
-            return { detectado: "grupoPuerto", datos: grupoPuerto, fecha };
-        }
-        return { detectado: "", datos: {}, fecha: "" };
+        await ref.set(datosAValidar,{merge:false});
+        showStatus('¡Guardado con éxito en Firebase!','success');
+    }catch(err){
+        console.error(err);
+        showStatus('Error: '+err.message,'danger');
+        showResults({ [grupoDetectado]: datosAValidar }); showConfirmationUI(true);
+    }finally{
+        showSpinner(false);
+        parsedDataForConfirmation=null;
+        fechaEdicionDiv.style.display="none";
     }
+}
 
-    // ------------ PARSER GRUPO 1 -----------------
-    function parseGrupo1Completo(html) {
-        const root = document.createElement('div');
-        root.innerHTML = html;
-        const tablas = Array.from(root.querySelectorAll('table'));
-        let fecha = '';
-        const textPlano = root.innerText || root.textContent || "";
-        let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-        if (m) {
-            fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-        }
-        let grupo1 = {};
-        function filtrarGestiones(tabla) {
-            const firstRow = tabla.querySelector('tr');
-            if (!firstRow) return false;
-            const txt = firstRow.textContent.toUpperCase();
-            return !txt.includes('GESTIONES');
-        }
-        grupo1.detenidos = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('DETENIDOS') &&
-                rows[0].textContent.toUpperCase().includes('MOTIVO')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (cells.length < 4) continue;
-                    const obj = {
-                        numero: parseInt(cells[0]?.textContent.trim()) || '',
-                        motivo: cells[1]?.textContent.trim() || '',
-                        nacionalidad: cells[2]?.textContent.trim() || '',
-                        diligencias: cells[3]?.textContent.trim() || '',
-                        observaciones: cells[4]?.textContent.trim() || ''
-                    };
-                    if (Object.values(obj).some(x => x)) grupo1.detenidos.push(obj);
-                }
-            }
-        }
-        if (!grupo1.detenidos.length) delete grupo1.detenidos;
+function onCancel(){
+    resultsContainer.innerHTML='';
+    statusContainer.innerHTML='';
+    showConfirmationUI(false);
+    parsedDataForConfirmation=null;
+    grupoDetectado="";
+    fechaEdicionDiv.style.display="none";
+}
 
-        grupo1.expulsados = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('EXPULSADOS') &&
-                rows[0].textContent.toUpperCase().includes('NACIONALIDAD')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (cells.length < 2) continue;
-                    const obj = {
-                        nombre: cells[0]?.textContent.trim() || '',
-                        nacionalidad: cells[1]?.textContent.trim() || '',
-                        diligencias: cells[2]?.textContent.trim() || '',
-                        nConduccionesPos: parseInt(cells[3]?.textContent.trim()) || 0,
-                        conduccionesNeg: parseInt(cells[4]?.textContent.trim()) || 0,
-                        observaciones: cells[5]?.textContent.trim() || ''
-                    };
-                    if (obj.nombre || obj.nacionalidad) grupo1.expulsados.push(obj);
-                }
-            }
-        }
-        if (!grupo1.expulsados.length) delete grupo1.expulsados;
+/* ======================  AUTO-DETECCIÓN Y PARSERS  ======================== */
+function autoDetectAndParse(html){
+    const txt = html.toUpperCase();
 
-        grupo1.fletados = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('FLETADOS') &&
-                rows[0].textContent.toUpperCase().includes('DESTINO')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (cells.length < 2) continue;
-                    const obj = {
-                        destino: cells[0]?.textContent.trim() || '',
-                        pax: parseInt(cells[1]?.textContent.trim()) || 0,
-                        observaciones: cells[2]?.textContent.trim() || ''
-                    };
-                    if (obj.destino) grupo1.fletados.push(obj);
-                }
-            }
-        }
-        if (!grupo1.fletados.length) delete grupo1.fletados;
-
-        grupo1.fletadosFuturos = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('FLETADOS FUTUROS')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (cells.length < 2) continue;
-                    const obj = {
-                        destino: cells[0]?.textContent.trim() || '',
-                        pax: parseInt(cells[1]?.textContent.trim()) || 0,
-                        fecha: cells[2]?.textContent.trim() || ''
-                    };
-                    if (obj.destino) grupo1.fletadosFuturos.push(obj);
-                }
-            }
-        }
-        if (!grupo1.fletadosFuturos.length) delete grupo1.fletadosFuturos;
-
-        grupo1.conduccionesPositivas = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('CONDUCCIONES POSITIVAS')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (!cells.length) continue;
-                    const obj = {
-                        numero: parseInt(cells[0]?.textContent.trim()) || 0,
-                        fecha: cells[1]?.textContent.trim() || ''
-                    };
-                    if (obj.numero) grupo1.conduccionesPositivas.push(obj);
-                }
-            }
-        }
-        if (!grupo1.conduccionesPositivas.length) delete grupo1.conduccionesPositivas;
-
-        grupo1.conduccionesNegativas = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('CONDUCCIONES NEGATIVAS')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (!cells.length) continue;
-                    const obj = {
-                        numero: parseInt(cells[0]?.textContent.trim()) || 0,
-                        fecha: cells[1]?.textContent.trim() || ''
-                    };
-                    if (obj.numero) grupo1.conduccionesNegativas.push(obj);
-                }
-            }
-        }
-        if (!grupo1.conduccionesNegativas.length) delete grupo1.conduccionesNegativas;
-
-        grupo1.pendientes = [];
-        for (let t of tablas) {
-            if (!filtrarGestiones(t)) continue;
-            const rows = Array.from(t.querySelectorAll('tr'));
-            if (
-                rows.length &&
-                rows[0].textContent.toUpperCase().includes('PENDIENTES')
-            ) {
-                for (let i = 1; i < rows.length; i++) {
-                    const cells = Array.from(rows[i].querySelectorAll('td'));
-                    if (!cells.length) continue;
-                    const obj = {
-                        descripcion: cells[0]?.textContent.trim() || '',
-                        fecha: cells[1]?.textContent.trim() || ''
-                    };
-                    if (obj.descripcion) grupo1.pendientes.push(obj);
-                }
-            }
-        }
-        if (!grupo1.pendientes.length) delete grupo1.pendientes;
-
-        return { grupo1, fecha };
+    if(txt.includes("DETENIDOS") && txt.includes("EXPULSADOS")){
+        const { datos, fecha } = parseGrupo1(html);
+        return { detectado: GROUP1, datos, fecha };
     }
-
-    // ------------ PARSER GRUPO 4 OPERATIVO -----------------
-    function parseGrupo4Completo(html) {
-        const root = document.createElement('div');
-        root.innerHTML = html;
-        const tablas = Array.from(root.querySelectorAll('table'));
-        let fecha = '';
-        const textPlano = root.innerText || root.textContent || "";
-        let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-        if (m) {
-            fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-        }
-        let grupo4 = {};
-        function mapSeccion(tablas, palabras, campos, parseFn) {
-            for (const t of tablas) {
-                const headTxt = t.querySelector('tr')?.textContent?.toUpperCase() || '';
-                if (palabras.every(w => headTxt.includes(w.toUpperCase()))) {
-                    const data = [];
-                    const rows = Array.from(t.querySelectorAll('tr'));
-                    for (let i = 1; i < rows.length; i++) {
-                        const cells = Array.from(rows[i].querySelectorAll('td'));
-                        if (cells.length < campos.length) continue;
-                        let obj = {};
-                        for (let c = 0; c < campos.length; c++) {
-                            obj[campos[c]] = cells[c]?.textContent.trim() || '';
-                        }
-                        if (parseFn) obj = parseFn(obj);
-                        if (Object.values(obj).some(x => x)) data.push(obj);
-                    }
-                    return data;
-                }
-            }
-            return [];
-        }
-        grupo4.colaboraciones = mapSeccion(tablas, ['Colaboraciones'], ['desc', 'cantidad'], x => ({
-            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.colaboraciones.length) delete grupo4.colaboraciones;
-
-        grupo4.detenidos = mapSeccion(tablas, ['Detenidos'], ['motivo', 'nacionalidad', 'cantidad'], x => ({
-            motivo: x.motivo, nacionalidad: x.nacionalidad, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.detenidos.length) delete grupo4.detenidos;
-
-        grupo4.citados = mapSeccion(tablas, ['Citados'], ['desc', 'cantidad'], x => ({
-            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.citados.length) delete grupo4.citados;
-
-        grupo4.gestiones = mapSeccion(tablas, ['Otras gestiones'], ['desc', 'cantidad'], x => ({
-            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.gestiones.length) delete grupo4.gestiones;
-
-        grupo4.inspeccionesTrabajo = mapSeccion(tablas, ['Inspecciones trabajo'], ['desc', 'cantidad'], x => ({
-            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.inspeccionesTrabajo.length) delete grupo4.inspeccionesTrabajo;
-
-        grupo4.otrasInspecciones = mapSeccion(tablas, ['Otras inspecciones'], ['desc', 'cantidad'], x => ({
-            descripcion: x.desc, cantidad: parseInt(x.cantidad) || 0
-        }));
-        if (!grupo4.otrasInspecciones.length) delete grupo4.otrasInspecciones;
-
-        for (const t of tablas) {
-            const headTxt = t.querySelector('tr')?.textContent?.toUpperCase() || '';
-            if (headTxt.includes('OBSERVACIONES')) {
-                const txt = Array.from(t.querySelectorAll('tr td')).slice(1).map(td => td.textContent.trim()).join(' ');
-                if (txt) grupo4.observaciones = txt;
-            }
-        }
-
-        return { grupo4_operativo: grupo4, fecha };
+    if(txt.includes("COLABORACIONES") && txt.includes("CITADOS")){
+        const { datos, fecha } = parseGrupo4(html);
+        return { detectado: GROUP4, datos, fecha };
     }
+    if(txt.includes("ARGOS") && txt.includes("FERRYS")){
+        const { datos, fecha } = parseGrupoPuerto(html);
+        return { detectado: GROUPPUERTO, datos, fecha };
+    }
+    return { detectado:'', datos:{}, fecha:'' };
+}
 
-    // ------------ PARSER GRUPO PUERTO -----------------
-    function parseGrupoPuertoCompleto(html) {
-        const root = document.createElement('div');
-        root.innerHTML = html;
-        const tablas = Array.from(root.querySelectorAll('table'));
-        let fecha = '';
-        const textPlano = root.innerText || root.textContent || "";
-        let m = textPlano.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-        if (m) {
-            if (m[1]) fecha = `${m[1]}-${m[2]}-${m[3]}`;
-            else fecha = `${m[6]}-${m[5].padStart(2, '0')}-${m[4].padStart(2, '0')}`;
+/* ------------------------------------------------------------------------- */
+/*                            PARSER GRUPO 1                                 */
+/* ------------------------------------------------------------------------- */
+function parseGrupo1(html){
+    const root  = document.createElement('div'); root.innerHTML=html;
+    const tablas= Array.from(root.querySelectorAll('table'));
+    const plain = root.innerText||root.textContent||"";
+    let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
+
+    const grupo1 = {};
+
+    const sinGestiones = t=>{
+        const head = t.querySelector('tr')?.textContent?.toUpperCase()||'';
+        return !head.includes('GESTIONES');
+    };
+
+    /* -------------------  Detenidos  ------------------- */
+    grupo1.detenidos=[];
+    tablas.filter(sinGestiones).forEach(tabla=>{
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        const encabezado = rows[0].textContent.toUpperCase();
+        if(encabezado.includes('DETENIDOS') && encabezado.includes('MOTIVO')){
+            rows.slice(1).forEach(tr=>{
+                const td=Array.from(tr.querySelectorAll('td'));
+                if(td.length<4) return;
+                const obj={
+                    numero:        parseInt(td[0].textContent.trim())||'',
+                    motivo:        td[1].textContent.trim()||'',
+                    nacionalidad:  td[2].textContent.trim()||'',
+                    diligencias:   td[3].textContent.trim()||'',
+                    observaciones: td[4]?.textContent.trim()||''
+                };
+                if(Object.values(obj).some(x=>x!==''))
+                    grupo1.detenidos.push(obj);
+            });
         }
-        let puerto = {
-            marinosArgos: '', controlPasaportes: '', cruceros: '', cruceristas: '', visadosValencia: '', visadosCG: '',
-            puertoDeportivo: '', denegaciones: '', certificadosEixics: '', ferrys: [], observaciones: ''
-        };
-        tablas.forEach(tabla => {
-            const head = tabla.querySelector('tr')?.textContent?.toUpperCase() || '';
-            if (head.includes('CTRL.MARINOS') || head.includes('ARGOS') || head.includes('CRUCEROS')) {
-                const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
-                filas.forEach(tr => {
-                    const tds = Array.from(tr.querySelectorAll('td'));
-                    [
-                        { clave: 'marinosArgos', palabras: ['ARGOS'] },
-                        { clave: 'controlPasaportes', palabras: ['PASAPORTES'] },
-                        { clave: 'cruceros', palabras: ['CRUCEROS'] },
-                        { clave: 'cruceristas', palabras: ['CRUCERISTAS'] },
-                        { clave: 'visadosValencia', palabras: ['VALEN'] },
-                        { clave: 'visadosCG', palabras: ['CG'] },
-                        { clave: 'puertoDeportivo', palabras: ['DEPOR'] },
-                        { clave: 'denegaciones', palabras: ['DENEG'] },
-                        { clave: 'certificadosEixics', palabras: ['EIXICS'] }
-                    ].forEach((map, i) => {
-                        if (tds[i] && map.palabras.some(p => head.includes(p))) {
-                            puerto[map.clave] = tds[i].textContent.trim();
-                        }
-                    });
+    });
+    if(!grupo1.detenidos.length) delete grupo1.detenidos;
+
+    /* -------------------  Expulsados  ------------------ */
+    grupo1.expulsados=[];
+    tablas.filter(sinGestiones).forEach(tabla=>{
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        const head = rows[0].textContent.toUpperCase();
+        if(head.includes('EXPULSADOS') && head.includes('NACIONALIDAD')){
+            rows.slice(1).forEach(tr=>{
+                const td = Array.from(tr.querySelectorAll('td'));
+                if(td.length<2) return;
+                const obj={
+                    nombre:            td[0].textContent.trim()||'',
+                    nacionalidad:      td[1].textContent.trim()||'',
+                    diligencias:       td[2]?.textContent.trim()||'',
+                    nConduccionesPos:  parseInt(td[3]?.textContent.trim())||0,
+                    conduccionesNeg:   parseInt(td[4]?.textContent.trim())||0,
+                    observaciones:     td[5]?.textContent.trim()||''
+                };
+                if(obj.nombre || obj.nacionalidad) grupo1.expulsados.push(obj);
+            });
+        }
+    });
+    if(!grupo1.expulsados.length) delete grupo1.expulsados;
+
+    /* -------------------  Fletados actuales ------------- */
+    grupo1.fletados=[];
+    tablas.filter(sinGestiones).forEach(tabla=>{
+        const rows=Array.from(tabla.querySelectorAll('tr'));
+        const head=rows[0].textContent.toUpperCase();
+        if(head.includes('FLETADOS') && head.includes('DESTINO') && !head.includes('FUTUROS')){
+            rows.slice(1).forEach(tr=>{
+                const td=Array.from(tr.querySelectorAll('td'));
+                if(td.length<2) return;
+                const obj={
+                    destino:       td[0].textContent.trim()||'',
+                    pax:           parseInt(td[1].textContent.trim())||0,
+                    observaciones: td[2]?.textContent.trim()||''
+                };
+                if(obj.destino) grupo1.fletados.push(obj);
+            });
+        }
+    });
+    if(!grupo1.fletados.length) delete grupo1.fletados;
+
+    /* -------------------  Fletados futuros ------------- */
+    grupo1.fletadosFuturos=[];
+    tablas.filter(sinGestiones).forEach(tabla=>{
+        const rows=Array.from(tabla.querySelectorAll('tr'));
+        const head=rows[0].textContent.toUpperCase();
+        if(head.includes('FLETADOS FUTUROS')){
+            rows.slice(1).forEach(tr=>{
+                const td=Array.from(tr.querySelectorAll('td'));
+                if(td.length<2) return;
+                const obj={
+                    destino: td[0].textContent.trim()||'',
+                    pax:     parseInt(td[1].textContent.trim())||0,
+                    fecha:   td[2]?.textContent.trim()||''
+                };
+                if(obj.destino) grupo1.fletadosFuturos.push(obj);
+            });
+        }
+    });
+    if(!grupo1.fletadosFuturos.length) delete grupo1.fletadosFuturos;
+
+    /* -------------  Conducciones positivas/negativas --------------- */
+    const extraerConducciones = (clave, palabra)=>{
+        grupo1[clave]=[];
+        tablas.filter(sinGestiones).forEach(tabla=>{
+            const rows=Array.from(tabla.querySelectorAll('tr'));
+            const head=rows[0].textContent.toUpperCase();
+            if(head.includes(palabra)){
+                rows.slice(1).forEach(tr=>{
+                    const td=Array.from(tr.querySelectorAll('td'));
+                    if(!td.length) return;
+                    const obj={
+                        numero: parseInt(td[0].textContent.trim())||0,
+                        fecha : td[1]?.textContent.trim()||''
+                    };
+                    if(obj.numero) grupo1[clave].push(obj);
                 });
             }
-            if (head.includes('FERRYS')) {
-                const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
-                puerto.ferrys = filas.map(tr => {
-                    const tds = Array.from(tr.querySelectorAll('td'));
-                    return {
-                        tipo: tds[0] ? tds[0].textContent.trim() : '',
-                        fecha: tds[1] ? tds[1].textContent.trim() : '',
-                        hora: tds[2] ? tds[2].textContent.trim() : '',
-                        pasajeros: tds[3] ? tds[3].textContent.trim() : '',
-                        vehiculos: tds[4] ? tds[4].textContent.trim() : ''
-                    };
-                }).filter(f => Object.values(f).some(x => x));
-            }
-            if (head.includes('OBSERVACIONES')) {
-                puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td => td.textContent.trim()).join(' ');
-            }
         });
-        for (let k of Object.keys(puerto)) {
-            if (Array.isArray(puerto[k]) && !puerto[k].length) delete puerto[k];
-            if (!Array.isArray(puerto[k]) && puerto[k] === '') delete puerto[k];
+        if(!grupo1[clave].length) delete grupo1[clave];
+    };
+    extraerConducciones('conduccionesPositivas','CONDUCCIONES POSITIVAS');
+    extraerConducciones('conduccionesNegativas','CONDUCCIONES NEGATIVAS');
+
+    /* -------------------  Pendientes  ------------------ */
+    grupo1.pendientes=[];
+    tablas.filter(sinGestiones).forEach(tabla=>{
+        const rows=Array.from(tabla.querySelectorAll('tr'));
+        const head=rows[0].textContent.toUpperCase();
+        if(head.includes('PENDIENTES')){
+            rows.slice(1).forEach(tr=>{
+                const td=Array.from(tr.querySelectorAll('td'));
+                if(!td.length) return;
+                const obj={
+                    descripcion: td[0].textContent.trim()||'',
+                    fecha:       td[1]?.textContent.trim()||''
+                };
+                if(obj.descripcion) grupo1.pendientes.push(obj);
+            });
         }
-        return { grupoPuerto: puerto, fecha };
+    });
+    if(!grupo1.pendientes.length) delete grupo1.pendientes;
+
+    return { datos: grupo1, fecha };
+}
+
+/* ------------------------------------------------------------------------- */
+/*                           PARSER GRUPO 4 OPERATIVO                        */
+/* ------------------------------------------------------------------------- */
+function parseGrupo4(html){
+    const root  = document.createElement('div'); root.innerHTML=html;
+    const tablas= Array.from(root.querySelectorAll('table'));
+    const plain = root.innerText||root.textContent||"";
+    let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
+
+    const grupo4={};
+
+    const mapSeccion = (palabras, campos, parseFn)=>{ /* ← devuelve array */
+        for(const t of tablas){
+            const cab = t.querySelector('tr')?.textContent?.toUpperCase()||'';
+            if(!palabras.every(p=>cab.includes(p.toUpperCase()))) continue;
+            const filas = Array.from(t.querySelectorAll('tr')).slice(1);
+            const arr   = [];
+            filas.forEach(tr=>{
+                const td = Array.from(tr.querySelectorAll('td'));
+                if(td.length < campos.length) return;
+                const obj={};
+                campos.forEach((campo,i)=> obj[campo]=td[i].textContent.trim()||'');
+                if(parseFn) Object.assign(obj,parseFn(obj));
+                if(Object.values(obj).some(v=>v!=='')) arr.push(obj);
+            });
+            return arr;
+        }
+        return [];
+    };
+
+    grupo4.colaboraciones      = mapSeccion(['COLABORACIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.colaboraciones.length) delete grupo4.colaboraciones;
+
+    grupo4.detenidos           = mapSeccion(['DETENIDOS'],['motivo','nacionalidad','cantidad'],
+                                            o=>({motivo:o.motivo,nacionalidad:o.nacionalidad,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.detenidos.length) delete grupo4.detenidos;
+
+    grupo4.citados             = mapSeccion(['CITADOS'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.citados.length) delete grupo4.citados;
+
+    grupo4.gestiones           = mapSeccion(['OTRAS GESTIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.gestiones.length) delete grupo4.gestiones;
+
+    grupo4.inspeccionesTrabajo = mapSeccion(['INSPECCIONES TRABAJO'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.inspeccionesTrabajo.length) delete grupo4.inspeccionesTrabajo;
+
+    grupo4.otrasInspecciones   = mapSeccion(['OTRAS INSPECCIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+    if(!grupo4.otrasInspecciones.length) delete grupo4.otrasInspecciones;
+
+    tablas.forEach(t=>{
+        const cab = t.querySelector('tr')?.textContent?.toUpperCase()||'';
+        if(!cab.includes('OBSERVACIONES')) return;
+        const txt = Array.from(t.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ');
+        if(txt) grupo4.observaciones = txt;
+    });
+
+    return { datos: grupo4, fecha };
+}
+
+/* ------------------------------------------------------------------------- */
+/*                           PARSER GRUPO PUERTO                             */
+/* ------------------------------------------------------------------------- */
+function parseGrupoPuerto(html){
+    const root  = document.createElement('div'); root.innerHTML=html;
+    const tablas= Array.from(root.querySelectorAll('table'));
+    const plain = root.innerText||root.textContent||"";
+    let m       = plain.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    const fecha = m
+        ? (m[1] ? `${m[1]}-${m[2]}-${m[3]}` : `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`)
+        : '';
+
+    const puerto={
+        marinosArgos:'',controlPasaportes:'',cruceros:'',cruceristas:'',visadosValencia:'',
+        visadosCG:'',puertoDeportivo:'',denegaciones:'',certificadosEixics:'',ferrys:[],observaciones:''
+    };
+
+    tablas.forEach(tabla=>{
+        const head = tabla.querySelector('tr')?.textContent?.toUpperCase()||'';
+
+        /* ------------  valores simples en línea  ------------ */
+        if(head.includes('CTRL.MARINOS')||head.includes('ARGOS')||head.includes('CRUCEROS')){
+            const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+            filas.forEach(tr=>{
+                const td = Array.from(tr.querySelectorAll('td'));
+                [
+                    {k:'marinosArgos',       match:'ARGOS'},
+                    {k:'controlPasaportes',  match:'PASAPORTES'},
+                    {k:'cruceros',           match:'CRUCEROS'},
+                    {k:'cruceristas',        match:'CRUCERISTAS'},
+                    {k:'visadosValencia',    match:'VALEN'},
+                    {k:'visadosCG',          match:' CG '},
+                    {k:'puertoDeportivo',    match:'DEPOR'},
+                    {k:'denegaciones',       match:'DENEG'},
+                    {k:'certificadosEixics', match:'EIXICS'}
+                ].forEach(({k,match},i)=>{
+                    if(td[i] && head.includes(match)) puerto[k]=td[i].textContent.trim();
+                });
+            });
+        }
+
+        /* ------------------  FERRYS  ------------------ */
+        if(head.includes('FERRYS')){
+            const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+            puerto.ferrys = filas.map(tr=>{
+                const td=Array.from(tr.querySelectorAll('td'));
+                return {
+                    tipo:       td[0]?.textContent.trim()||'',
+                    fecha:      td[1]?.textContent.trim()||'',
+                    hora:       td[2]?.textContent.trim()||'',
+                    pasajeros:  td[3]?.textContent.trim()||'',
+                    vehiculos:  td[4]?.textContent.trim()||''
+                };
+            }).filter(f=>Object.values(f).some(v=>v));
+        }
+
+        /* ---------------  OBSERVACIONES --------------- */
+        if(head.includes('OBSERVACIONES')){
+            puerto.observaciones = Array.from(tabla.querySelectorAll('tr td'))
+                                         .slice(1).map(td=>td.textContent.trim()).join(' ').trim();
+        }
+    });
+
+    /* eliminar vacíos */
+    Object.keys(puerto).forEach(k=>{
+        if(Array.isArray(puerto[k]) && !puerto[k].length)          delete puerto[k];
+        else if(!Array.isArray(puerto[k]) && puerto[k]==='')       delete puerto[k];
+    });
+
+    return { datos: puerto, fecha };
+}
+
+/* ------------------------------------------------------------------------- */
+/*                               VALIDACIÓN                                  */
+/* ------------------------------------------------------------------------- */
+function validarDatos(data, grupo){
+    if(!data||typeof data!=='object') return ['No se han extraído datos válidos.'];
+
+    const errs=[];
+
+    if(grupo===GROUP1){
+        if(!data.detenidos?.length && !data.expulsados?.length && !data.fletados?.length)
+            errs.push('Debe haber al menos un detenido, expulsado o fletado.');
     }
 
-    // ------------ VALIDACIÓN GENERAL -------------
-    function validarDatos(data, grupo) {
-        if (!data || typeof data !== 'object') {
-            return ['No se han extraído datos válidos para este grupo.'];
-        }
-        let errores = [];
-        // --- Grupo 1 ---
-        if (grupo === "grupo1_expulsiones") {
-            if (
-                (!data.detenidos || data.detenidos.length === 0) &&
-                (!data.expulsados || data.expulsados.length === 0) &&
-                (!data.fletados || data.fletados.length === 0)
-            ) {
-                errores.push('Debe haber al menos un detenido, expulsado o fletado.');
-            }
-        }
-        // --- Grupo 4 ---
-        if (grupo === "grupo4_operativo") {
-            let faltan = [];
-            if (!data.colaboraciones || data.colaboraciones.length === 0) faltan.push("Colaboraciones");
-            if (!data.detenidos || data.detenidos.length === 0) faltan.push("Detenidos");
-            if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) faltan.push("Inspecciones Trabajo");
-            if (faltan.length === 3) {
-                errores.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
-            } else if (faltan.length > 0) {
-                errores.push('⚠️ Faltan registros en: ' + faltan.join(', '));
-            }
-        }
-        // --- Grupo Puerto ---
-        if (grupo === "grupoPuerto") {
-            const tieneAlgunDato = [
-                data.marinosArgos,
-                data.controlPasaportes,
-                data.cruceros,
-                data.cruceristas,
-                data.visadosValencia,
-                data.visadosCG,
-                data.puertoDeportivo,
-                data.denegaciones,
-                data.certificadosEixics,
-                (data.ferrys && data.ferrys.length > 0),
-                data.observaciones && data.observaciones.trim() !== ''
-            ].some(x => x && x !== '');
-            if (!tieneAlgunDato) {
-                errores.push('Debe haber al menos un campo con información en el parte de Puerto.');
-            }
-        }
-        // --- Fecha válida para todos los grupos ---
-        if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
-            errores.push('La fecha es obligatoria y debe ser válida.');
-        }
-        return errores;
+    if(grupo===GROUP4){
+        const faltan=[];
+        if(!data.colaboraciones?.length)     faltan.push('Colaboraciones');
+        if(!data.detenidos?.length)          faltan.push('Detenidos');
+        if(!data.inspeccionesTrabajo?.length)faltan.push('Inspecciones Trabajo');
+        if(faltan.length===3) errs.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
+        else if(faltan.length) errs.push('⚠️ Faltan registros en: '+faltan.join(', '));
     }
-});
+
+    if(grupo===GROUPPUERTO){
+        const tieneDatos = [
+            'marinosArgos','controlPasaportes','cruceros','cruceristas','visadosValencia','visadosCG',
+            'puertoDeportivo','denegaciones','certificadosEixics','observaciones'
+        ].some(k=>data[k]) || (data.ferrys?.length);
+        if(!tieneDatos) errs.push('Debe haber al menos un campo con información en el parte de Puerto.');
+    }
+
+    if(!obtenerFechaFormateada().match(/^\d{4}-\d{2}-\d{2}$/))
+        errs.push('La fecha es obligatoria y debe ser válida.');
+
+    return errs;
+}
+
+}); // DOMContentLoaded
