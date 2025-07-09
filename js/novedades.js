@@ -1,8 +1,3 @@
-// ==============================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPO 1 AUTOIMPORT
-// Profesional 2025 · Importa TODO Grupo 1 menos Gestiones · DOCX oficial
-// ==============================================================================
-
 document.addEventListener('DOMContentLoaded', function () {
 
     // --- CONFIGURACIÓN FIREBASE ---
@@ -193,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --------------------------------------------------------------------------
     // PARSER COMPLETO DE GRUPO 1 (excepto GESTIONES)
+    // ADAPTADO: Detenidos solo número correlativo
     // --------------------------------------------------------------------------
     function parseGrupo1Completo(html) {
         const root = document.createElement('div');
@@ -216,8 +212,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return !txt.includes('GESTIONES');
         }
 
-        // ---- Detenidos ----
+        // ---- Detenidos: solo número, motivo, nacionalidad, diligencias, observaciones ----
         grupo1.detenidos = [];
+        let contadorDetenidos = 1;
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
             const rows = Array.from(t.querySelectorAll('tr'));
@@ -230,14 +227,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     const cells = Array.from(rows[i].querySelectorAll('td'));
                     if (cells.length < 4) continue;
                     const obj = {
-                        nombre: cells[0]?.textContent.trim() || '',
+                        numero: contadorDetenidos++,
                         motivo: cells[1]?.textContent.trim() || '',
                         nacionalidad: cells[2]?.textContent.trim() || '',
                         diligencias: cells[3]?.textContent.trim() || '',
                         observaciones: cells[4]?.textContent.trim() || ''
                     };
                     // Añade si algún campo relevante no está vacío
-                    if (Object.values(obj).some(x => x)) grupo1.detenidos.push(obj);
+                    if (obj.motivo || obj.nacionalidad || obj.diligencias || obj.observaciones) grupo1.detenidos.push(obj);
                 }
             }
         }
