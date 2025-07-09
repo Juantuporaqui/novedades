@@ -160,8 +160,13 @@ document.addEventListener('DOMContentLoaded', function () {
         showStatus('Guardando en Firebase...', 'info');
         resultsContainer.innerHTML = '';
 
-        try {
-            const colName = grupoDetectado === "grupo1_expulsiones" ? "grupo1_expulsiones" : "grupo4_operativo";
+                try {
+            let colName = "";
+            if (grupoDetectado === "grupo1_expulsiones") colName = "grupo1_expulsiones";
+            else if (grupoDetectado === "grupo4_operativo") colName = "grupo4_operativo";
+            else if (grupoDetectado === "grupoPuerto") colName = "grupoPuerto_registros";
+            else throw new Error("Grupo no reconocido.");
+
             const ref = db.collection(colName).doc(fechaFinal);
             const snap = await ref.get();
             if (snap.exists) {
@@ -195,20 +200,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // =============== PARSERS AUTOMÁTICOS =========================
 
-    function autoDetectAndParse(html) {
-        // ¿Es parte de grupo 1 o grupo 4?
+        function autoDetectAndParse(html) {
         const texto = html.toUpperCase();
         if (texto.includes("DETENIDOS") && texto.includes("EXPULSADOS")) {
-            // Es grupo 1
             const { grupo1, fecha } = parseGrupo1Completo(html);
             return { detectado: "grupo1_expulsiones", datos: grupo1, fecha };
         }
         if (texto.includes("COLABORACIONES") && texto.includes("CITADOS")) {
-            // Es grupo 4 operativo
             const { grupo4, fecha } = parseGrupo4Completo(html);
             return { detectado: "grupo4_operativo", datos: grupo4, fecha };
         }
-        // Por defecto, error
+        if (texto.includes("ARGOS") && texto.includes("FERRYS")) {
+            const { puerto, fecha } = parseGrupoPuertoCompleto(html);
+            return { detectado: "grupoPuerto", datos: puerto, fecha };
+        }
         return { detectado: "", datos: {}, fecha: "" };
     }
 
@@ -468,6 +473,62 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return { grupo4, fecha };
     }
+    // ------------ PARSER GRUPO PUERTO -----------------
+    function parseGrupoPuertoCompleto(html) {
+        const root = document.createElement('div');
+        root.innerHTML = html;
+        const tablas = Array.from(root.querySelectorAll('table'));
+        let fecha = '';
+        // Busca fecha robusta en todo el documento
+        const textPlano = root.innerText || root.textContent || "";
+        let m = textPlano.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (m) {
+            if (m[1]) fecha = `${m[1]}-${m[2]}-${m[3]}`;
+            else fecha = `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`;
+        }
+        let puerto = {
+            marinosArgos: '', controlPasaportes: '', cruceros: '', cruceristas: '', visadosValencia: '', visadosCG: '',
+            puertoDeportivo: '', denegaciones: '', certificadosEixics: '', ferrys: [], observaciones: ''
+        };
+        // Procesa tablas por nombre de columnas (flexible)
+        tablas.forEach(tabla => {
+            const head = tabla.querySelector('tr')?.textContent?.toUpperCase() || '';
+            // Valores simples
+            if (head.includes('CTRL.MARINOS') || head.includes('ARGOS') || head.includes('CRUCEROS')) {
+                const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+                filas.forEach(tr => {
+                    const tds = Array.from(tr.querySelectorAll('td'));
+                    // Mapeo por columna
+                    [
+                        {clave:'marinosArgos', palabras:['ARGOS']},
+                        {clave:'controlPasaportes', palabras:['PASAPORTES']},
+                        {clave:'cruceros', palabras:['CRUCEROS']},
+                        {clave:'cruceristas', palabras:['CRUCERISTAS']},
+                        {clave:'visadosValencia', palabras:['VALEN']},
+                        {clave:'visadosCG', palabras:['CG']},
+                        {clave:'puertoDeportivo', palabras:['DEPOR']},
+                        {clave:'denegaciones', palabras:['DENEG']},
+                        {clave:'certificadosEixics', palabras:['EIXICS']}
+                    ].forEach((map,i)=>{
+                        if (tds[i] && map.palabras.some(p=>head.includes(p))) {
+                            puerto[map.clave] = tds[i].textContent.trim();
+                        }
+                    });
+                });
+            }
+            // FERRYS
+            if (head.includes('FERRYS')) {
+                const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+                puerto.ferrys = filas.map(tr => {
+                    const tds = Array.from(tr.querySelectorAll('td'));
+                    return {
+                        tipo: tds[0]?tds[0].textContent.trim():'',
+                        fecha: tds[1]?tds[1].textContent.trim():'',
+                        hora: tds[2]?tds[2].textContent.trim():'',
+                        pasajeros: tds[3]?tds[3].textContent.trim():'',
+                        vehiculos: tds[4]?tds[4].textContent.trim():''
+                    };
+                }).filter(
 
     // ------------ VALIDACIÓN GENERAL ------------
     function validarDatos(data, grupo) {
