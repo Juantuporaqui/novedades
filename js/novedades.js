@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        return { grupo4, fecha };
+       return { grupo4_operativo: grupo4, fecha };
     }
            // ------------ PARSER GRUPO PUERTO -----------------
     function parseGrupoPuertoCompleto(html) {
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (Array.isArray(puerto[k]) && !puerto[k].length) delete puerto[k];
             if (!Array.isArray(puerto[k]) && puerto[k] === '') delete puerto[k];
         }
-        return { puerto, fecha };
+        return { grupoPuerto: puerto, fecha };
     }
 
     // ------------ VALIDACIÓN GENERAL ------------
