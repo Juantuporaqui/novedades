@@ -35,9 +35,9 @@ const fechaDiaInput = document.getElementById('fechaDia');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNuevo = document.getElementById('btnNuevo');
 
-// Detenidos
+// Detenidos (ahora por número, no nombre)
 const detenidoForm = document.getElementById('detenidoForm');
-const nombreDetenido = document.getElementById('nombreDetenido');
+const numeroDetenido = document.getElementById('numeroDetenido');
 const motivoDetenido = document.getElementById('motivoDetenido');
 const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
 const diligenciasDetenido = document.getElementById('diligenciasDetenido');
@@ -117,7 +117,7 @@ async function cargarDia(fecha) {
     }
     const datos = docSnap.data();
 
-    mostrarListaVentana(detenidosVentana, datos.detenidos || [], 'detenido', true);
+    mostrarListaDetenidos(datos.detenidos || []);
     mostrarListaVentana(expulsadosVentana, datos.expulsados || [], 'expulsado', true);
     mostrarListaVentana(fletadosVentana, datos.fletados || [], 'fletado', true);
     mostrarListaVentana(fletadosFuturosVentana, datos.fletadosFuturos || [], 'fletadoFuturo', true);
@@ -142,6 +142,28 @@ fechaDiaInput.addEventListener('change', () => {
 });
 
 // ====== Mostrar listados ======
+function mostrarListaDetenidos(lista) {
+    if (!Array.isArray(lista) || lista.length === 0) {
+        detenidosVentana.innerHTML = "<span class='text-muted'>Sin datos</span>";
+        return;
+    }
+    detenidosVentana.innerHTML = "";
+    lista.forEach((item, idx) => {
+        let texto = `Nº ${item.numero || "-"} - ${item.motivo || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}] ${item.observaciones ? "- " + item.observaciones : ""}`;
+        const div = document.createElement("div");
+        div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
+        div.innerHTML = `<span>${texto}</span>`;
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn btn-sm btn-danger ms-2";
+        btnDel.title = "Eliminar";
+        btnDel.innerHTML = "<i class='bi bi-trash'></i>";
+        btnDel.onclick = () => eliminarDetenido(idx);
+        div.appendChild(btnDel);
+        detenidosVentana.appendChild(div);
+    });
+    scrollVentana(detenidosVentana.id);
+}
+
 function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     if (!Array.isArray(lista) || lista.length === 0) {
         ventana.innerHTML = "<span class='text-muted'>Sin datos</span>";
@@ -151,9 +173,6 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     lista.forEach((item, idx) => {
         let texto = "";
         switch (tipo) {
-            case "detenido":
-                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.motivo || ""}] {${item.diligencias || ""}} <em>${item.observaciones || ""}</em>`;
-                break;
             case "expulsado":
                 texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
                 break;
@@ -194,22 +213,50 @@ async function añadirDetenido(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
     fechaActual = fechaDiaInput.value;
-    const nombre = nombreDetenido.value.trim();
+    const numero = parseInt(numeroDetenido.value) || null;
     const motivo = motivoDetenido.value.trim();
     const nacionalidad = nacionalidadDetenido.value.trim();
     const diligencias = diligenciasDetenido.value.trim();
     const observaciones = observacionesDetenido.value.trim();
-    if (!nombre) { showToast("Introduce nombre."); return; }
+    if (!numero) { showToast("Introduce número de detenido."); return; }
     if (!motivo) { showToast("Introduce motivo."); return; }
     if (!nacionalidad) { showToast("Introduce nacionalidad."); return; }
-    const detenido = { nombre, motivo, nacionalidad, diligencias, observaciones };
+
+    const detenido = { numero, motivo, nacionalidad, diligencias, observaciones };
     const ref = getDocRefDia(fechaActual);
+
+    // Evitar duplicados
+    const docSnap = await ref.get();
+    let detenidos = [];
+    if (docSnap.exists && Array.isArray(docSnap.data().detenidos)) {
+        detenidos = docSnap.data().detenidos;
+        if (detenidos.some(d => d.numero === numero)) {
+            showToast("Ya existe un detenido con ese número.");
+            return;
+        }
+    }
+
     await ref.set({
         detenidos: firebase.firestore.FieldValue.arrayUnion(detenido)
     }, { merge: true });
     cargarDia(fechaActual);
     limpiarFormulario(detenidoForm);
 }
+
+async function eliminarDetenido(idx) {
+    if (!fechaDiaInput.value) return;
+    fechaActual = fechaDiaInput.value;
+    const ref = getDocRefDia(fechaActual);
+    const docSnap = await ref.get();
+    if (!docSnap.exists) return;
+    let lista = docSnap.data().detenidos || [];
+    if (idx < 0 || idx >= lista.length) return;
+    lista.splice(idx, 1);
+    await ref.set({ detenidos: lista }, { merge: true });
+    cargarDia(fechaActual);
+}
+
+// ====== Añadir otros (expulsados, fletados, etc) ======
 async function añadirExpulsado(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -307,7 +354,7 @@ async function añadirPendiente(e) {
     limpiarFormulario(pendienteForm);
 }
 
-// ====== Eliminar dato ======
+// ====== Eliminar dato de cualquier lista (menos detenidos) ======
 async function eliminarDato(tipo, idx) {
     if (!fechaDiaInput.value) return;
     fechaActual = fechaDiaInput.value;
@@ -427,7 +474,7 @@ if (btnExportarPDF) {
         resumenFiltrado.forEach(item => {
             html += `<tr>
               <td>${formatoFecha(item.fecha)}</td>
-              <td>${(item.detenidos||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
+              <td>${(item.detenidos||[]).map(x => x.numero ? x.numero : "-").join(", ")}</td>
               <td>${(item.expulsados||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
               <td>${(item.fletados||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
               <td>${(item.fletadosFuturos||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
@@ -454,7 +501,7 @@ if (btnExportarCSV) {
         resumenFiltrado.forEach(item => {
             csv += [
                 item.fecha,
-                (item.detenidos||[]).map(x => x.nombre).join("|"),
+                (item.detenidos||[]).map(x => x.numero).join("|"),
                 (item.expulsados||[]).map(x => x.nombre).join("|"),
                 (item.fletados||[]).map(x => x.destino).join("|"),
                 (item.fletadosFuturos||[]).map(x => x.destino).join("|"),
