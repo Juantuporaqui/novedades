@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return { grupo4, fecha };
     }
-       // ------------ PARSER GRUPO PUERTO -----------------
+           // ------------ PARSER GRUPO PUERTO -----------------
     function parseGrupoPuertoCompleto(html) {
         const root = document.createElement('div');
         root.innerHTML = html;
