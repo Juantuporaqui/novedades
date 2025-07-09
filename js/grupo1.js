@@ -13,32 +13,36 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ====== Utilidades ======
-
 function showToast(mensaje, tipo = "info") {
     alert(mensaje);
 }
-
 function formatoFecha(fecha) {
     if (!fecha) return "";
     const f = new Date(fecha);
     if (isNaN(f.getTime())) return fecha;
     return f.toLocaleDateString("es-ES");
 }
-
 function limpiarFormulario(formulario) {
     if (formulario) formulario.reset();
 }
-
 function scrollVentana(idVentana) {
     const ventana = document.getElementById(idVentana);
     if (ventana) ventana.scrollTop = ventana.scrollHeight;
 }
 
 // ====== Referencias DOM ======
-
 const fechaDiaInput = document.getElementById('fechaDia');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNuevo = document.getElementById('btnNuevo');
+
+// Detenidos
+const detenidoForm = document.getElementById('detenidoForm');
+const nombreDetenido = document.getElementById('nombreDetenido');
+const motivoDetenido = document.getElementById('motivoDetenido');
+const nacionalidadDetenido = document.getElementById('nacionalidadDetenido');
+const diligenciasDetenido = document.getElementById('diligenciasDetenido');
+const observacionesDetenido = document.getElementById('observacionesDetenido');
+const detenidosVentana = document.getElementById('detenidosVentana');
 
 // Expulsados
 const expulsadoForm = document.getElementById('expulsadoForm');
@@ -84,7 +88,7 @@ const hastaResumen = document.getElementById('hastaResumen');
 const generarResumenBtn = document.getElementById('generarResumenBtn');
 const resumenVentana = document.getElementById('resumenVentana');
 
-// NUEVOS: Botones exportación
+// Botones exportación
 const btnExportarPDF = document.getElementById('btnExportarPDF');
 const btnExportarCSV = document.getElementById('btnExportarCSV');
 const btnWhatsapp = document.getElementById('btnWhatsapp');
@@ -95,7 +99,7 @@ let fechaActual = null;
 // ====== Helpers Firestore ======
 function getDocIdDia(fecha) {
     if (!fecha) return null;
-    return new Date(fecha).toISOString().slice(0, 10); // SOLO FECHA, sin prefijo
+    return new Date(fecha).toISOString().slice(0, 10);
 }
 function getDocRefDia(fecha) {
     return db.collection("grupo1_expulsiones").doc(getDocIdDia(fecha));
@@ -109,11 +113,11 @@ async function cargarDia(fecha) {
     const ref = getDocRefDia(fecha);
     const docSnap = await ref.get();
     if (!docSnap.exists) {
-        // No muestres alert al cargar un día vacío, sólo vacía campos
         return;
     }
     const datos = docSnap.data();
 
+    mostrarListaVentana(detenidosVentana, datos.detenidos || [], 'detenido', true);
     mostrarListaVentana(expulsadosVentana, datos.expulsados || [], 'expulsado', true);
     mostrarListaVentana(fletadosVentana, datos.fletados || [], 'fletado', true);
     mostrarListaVentana(fletadosFuturosVentana, datos.fletadosFuturos || [], 'fletadoFuturo', true);
@@ -123,6 +127,7 @@ async function cargarDia(fecha) {
 }
 
 function limpiarTodo() {
+    detenidosVentana.innerHTML = "";
     expulsadosVentana.innerHTML = "";
     fletadosVentana.innerHTML = "";
     fletadosFuturosVentana.innerHTML = "";
@@ -146,6 +151,9 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     lista.forEach((item, idx) => {
         let texto = "";
         switch (tipo) {
+            case "detenido":
+                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.motivo || ""}] {${item.diligencias || ""}} <em>${item.observaciones || ""}</em>`;
+                break;
             case "expulsado":
                 texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
                 break;
@@ -182,6 +190,26 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
 }
 
 // ====== Añadir datos ======
+async function añadirDetenido(e) {
+    e.preventDefault();
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
+    const nombre = nombreDetenido.value.trim();
+    const motivo = motivoDetenido.value.trim();
+    const nacionalidad = nacionalidadDetenido.value.trim();
+    const diligencias = diligenciasDetenido.value.trim();
+    const observaciones = observacionesDetenido.value.trim();
+    if (!nombre) { showToast("Introduce nombre."); return; }
+    if (!motivo) { showToast("Introduce motivo."); return; }
+    if (!nacionalidad) { showToast("Introduce nacionalidad."); return; }
+    const detenido = { nombre, motivo, nacionalidad, diligencias, observaciones };
+    const ref = getDocRefDia(fechaActual);
+    await ref.set({
+        detenidos: firebase.firestore.FieldValue.arrayUnion(detenido)
+    }, { merge: true });
+    cargarDia(fechaActual);
+    limpiarFormulario(detenidoForm);
+}
 async function añadirExpulsado(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -200,7 +228,6 @@ async function añadirExpulsado(e) {
     cargarDia(fechaActual);
     limpiarFormulario(expulsadoForm);
 }
-
 async function añadirFletado(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -218,7 +245,6 @@ async function añadirFletado(e) {
     cargarDia(fechaActual);
     limpiarFormulario(fletadoForm);
 }
-
 async function añadirFletadoFuturo(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -236,7 +262,6 @@ async function añadirFletadoFuturo(e) {
     cargarDia(fechaActual);
     limpiarFormulario(fletadoFuturoForm);
 }
-
 async function añadirConduccionPositiva(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -251,7 +276,6 @@ async function añadirConduccionPositiva(e) {
     cargarDia(fechaActual);
     limpiarFormulario(conduccionPosForm);
 }
-
 async function añadirConduccionNegativa(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -266,7 +290,6 @@ async function añadirConduccionNegativa(e) {
     cargarDia(fechaActual);
     limpiarFormulario(conduccionNegForm);
 }
-
 async function añadirPendiente(e) {
     e.preventDefault();
     if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
@@ -292,11 +315,13 @@ async function eliminarDato(tipo, idx) {
     const docSnap = await ref.get();
     if (!docSnap.exists) return;
     const datos = docSnap.data();
-    let lista = datos[tipo + (tipo.endsWith('a') ? 's' : '')] || [];
+    let key = tipo + (tipo.endsWith('a') ? 's' : '');
+    if (tipo === 'detenido') key = 'detenidos';
+    let lista = datos[key] || [];
     if (idx < 0 || idx >= lista.length) return;
     lista.splice(idx, 1);
     await ref.set({
-        [tipo + (tipo.endsWith('a') ? 's' : '')]: lista
+        [key]: lista
     }, { merge: true });
     cargarDia(fechaActual);
 }
@@ -307,7 +332,6 @@ btnBuscar.addEventListener('click', () => {
     fechaActual = fechaDiaInput.value;
     cargarDia(fechaActual);
 });
-
 btnNuevo.addEventListener('click', () => {
     if (!fechaDiaInput.value) { showToast("Introduce la fecha para el nuevo registro."); return; }
     fechaActual = fechaDiaInput.value;
@@ -315,6 +339,7 @@ btnNuevo.addEventListener('click', () => {
 });
 
 // ====== Formularios: eventos ======
+detenidoForm.addEventListener('submit', añadirDetenido);
 expulsadoForm.addEventListener('submit', añadirExpulsado);
 fletadoForm.addEventListener('submit', añadirFletado);
 fletadoFuturoForm.addEventListener('submit', añadirFletadoFuturo);
@@ -323,8 +348,7 @@ conduccionNegForm.addEventListener('submit', añadirConduccionNegativa);
 pendienteForm.addEventListener('submit', añadirPendiente);
 
 // ====== Generar resumen avanzado ======
-let resumenFiltrado = []; // para exportación
-
+let resumenFiltrado = [];
 generarResumenBtn.addEventListener('click', async () => {
     const desde = desdeResumen.value;
     const hasta = hastaResumen.value;
@@ -337,7 +361,7 @@ generarResumenBtn.addEventListener('click', async () => {
     let resumen = [];
     snapshot.forEach(docSnap => {
         const docId = docSnap.id;
-        const fechaStr = docId; // Solo la fecha (sin prefijo)
+        const fechaStr = docId;
         if (fechaStr >= desde && fechaStr <= hasta) {
             resumen.push({ fecha: fechaStr, ...docSnap.data() });
         }
@@ -346,7 +370,6 @@ generarResumenBtn.addEventListener('click', async () => {
     resumenFiltrado = resumen;
     mostrarResumen(resumen);
 });
-
 function mostrarResumen(resumen) {
     if (!Array.isArray(resumen) || resumen.length === 0) {
         resumenVentana.innerHTML = "<span class='text-muted'>No hay datos en el rango seleccionado.</span>";
@@ -355,6 +378,7 @@ function mostrarResumen(resumen) {
     let html = `<div class='table-responsive'><table class='table table-striped'>
     <thead><tr>
       <th>Fecha</th>
+      <th>Detenidos</th>
       <th>Expulsados</th>
       <th>Fletados</th>
       <th>Fletados Futuros</th>
@@ -365,6 +389,7 @@ function mostrarResumen(resumen) {
     resumen.forEach(item => {
         html += `<tr>
           <td>${formatoFecha(item.fecha)}</td>
+          <td>${(item.detenidos||[]).length}</td>
           <td>${(item.expulsados||[]).length}</td>
           <td>${(item.fletados||[]).length}</td>
           <td>${(item.fletadosFuturos||[]).length}</td>
@@ -390,6 +415,7 @@ if (btnExportarPDF) {
         <thead>
         <tr>
           <th>Fecha</th>
+          <th>Detenidos</th>
           <th>Expulsados</th>
           <th>Fletados</th>
           <th>Fletados Futuros</th>
@@ -401,6 +427,7 @@ if (btnExportarPDF) {
         resumenFiltrado.forEach(item => {
             html += `<tr>
               <td>${formatoFecha(item.fecha)}</td>
+              <td>${(item.detenidos||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
               <td>${(item.expulsados||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
               <td>${(item.fletados||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
               <td>${(item.fletadosFuturos||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
@@ -423,10 +450,11 @@ if (btnExportarCSV) {
             showToast("Primero genera un resumen.");
             return;
         }
-        let csv = "Fecha,Expulsados,Fletados,FletadosFuturos,ConduccionesPos,ConduccionesNeg,Pendientes\n";
+        let csv = "Fecha,Detenidos,Expulsados,Fletados,FletadosFuturos,ConduccionesPos,ConduccionesNeg,Pendientes\n";
         resumenFiltrado.forEach(item => {
             csv += [
                 item.fecha,
+                (item.detenidos||[]).map(x => x.nombre).join("|"),
                 (item.expulsados||[]).map(x => x.nombre).join("|"),
                 (item.fletados||[]).map(x => x.destino).join("|"),
                 (item.fletadosFuturos||[]).map(x => x.destino).join("|"),
@@ -455,7 +483,7 @@ if (btnWhatsapp) {
         }
         let resumen = `Resumen Gestión SIREX\n${desdeResumen.value} al ${hastaResumen.value}:\n`;
         resumenFiltrado.forEach(item => {
-            resumen += `${formatoFecha(item.fecha)} - Exp: ${(item.expulsados||[]).length}, Flet: ${(item.fletados||[]).length}, FletF: ${(item.fletadosFuturos||[]).length}, C+: ${(item.conduccionesPositivas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, C-: ${(item.conduccionesNegativas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, Pend: ${(item.pendientes||[]).length}\n`;
+            resumen += `${formatoFecha(item.fecha)} - Det: ${(item.detenidos||[]).length}, Exp: ${(item.expulsados||[]).length}, Flet: ${(item.fletados||[]).length}, FletF: ${(item.fletadosFuturos||[]).length}, C+: ${(item.conduccionesPositivas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, C-: ${(item.conduccionesNegativas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, Pend: ${(item.pendientes||[]).length}\n`;
         });
         navigator.clipboard.writeText(resumen)
             .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
@@ -469,8 +497,6 @@ window.addEventListener('DOMContentLoaded', () => {
     fechaDiaInput.value = hoy;
     fechaActual = hoy;
     cargarDia(hoy);
-
-    // Modo oscuro persistente
     if (localStorage.getItem("sirex_darkmode") === "1") {
         document.body.classList.add("dark-mode");
     }
