@@ -12,7 +12,6 @@
   <link rel="stylesheet" href="../css/grupo1.css">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
   <style>
-    /* Modo oscuro extra */
     body.dark-mode {
       background: #17233a !important;
       color: #f8fafc !important;
@@ -126,8 +125,39 @@
       <div class="col-lg-10">
         <div class="card shadow-lg p-4">
           <h2 class="mb-4 text-police-blue">
-            <i class="bi bi-person-fill-lock"></i> Gestión de expulsados y novedades
+            <i class="bi bi-person-fill-lock"></i> Gestión de expulsados, detenidos y novedades
           </h2>
+
+          <!-- SECCIÓN DETENIDOS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Detenidos
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Añade aquí los datos de cada detenido: motivo, nacionalidad, diligencias y observaciones.')">?</button>
+            </h4>
+            <form id="detenidoForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-2">
+                <input type="text" id="nombreDetenido" class="form-control" placeholder="Nombre o ID" maxlength="60">
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="motivoDetenido" class="form-control" placeholder="Motivo" maxlength="60">
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="nacionalidadDetenido" class="form-control" placeholder="Nacionalidad" maxlength="30">
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="diligenciasDetenido" class="form-control" placeholder="Diligencias" maxlength="90">
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="observacionesDetenido" class="form-control" placeholder="Observaciones" maxlength="90">
+              </div>
+              <div class="col-12 col-md-1 d-grid">
+                <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="detenidos-list mt-2">
+              <small class="text-muted">Listado detenidos (día):</small>
+              <div id="detenidosVentana" class="ventana-datos mt-1"></div>
+            </div>
+          </div>
 
           <!-- SECCIÓN EXPULSADOS -->
           <div class="mb-4">
@@ -327,8 +357,6 @@
         document.body.classList.add("dark-mode");
       }
     }
-    // ========= BOTÓN "?" ayuda contextual ya está en cada sección =========
-    // ========= Botones de exportación avanzada se gestionan en grupo1.js =========
   </script>
 </body>
 </html>
