@@ -143,6 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         let fechaFinal = obtenerFechaFormateada();
+        if (!fechaFinal || fechaFinal.length < 8) {
+    showStatus('⚠️ No se ha detectado una fecha válida. Corrige antes de guardar.', 'danger');
+    btnConfirmarGuardado.disabled = true;
+    return;
+}
+
         parsedDataForConfirmation.fecha = fechaFinal;
 
         erroresValidacion = validarDatos(parsedDataForConfirmation.grupo1_expulsiones);
