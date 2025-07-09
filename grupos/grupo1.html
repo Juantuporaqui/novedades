@@ -129,24 +129,39 @@
           </h2>
 
         
-<!-- SECCIÓN DETENIDOS SOLO NÚMERO -->
-<div class="mb-4">
-  <h4 class="mb-2">Detenidos
-    <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Introduce aquí el número total de detenidos del día, nada más.')">?</button>
-  </h4>
-  <form id="detenidoForm" class="row g-2 align-items-end">
-    <div class="col-12 col-md-4">
-      <input type="number" id="numeroDetenidos" class="form-control" placeholder="Nº de detenidos" min="0" max="99">
-    </div>
-    <div class="col-4 col-md-2 d-grid">
-      <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i></button>
-    </div>
-  </form>
-  <div class="detenidos-list mt-2">
-    <small class="text-muted">Nº detenidos del día:</small>
-    <div id="detenidosVentana" class="ventana-datos mt-1"></div>
-  </div>
-</div>
+<!-- ... todo el head y lo anterior igual ... -->
+
+          <!-- SECCIÓN DETENIDOS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Detenidos
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Añade aquí los datos de cada detenido: número (1, 2, 3...), motivo, nacionalidad, diligencias y observaciones.')">?</button>
+            </h4>
+            <form id="detenidoForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-2">
+                <input type="number" id="numeroDetenido" class="form-control" placeholder="Nº" min="1" max="99" required>
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="motivoDetenido" class="form-control" placeholder="Motivo" maxlength="60">
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="nacionalidadDetenido" class="form-control" placeholder="Nacionalidad" maxlength="30">
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="diligenciasDetenido" class="form-control" placeholder="Diligencias" maxlength="90">
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="text" id="observacionesDetenido" class="form-control" placeholder="Observaciones" maxlength="90">
+              </div>
+              <div class="col-12 col-md-1 d-grid">
+                <button type="submit" class="btn btn-police-blue"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="detenidos-list mt-2">
+              <small class="text-muted">Listado detenidos (día):</small>
+              <div id="detenidosVentana" class="ventana-datos mt-1"></div>
+            </div>
+          </div>
+
 
           <!-- SECCIÓN EXPULSADOS -->
           <div class="mb-4">
