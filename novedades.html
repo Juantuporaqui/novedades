@@ -99,11 +99,16 @@
 
             <div id="status-container"></div>
             
-           <div class="mb-3" id="fecha-edicion" style="display:none;">
-    <label class="fw-bold">Fecha detectada:</label>
-    <span id="fechaDetectada" class="badge bg-secondary"></span>
-    <input type="text" id="fechaManualInput" class="form-control d-inline w-auto ms-2" style="width:130px;display:inline-block;" placeholder="DD/MM/AAAA">
+           <div class="mb-3 row align-items-center" id="fecha-edicion" style="display:none">
+  <label class="col-sm-2 col-form-label fw-bold" for="fechaManualInput">Fecha detectada:</label>
+  <div class="col-sm-3">
+    <input type="date" id="fechaManualInput" class="form-control" required>
+  </div>
+  <div class="col-sm-7">
+    <span id="fechaDetectadaBadge" class="badge bg-secondary"></span>
+  </div>
 </div>
+
 
 
             <div id="confirmation-buttons" class="text-center mt-4" style="display: none;">
