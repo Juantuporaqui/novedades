@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ------------ VALIDACIÓN GENERAL ------------
-    function validarDatos(data, grupo) {
+function validarDatos(data, grupo) {
     let errores = [];
     // --- Grupo 1 ---
     if (grupo === "grupo1_expulsiones") {
@@ -563,13 +563,37 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!data.detenidos || data.detenidos.length === 0) faltan.push("Detenidos");
         if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) faltan.push("Inspecciones Trabajo");
 
+        // Permitir que todo pueda ir vacío, pero advertir si falta todo
         if (faltan.length === 3) {
             errores.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
         } else if (faltan.length > 0) {
             errores.push('⚠️ Faltan registros en: ' + faltan.join(', '));
         }
     }
-    // --- Fecha válida para ambos grupos ---
+    // --- Grupo Puerto ---
+    if (grupo === "grupoPuerto") {
+        // Ningún campo es obligatorio (puede ir todo vacío),
+        // pero si todos los campos están vacíos, advertimos
+        const tieneAlgunDato = [
+            data.marinosArgos,
+            data.controlPasaportes,
+            data.cruceros,
+            data.cruceristas,
+            data.visadosValencia,
+            data.visadosCG,
+            data.puertoDeportivo,
+            data.denegaciones,
+            data.certificadosEixics,
+            (data.ferrys && data.ferrys.length > 0),
+            data.observaciones && data.observaciones.trim() !== ''
+        ].some(x => x && x !== ''); // True si hay algo no vacío
+
+        if (!tieneAlgunDato) {
+            errores.push('Debe haber al menos un campo con información en el parte de Puerto.');
+        }
+        // No añadas más validaciones salvo que quieras campos obligatorios.
+    }
+    // --- Fecha válida para todos los grupos ---
     if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
         errores.push('La fecha es obligatoria y debe ser válida.');
     }
