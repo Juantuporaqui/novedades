@@ -1,6 +1,6 @@
 // ==============================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPOS 1 y 4 AUTOIMPORT
-// Profesional 2025 · Importa Grupo 1 (menos Gestiones) y Grupo 4 Operativo · DOCX oficial
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPOS 1, 4 y PUERTO
+// Profesional 2025 · Importa Grupo 1 (menos Gestiones), Grupo 4 Operativo y Puerto · DOCX oficial
 // ==============================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let parsedDataForConfirmation = null;
     let erroresValidacion = [];
-    let grupoDetectado = ""; // "grupo1" o "grupo4"
+    let grupoDetectado = ""; // "grupo1_expulsiones", "grupo4_operativo" o "grupoPuerto"
 
     // --- UI ---
     function showStatus(message, type = 'info') {
@@ -116,7 +116,10 @@ document.addEventListener('DOMContentLoaded', function () {
             showFechaEditable(fecha);
             showResults({ [detectado]: datos });
 
-            erroresValidacion = validarDatos(datos, grupoDetectado);
+            // Validación en carga
+            let datosAValidar = datos;
+            erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
+
             if (erroresValidacion.length) {
                 showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
                 btnConfirmarGuardado.disabled = true;
@@ -148,7 +151,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         parsedDataForConfirmation.fecha = fechaFinal;
 
-        erroresValidacion = validarDatos(parsedDataForConfirmation[grupoDetectado], grupoDetectado);
+        // Detección robusta del objeto de datos
+        let datosAValidar = parsedDataForConfirmation[grupoDetectado];
+        if (!datosAValidar) {
+            for (let k of Object.keys(parsedDataForConfirmation)) {
+                if (k !== 'fecha') {
+                    datosAValidar = parsedDataForConfirmation[k];
+                    break;
+                }
+            }
+        }
+        erroresValidacion = validarDatos(datosAValidar, grupoDetectado);
+
         if (erroresValidacion.length) {
             showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
             btnConfirmarGuardado.disabled = true;
@@ -160,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showStatus('Guardando en Firebase...', 'info');
         resultsContainer.innerHTML = '';
 
-                try {
+        try {
             let colName = "";
             if (grupoDetectado === "grupo1_expulsiones") colName = "grupo1_expulsiones";
             else if (grupoDetectado === "grupo4_operativo") colName = "grupo4_operativo";
@@ -200,19 +214,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // =============== PARSERS AUTOMÁTICOS =========================
 
-        function autoDetectAndParse(html) {
+    function autoDetectAndParse(html) {
         const texto = html.toUpperCase();
         if (texto.includes("DETENIDOS") && texto.includes("EXPULSADOS")) {
             const { grupo1, fecha } = parseGrupo1Completo(html);
             return { detectado: "grupo1_expulsiones", datos: grupo1, fecha };
         }
         if (texto.includes("COLABORACIONES") && texto.includes("CITADOS")) {
-            const { grupo4, fecha } = parseGrupo4Completo(html);
-            return { detectado: "grupo4_operativo", datos: grupo4, fecha };
+            const { grupo4_operativo, fecha } = parseGrupo4Completo(html);
+            return { detectado: "grupo4_operativo", datos: grupo4_operativo, fecha };
         }
         if (texto.includes("ARGOS") && texto.includes("FERRYS")) {
-            const { puerto, fecha } = parseGrupoPuertoCompleto(html);
-            return { detectado: "grupoPuerto", datos: puerto, fecha };
+            const { grupoPuerto, fecha } = parseGrupoPuertoCompleto(html);
+            return { detectado: "grupoPuerto", datos: grupoPuerto, fecha };
         }
         return { detectado: "", datos: {}, fecha: "" };
     }
@@ -223,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function () {
         root.innerHTML = html;
         const tablas = Array.from(root.querySelectorAll('table'));
         let fecha = '';
-        // Busca fecha robusta en todo el documento
         const textPlano = root.innerText || root.textContent || "";
         let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
         if (m) {
@@ -249,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const cells = Array.from(rows[i].querySelectorAll('td'));
                     if (cells.length < 4) continue;
                     const obj = {
-                        numero: parseInt(cells[0]?.textContent.trim()) || '', // CAMBIO: ahora es número
+                        numero: parseInt(cells[0]?.textContent.trim()) || '',
                         motivo: cells[1]?.textContent.trim() || '',
                         nacionalidad: cells[2]?.textContent.trim() || '',
                         diligencias: cells[3]?.textContent.trim() || '',
@@ -261,7 +274,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.detenidos.length) delete grupo1.detenidos;
 
-        // Expulsados, Fletados, etc. igual que antes...
         grupo1.expulsados = [];
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
@@ -405,7 +417,6 @@ document.addEventListener('DOMContentLoaded', function () {
         root.innerHTML = html;
         const tablas = Array.from(root.querySelectorAll('table'));
         let fecha = '';
-        // Busca fecha robusta en todo el documento
         const textPlano = root.innerText || root.textContent || "";
         let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
         if (m) {
@@ -471,70 +482,65 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-       return { grupo4_operativo: grupo4, fecha };
+        return { grupo4_operativo: grupo4, fecha };
     }
-           // ------------ PARSER GRUPO PUERTO -----------------
+
+    // ------------ PARSER GRUPO PUERTO -----------------
     function parseGrupoPuertoCompleto(html) {
         const root = document.createElement('div');
         root.innerHTML = html;
         const tablas = Array.from(root.querySelectorAll('table'));
         let fecha = '';
-        // Busca fecha robusta en todo el documento
         const textPlano = root.innerText || root.textContent || "";
         let m = textPlano.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
         if (m) {
             if (m[1]) fecha = `${m[1]}-${m[2]}-${m[3]}`;
-            else fecha = `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`;
+            else fecha = `${m[6]}-${m[5].padStart(2, '0')}-${m[4].padStart(2, '0')}`;
         }
         let puerto = {
             marinosArgos: '', controlPasaportes: '', cruceros: '', cruceristas: '', visadosValencia: '', visadosCG: '',
             puertoDeportivo: '', denegaciones: '', certificadosEixics: '', ferrys: [], observaciones: ''
         };
-        // Procesa tablas por nombre de columnas (flexible)
         tablas.forEach(tabla => {
             const head = tabla.querySelector('tr')?.textContent?.toUpperCase() || '';
-            // Valores simples
             if (head.includes('CTRL.MARINOS') || head.includes('ARGOS') || head.includes('CRUCEROS')) {
                 const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
                 filas.forEach(tr => {
                     const tds = Array.from(tr.querySelectorAll('td'));
                     [
-                        {clave:'marinosArgos', palabras:['ARGOS']},
-                        {clave:'controlPasaportes', palabras:['PASAPORTES']},
-                        {clave:'cruceros', palabras:['CRUCEROS']},
-                        {clave:'cruceristas', palabras:['CRUCERISTAS']},
-                        {clave:'visadosValencia', palabras:['VALEN']},
-                        {clave:'visadosCG', palabras:['CG']},
-                        {clave:'puertoDeportivo', palabras:['DEPOR']},
-                        {clave:'denegaciones', palabras:['DENEG']},
-                        {clave:'certificadosEixics', palabras:['EIXICS']}
-                    ].forEach((map,i)=>{
-                        if (tds[i] && map.palabras.some(p=>head.includes(p))) {
+                        { clave: 'marinosArgos', palabras: ['ARGOS'] },
+                        { clave: 'controlPasaportes', palabras: ['PASAPORTES'] },
+                        { clave: 'cruceros', palabras: ['CRUCEROS'] },
+                        { clave: 'cruceristas', palabras: ['CRUCERISTAS'] },
+                        { clave: 'visadosValencia', palabras: ['VALEN'] },
+                        { clave: 'visadosCG', palabras: ['CG'] },
+                        { clave: 'puertoDeportivo', palabras: ['DEPOR'] },
+                        { clave: 'denegaciones', palabras: ['DENEG'] },
+                        { clave: 'certificadosEixics', palabras: ['EIXICS'] }
+                    ].forEach((map, i) => {
+                        if (tds[i] && map.palabras.some(p => head.includes(p))) {
                             puerto[map.clave] = tds[i].textContent.trim();
                         }
                     });
                 });
             }
-            // FERRYS
             if (head.includes('FERRYS')) {
                 const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
                 puerto.ferrys = filas.map(tr => {
                     const tds = Array.from(tr.querySelectorAll('td'));
                     return {
-                        tipo: tds[0]?tds[0].textContent.trim():'',
-                        fecha: tds[1]?tds[1].textContent.trim():'',
-                        hora: tds[2]?tds[2].textContent.trim():'',
-                        pasajeros: tds[3]?tds[3].textContent.trim():'',
-                        vehiculos: tds[4]?tds[4].textContent.trim():''
+                        tipo: tds[0] ? tds[0].textContent.trim() : '',
+                        fecha: tds[1] ? tds[1].textContent.trim() : '',
+                        hora: tds[2] ? tds[2].textContent.trim() : '',
+                        pasajeros: tds[3] ? tds[3].textContent.trim() : '',
+                        vehiculos: tds[4] ? tds[4].textContent.trim() : ''
                     };
-                }).filter(f=>Object.values(f).some(x=>x));
+                }).filter(f => Object.values(f).some(x => x));
             }
-            // Observaciones
             if (head.includes('OBSERVACIONES')) {
-                puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ');
+                puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td => td.textContent.trim()).join(' ');
             }
         });
-        // Elimina arrays vacíos y campos vacíos
         for (let k of Object.keys(puerto)) {
             if (Array.isArray(puerto[k]) && !puerto[k].length) delete puerto[k];
             if (!Array.isArray(puerto[k]) && puerto[k] === '') delete puerto[k];
@@ -542,61 +548,57 @@ document.addEventListener('DOMContentLoaded', function () {
         return { grupoPuerto: puerto, fecha };
     }
 
-    // ------------ VALIDACIÓN GENERAL ------------
-function validarDatos(data, grupo) {
-    let errores = [];
-    // --- Grupo 1 ---
-    if (grupo === "grupo1_expulsiones") {
-        if (
-            (!data.detenidos || data.detenidos.length === 0) &&
-            (!data.expulsados || data.expulsados.length === 0) &&
-            (!data.fletados || data.fletados.length === 0)
-        ) {
-            errores.push('Debe haber al menos un detenido, expulsado o fletado.');
+    // ------------ VALIDACIÓN GENERAL -------------
+    function validarDatos(data, grupo) {
+        if (!data || typeof data !== 'object') {
+            return ['No se han extraído datos válidos para este grupo.'];
         }
-    }
-    // --- Grupo 4 ---
-    if (grupo === "grupo4_operativo") {
-        // Puedes adaptar los campos requeridos a tu criterio
-        let faltan = [];
-        if (!data.colaboraciones || data.colaboraciones.length === 0) faltan.push("Colaboraciones");
-        if (!data.detenidos || data.detenidos.length === 0) faltan.push("Detenidos");
-        if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) faltan.push("Inspecciones Trabajo");
-
-        // Permitir que todo pueda ir vacío, pero advertir si falta todo
-        if (faltan.length === 3) {
-            errores.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
-        } else if (faltan.length > 0) {
-            errores.push('⚠️ Faltan registros en: ' + faltan.join(', '));
+        let errores = [];
+        // --- Grupo 1 ---
+        if (grupo === "grupo1_expulsiones") {
+            if (
+                (!data.detenidos || data.detenidos.length === 0) &&
+                (!data.expulsados || data.expulsados.length === 0) &&
+                (!data.fletados || data.fletados.length === 0)
+            ) {
+                errores.push('Debe haber al menos un detenido, expulsado o fletado.');
+            }
         }
-    }
-    // --- Grupo Puerto ---
-    if (grupo === "grupoPuerto") {
-        // Ningún campo es obligatorio (puede ir todo vacío),
-        // pero si todos los campos están vacíos, advertimos
-        const tieneAlgunDato = [
-            data.marinosArgos,
-            data.controlPasaportes,
-            data.cruceros,
-            data.cruceristas,
-            data.visadosValencia,
-            data.visadosCG,
-            data.puertoDeportivo,
-            data.denegaciones,
-            data.certificadosEixics,
-            (data.ferrys && data.ferrys.length > 0),
-            data.observaciones && data.observaciones.trim() !== ''
-        ].some(x => x && x !== ''); // True si hay algo no vacío
-
-        if (!tieneAlgunDato) {
-            errores.push('Debe haber al menos un campo con información en el parte de Puerto.');
+        // --- Grupo 4 ---
+        if (grupo === "grupo4_operativo") {
+            let faltan = [];
+            if (!data.colaboraciones || data.colaboraciones.length === 0) faltan.push("Colaboraciones");
+            if (!data.detenidos || data.detenidos.length === 0) faltan.push("Detenidos");
+            if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) faltan.push("Inspecciones Trabajo");
+            if (faltan.length === 3) {
+                errores.push('Debe haber al menos un registro relevante (colaboraciones, detenidos o inspecciones trabajo).');
+            } else if (faltan.length > 0) {
+                errores.push('⚠️ Faltan registros en: ' + faltan.join(', '));
+            }
         }
-        // No añadas más validaciones salvo que quieras campos obligatorios.
+        // --- Grupo Puerto ---
+        if (grupo === "grupoPuerto") {
+            const tieneAlgunDato = [
+                data.marinosArgos,
+                data.controlPasaportes,
+                data.cruceros,
+                data.cruceristas,
+                data.visadosValencia,
+                data.visadosCG,
+                data.puertoDeportivo,
+                data.denegaciones,
+                data.certificadosEixics,
+                (data.ferrys && data.ferrys.length > 0),
+                data.observaciones && data.observaciones.trim() !== ''
+            ].some(x => x && x !== '');
+            if (!tieneAlgunDato) {
+                errores.push('Debe haber al menos un campo con información en el parte de Puerto.');
+            }
+        }
+        // --- Fecha válida para todos los grupos ---
+        if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
+            errores.push('La fecha es obligatoria y debe ser válida.');
+        }
+        return errores;
     }
-    // --- Fecha válida para todos los grupos ---
-    if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
-        errores.push('La fecha es obligatoria y debe ser válida.');
-    }
-    return errores;
-}
 });
