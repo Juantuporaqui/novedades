@@ -1,3 +1,8 @@
+// ==============================================================================
+// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES - GRUPO 1 AUTOIMPORT
+// Profesional 2025 · Importa TODO Grupo 1 menos Gestiones · DOCX oficial
+// ==============================================================================
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // --- CONFIGURACIÓN FIREBASE ---
@@ -23,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnCancelar = document.getElementById('btnCancelar');
     const fechaEdicionDiv = document.getElementById('fecha-edicion');
     const fechaManualInput = document.getElementById('fechaManualInput');
+    const fechaDetectadaBadge = document.getElementById('fechaDetectadaBadge');
     const spinner = document.getElementById('spinner-area');
 
     let parsedDataForConfirmation = null;
@@ -62,31 +68,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
-    function showFechaEditable(fecha) {
-    if (!fechaEdicionDiv || !fechaManualInput) return;
-    // Añadir la fecha extraída visualmente
-    document.getElementById("fechaDetectada").textContent = fecha || '(No detectada)';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        const [yy, mm, dd] = fecha.split('-');
-        fechaManualInput.value = `${dd}/${mm}/${yy}`;
-    } else {
-        fechaManualInput.value = fecha;
-    }
-    fechaEdicionDiv.style.display = "block";
-}
-
-    function obtenerFechaFormateada() {
-        let val = fechaManualInput.value.trim();
-        let regexES = /^(\d{1,2})[\/\- ](\d{1,2})[\/\- ](\d{2,4})$/;
-        let match = val.match(regexES);
-        if (match) {
-            let dd = match[1].padStart(2, '0');
-            let mm = match[2].padStart(2, '0');
-            let yyyy = match[3];
-            if (yyyy.length === 2) yyyy = (parseInt(yyyy, 10) > 50 ? '19' : '20') + yyyy;
-            return `${yyyy}-${mm}-${dd}`;
+    function showFechaEditable(fechaISO, fuente = "") {
+        if (!fechaEdicionDiv || !fechaManualInput) return;
+        fechaEdicionDiv.style.display = "flex";
+        if (fechaISO && /^\d{4}-\d{2}-\d{2}$/.test(fechaISO)) {
+            fechaManualInput.value = fechaISO;
+            fechaDetectadaBadge.textContent = "Detectada: " + fechaISO.split("-").reverse().join("/");
+            fechaDetectadaBadge.className = "badge bg-success";
+        } else {
+            fechaManualInput.value = "";
+            fechaDetectadaBadge.textContent = "No detectada";
+            fechaDetectadaBadge.className = "badge bg-secondary";
         }
-        return val;
+    }
+    function obtenerFechaFormateada() {
+        return fechaManualInput.value || "";
     }
 
     // --- EVENTOS ---
@@ -110,17 +106,16 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml({ arrayBuffer });
-            const { grupo1, fecha } = parseGrupo1Completo(result.value);
+            const { grupo1, fecha, fechaBruta } = parseGrupo1Completo(result.value);
             if (!grupo1 || Object.keys(grupo1).length === 0) throw new Error("No se han extraído datos válidos de Grupo 1.");
-
             parsedDataForConfirmation = { grupo1_expulsiones: grupo1, fecha };
-            showFechaEditable(fecha);
+
+            showFechaEditable(fecha, fechaBruta);
             showResults({ grupo1_expulsiones: grupo1 });
 
             erroresValidacion = validarDatos(grupo1);
             if (erroresValidacion.length) {
-                showStatus('⚠️ Errores en campos críticos:<ul>' +
-                    erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>Corrige antes de guardar.', 'warning');
+                showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
                 btnConfirmarGuardado.disabled = true;
             } else {
                 showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
@@ -143,18 +138,16 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         let fechaFinal = obtenerFechaFormateada();
-        if (!fechaFinal || fechaFinal.length < 8) {
-    showStatus('⚠️ No se ha detectado una fecha válida. Corrige antes de guardar.', 'danger');
-    btnConfirmarGuardado.disabled = true;
-    return;
-}
-
+        if (!fechaFinal) {
+            showStatus('Selecciona una fecha válida.', 'danger');
+            fechaManualInput.focus();
+            return;
+        }
         parsedDataForConfirmation.fecha = fechaFinal;
 
         erroresValidacion = validarDatos(parsedDataForConfirmation.grupo1_expulsiones);
         if (erroresValidacion.length) {
-            showStatus('⚠️ Errores:<ul>' +
-                erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>Corrige antes de guardar.', 'warning');
+            showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
             btnConfirmarGuardado.disabled = true;
             return;
         }
@@ -196,21 +189,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --------------------------------------------------------------------------
-    // PARSER COMPLETO DE GRUPO 1 (excepto GESTIONES)
-    // ADAPTADO: Detenidos solo número correlativo
+    // PARSER COMPLETO DE GRUPO 1 (excepto GESTIONES) con FECHA DETECCIÓN ROBUSTA
     // --------------------------------------------------------------------------
     function parseGrupo1Completo(html) {
         const root = document.createElement('div');
         root.innerHTML = html;
         const tablas = Array.from(root.querySelectorAll('table'));
         let fecha = '';
+        let fechaBruta = '';
         let grupo1 = {};
 
-        // Busca fecha (primeras filas)
-        if (tablas[0]) {
-            const txt = tablas[0].textContent;
-            const m = txt.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        // Busca fecha en el texto plano (bruto, robusto)
+        const textPlano = root.innerText || root.textContent || "";
+        let m = textPlano.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (m) {
+            fecha = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            fechaBruta = m[0];
         }
 
         // --- Helper general para cada tabla, ignora si cabecera contiene 'GESTIONES' ---
@@ -221,9 +215,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return !txt.includes('GESTIONES');
         }
 
-        // ---- Detenidos: solo número, motivo, nacionalidad, diligencias, observaciones ----
+        // ---- Detenidos ----
         grupo1.detenidos = [];
-        let contadorDetenidos = 1;
         for (let t of tablas) {
             if (!filtrarGestiones(t)) continue;
             const rows = Array.from(t.querySelectorAll('tr'));
@@ -236,14 +229,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     const cells = Array.from(rows[i].querySelectorAll('td'));
                     if (cells.length < 4) continue;
                     const obj = {
-                        numero: contadorDetenidos++,
+                        numero: parseInt(cells[0]?.textContent.trim()) || '', // CAMBIO: ahora es número
                         motivo: cells[1]?.textContent.trim() || '',
                         nacionalidad: cells[2]?.textContent.trim() || '',
                         diligencias: cells[3]?.textContent.trim() || '',
                         observaciones: cells[4]?.textContent.trim() || ''
                     };
                     // Añade si algún campo relevante no está vacío
-                    if (obj.motivo || obj.nacionalidad || obj.diligencias || obj.observaciones) grupo1.detenidos.push(obj);
+                    if (Object.values(obj).some(x => x)) grupo1.detenidos.push(obj);
                 }
             }
         }
@@ -270,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         conduccionesNeg: parseInt(cells[4]?.textContent.trim()) || 0,
                         observaciones: cells[5]?.textContent.trim() || ''
                     };
-                    // Solo si hay nombre o nacionalidad
                     if (obj.nombre || obj.nacionalidad) grupo1.expulsados.push(obj);
                 }
             }
@@ -390,11 +382,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!grupo1.pendientes.length) delete grupo1.pendientes;
 
-        return { grupo1, fecha };
+        return { grupo1, fecha, fechaBruta };
     }
 
     // --------------------------------------------------------------------------
-    // VALIDACIÓN: Debe haber al menos algún registro útil
+    // VALIDACIÓN
     // --------------------------------------------------------------------------
     function validarDatos(grupo1) {
         let errores = [];
@@ -404,6 +396,10 @@ document.addEventListener('DOMContentLoaded', function () {
             (!grupo1.fletados || grupo1.fletados.length === 0)
         ) {
             errores.push('Debe haber al menos un detenido, expulsado o fletado.');
+        }
+        // Añade validación para la fecha
+        if (!obtenerFechaFormateada() || !/^\d{4}-\d{2}-\d{2}$/.test(obtenerFechaFormateada())) {
+            errores.push('La fecha es obligatoria y debe ser válida.');
         }
         return errores;
     }
