@@ -63,15 +63,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
     function showFechaEditable(fecha) {
-        if (!fechaEdicionDiv || !fechaManualInput) return;
-        if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-            const [yy, mm, dd] = fecha.split('-');
-            fechaManualInput.value = `${dd}/${mm}/${yy}`;
-        } else {
-            fechaManualInput.value = fecha;
-        }
-        fechaEdicionDiv.style.display = "block";
+    if (!fechaEdicionDiv || !fechaManualInput) return;
+    // Añadir la fecha extraída visualmente
+    document.getElementById("fechaDetectada").textContent = fecha || '(No detectada)';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        const [yy, mm, dd] = fecha.split('-');
+        fechaManualInput.value = `${dd}/${mm}/${yy}`;
+    } else {
+        fechaManualInput.value = fecha;
     }
+    fechaEdicionDiv.style.display = "block";
+}
+
     function obtenerFechaFormateada() {
         let val = fechaManualInput.value.trim();
         let regexES = /^(\d{1,2})[\/\- ](\d{1,2})[\/\- ](\d{2,4})$/;
