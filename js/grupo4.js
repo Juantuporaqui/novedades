@@ -1,6 +1,6 @@
 /****************************************************************************************
 *   SIREX · Grupo 4 Operativo · JS alineado DOCX 2025                                    *
-*   Añade: Arrays detenidos, colaboraciones, gestiones. Campos individuales identificados, *
+*   Añade: Arrays detenidos, colaboraciones, gestiones. Campos individuales identificados,*
 *   citadosCecorex, citadosUcrif y observaciones. Incluye resumen, PDF, CSV, WhatsApp.   *
 *****************************************************************************************/
 
@@ -61,7 +61,7 @@ function renderListas() {
   }
   if($('listaColaboraciones')) {
     $('listaColaboraciones').innerHTML = state.colaboraciones.map((item, idx) =>
-      `<li>${item.colaboracionDesc} · ${item.colaboracionUnidad} · ${item.colaboracionResultado} · ${item.colaboracionTrabajo} · ${item.colaboracionLugar} · ${item.colaboracionResultadoI}
+      `<li>${item.colaboracionDesc} · ${item.colaboracionUnidad} · ${item.colaboracionResultado}
         <button type="button" class="del-btn" onclick="eliminarItem('colaboraciones',${idx})">✕</button>
       </li>`
     ).join('');
@@ -179,7 +179,8 @@ function mostrarResumen() {
     <b>Citados UCRIF:</b> ${d.citadosUcrif}<br>
     <b>Colaboraciones:</b> ${d.colaboraciones.length}<br>
     <b>Gestiones varias:</b> ${d.gestiones.length}<br>
-    <b>Observaciones:</b> ${d.observaciones || "—"}
+    <b>Observaciones citados:</b> ${d.citadosObservaciones || "—"}<br>
+    <b>Observaciones generales:</b> ${d.observaciones || "—"}
   `;
   $('panelResumen').style.display = "block";
 }
@@ -203,8 +204,8 @@ window.onload = function() {
   $('btnAddDetenido').onclick = () => addItem('detenidos', ['numDetenidos','motivo','nacionalidad','diligencias','observaciones'],
     ['numDetenidos','detenidoMotivo','detenidoNacionalidad','detenidoDiligencias','detenidoObservaciones']);
   $('btnAddColaboracion').onclick = () => addItem('colaboraciones',
-    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado','colaboracionTrabajo','colaboracionLugar','colaboracionResultadoI'],
-    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado','colaboracionTrabajo','colaboracionLugar','colaboracionResultadoI']);
+    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado'],
+    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado']);
   $('btnAddGestion').onclick = () => addItem('gestiones',['gestionDesc'],['gestionDesc']);
 
   $('btnGuardar').onclick = guardarRegistro;
@@ -305,7 +306,10 @@ $('btnExportarPDF').onclick = function() {
       html += `<li><b>Colaboraciones:</b> ${r.colaboraciones.length}</li>`;
     if(r.gestiones && r.gestiones.length)
       html += `<li><b>Gestiones varias:</b> ${r.gestiones.length}</li>`;
-    if(r.observaciones) html += `<li><b>Obs:</b> ${r.observaciones}</li>`;
+    if(r.citadosObservaciones)
+      html += `<li><b>Obs. citados:</b> ${r.citadosObservaciones}</li>`;
+    if(r.observaciones)
+      html += `<li><b>Obs. generales:</b> ${r.observaciones}</li>`;
     html += "</ul>";
   });
   const w = window.open("", "_blank");
@@ -334,7 +338,7 @@ $('btnExportarCSV').onclick = function() {
     alert("Primero genera un resumen de fechas.");
     return;
   }
-  let csv = "Fecha,Detenidos,Identificados,CitadosCeCOREX,CitadosUCRIF,Colaboraciones,Gestiones,Observaciones\n";
+  let csv = "Fecha,Detenidos,Identificados,CitadosCeCOREX,CitadosUCRIF,Colaboraciones,Gestiones,ObsCitados,ObsGenerales\n";
   window._resumenesFiltrados.forEach(r => {
     csv += [
       r.fecha,
@@ -344,6 +348,7 @@ $('btnExportarCSV').onclick = function() {
       r.citadosUcrif||0,
       (r.colaboraciones||[]).length,
       (r.gestiones||[]).length,
+      JSON.stringify(r.citadosObservaciones||""),
       JSON.stringify(r.observaciones||"")
     ].join(",") + "\n";
   });
