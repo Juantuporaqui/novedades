@@ -1,11 +1,11 @@
 /****************************************************************************************
-*   SIREX · Grupo 4 Operativo · JS compatible DOCX · Full CRUD · Robustísimo            *
-*   Incluye: Añadir/cargar/eliminar, historial, resumen por fechas, PDF/CSV/WhatsApp    *
+*   SIREX · Grupo 4 Operativo · JS alineado DOCX 2025                                    *
+*   Añade: Arrays detenidos, colaboraciones, gestiones. Campos individuales identificados, *
+*   citadosCecorex, citadosUcrif y observaciones. Incluye resumen, PDF, CSV, WhatsApp.   *
 *****************************************************************************************/
 
-// 1. Firebase INIT + helpers
-
 const NOMBRE_COLECCION = "grupo4_operativo";
+
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
   authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -19,110 +19,81 @@ if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
-// --- Estado global ---
 let state = {
-  numDetenidos: 0,
+  detenidos: [],
+  colaboraciones: [],
+  gestiones: [],
   identificados: 0,
   citadosCecorex: 0,
   citadosUcrif: 0,
-  detenidos: [],
-  colaboraciones: [],
-  inspecciones: [],
-  gestiones: [],
+  citadosObservaciones: "",
   observaciones: ""
 };
 
-// --------- Utilidades ----------
 function limpiarInputs(...ids) {
   ids.forEach(id => { if($(id)) $(id).value = ""; });
 }
-function formatoFechaCorta(fecha) {
-  if (!fecha) return "";
-  let f = new Date(fecha);
-  return `${f.getDate().toString().padStart(2,"0")}/${(f.getMonth()+1).toString().padStart(2,"0")}/${f.getFullYear().toString().slice(-2)}`;
+
+function addItem(tipo, campos, ids) {
+  for (let i = 0; i < campos.length; i++) {
+    if (!$(ids[i]).value) {
+      $(ids[i]).classList.add('input-error');
+      setTimeout(() => $(ids[i]).classList.remove('input-error'), 700);
+      return;
+    }
+  }
+  let item = {};
+  campos.forEach((campo, i) => {
+    item[campo] = $(ids[i]).value.trim();
+  });
+  state[tipo].push(item);
+  renderListas();
+  limpiarInputs(...ids);
 }
 
-// --------- Añadir elementos dinámicos ----------
-function addDetenido() {
-  const motivo = $('detenidoMotivo').value.trim();
-  const nacionalidad = $('detenidoNacionalidad').value.trim();
-  const diligencias = $('detenidoDiligencias').value.trim();
-  const observ = $('detenidoObservaciones').value.trim();
-  if (!motivo && !nacionalidad && !diligencias && !observ) return;
-  state.detenidos.push({ motivo, nacionalidad, diligencias, observaciones: observ });
-  renderListas();
-  limpiarInputs('detenidoMotivo','detenidoNacionalidad','detenidoDiligencias','detenidoObservaciones');
-}
-function addColaboracion() {
-  const unidad = $('colaboracionUnidad').value.trim();
-  const resultado = $('colaboracionResultado').value.trim();
-  if (!unidad && !resultado) return;
-  state.colaboraciones.push({ unidad, resultado });
-  renderListas();
-  limpiarInputs('colaboracionUnidad','colaboracionResultado');
-}
-function addInspeccion() {
-  const trabajo = $('inspeccionTrabajo').value.trim();
-  const lugar = $('inspeccionLugar').value.trim();
-  const resultado = $('inspeccionResultado').value.trim();
-  if (!trabajo && !lugar && !resultado) return;
-  state.inspecciones.push({ trabajo, lugar, resultado });
-  renderListas();
-  limpiarInputs('inspeccionTrabajo','inspeccionLugar','inspeccionResultado');
-}
-function addGestion() {
-  const descripcion = $('gestionDescripcion').value.trim();
-  if (!descripcion) return;
-  state.gestiones.push({ descripcion });
-  renderListas();
-  limpiarInputs('gestionDescripcion');
-}
-
-// --------- Renderizar listas dinámicas ----------
 function renderListas() {
-  // Detenidos detallados
-  $('listaDetenidos').innerHTML = state.detenidos.map((e, i) =>
-    `<li>${e.motivo || "-"} · ${e.nacionalidad || "-"} · ${e.diligencias || "-"} · ${e.observaciones || "-"}
-      <button type="button" class="del-btn" onclick="eliminarItem('detenidos',${i})">✕</button>
-    </li>`
-  ).join('');
-  // Colaboraciones
-  $('listaColaboraciones').innerHTML = state.colaboraciones.map((e, i) =>
-    `<li>${e.unidad || "-"} · ${e.resultado || "-"}
-      <button type="button" class="del-btn" onclick="eliminarItem('colaboraciones',${i})">✕</button>
-    </li>`
-  ).join('');
-  // Inspecciones
-  $('listaInspecciones').innerHTML = state.inspecciones.map((e, i) =>
-    `<li>${e.trabajo || "-"} · ${e.lugar || "-"} · ${e.resultado || "-"}
-      <button type="button" class="del-btn" onclick="eliminarItem('inspecciones',${i})">✕</button>
-    </li>`
-  ).join('');
-  // Gestiones Varias
-  $('listaGestiones').innerHTML = state.gestiones.map((e, i) =>
-    `<li>${e.descripcion}
-      <button type="button" class="del-btn" onclick="eliminarItem('gestiones',${i})">✕</button>
-    </li>`
-  ).join('');
+  if($('listaDetenidos')) {
+    $('listaDetenidos').innerHTML = state.detenidos.map((item, idx) =>
+      `<li>${item.numDetenidos || ""} · ${item.motivo} · ${item.nacionalidad} · ${item.diligencias} · ${item.observaciones}
+        <button type="button" class="del-btn" onclick="eliminarItem('detenidos',${idx})">✕</button>
+      </li>`
+    ).join('');
+  }
+  if($('listaColaboraciones')) {
+    $('listaColaboraciones').innerHTML = state.colaboraciones.map((item, idx) =>
+      `<li>${item.colaboracionDesc} · ${item.colaboracionUnidad} · ${item.colaboracionResultado} · ${item.colaboracionTrabajo} · ${item.colaboracionLugar} · ${item.colaboracionResultadoI}
+        <button type="button" class="del-btn" onclick="eliminarItem('colaboraciones',${idx})">✕</button>
+      </li>`
+    ).join('');
+  }
+  if($('listaGestiones')) {
+    $('listaGestiones').innerHTML = state.gestiones.map((item, idx) =>
+      `<li>${item.gestionDesc}
+        <button type="button" class="del-btn" onclick="eliminarItem('gestiones',${idx})">✕</button>
+      </li>`
+    ).join('');
+  }
 }
+
 window.eliminarItem = function(tipo, idx) {
   state[tipo].splice(idx, 1);
   renderListas();
 };
 
-// --------- Guardar y cargar registros ----------
 async function guardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  // Sincroniza los campos numéricos
-  state.numDetenidos = parseInt($('numDetenidos').value) || 0;
-  state.identificados = parseInt($('identificados').value) || 0;
-  state.citadosCecorex = parseInt($('citadosCecorex').value) || 0;
-  state.citadosUcrif = parseInt($('citadosUcrif').value) || 0;
-  state.observaciones = $('observaciones').value.trim();
+
+  // Actualiza valores individuales
+  state.identificados = Number($('identificados').value) || 0;
+  state.citadosCecorex = Number($('citadosCecorex').value) || 0;
+  state.citadosUcrif = Number($('citadosUcrif').value) || 0;
+  state.citadosObservaciones = $('citadosObservaciones').value || "";
+  state.observaciones = $('observaciones').value || "";
 
   await db.collection(NOMBRE_COLECCION).doc(fecha).set({
-    fecha, ...state
+    fecha,
+    ...state
   });
   alert("¡Registro guardado!");
   cargarHistorial();
@@ -133,23 +104,20 @@ async function cargarRegistro() {
   if (!fecha) return alert("Selecciona la fecha");
   const doc = await db.collection(NOMBRE_COLECCION).doc(fecha).get();
   if (!doc.exists) return alert("No hay registro en esa fecha.");
-  const d = doc.data();
-  state = {
-    numDetenidos: d.numDetenidos || 0,
-    identificados: d.identificados || 0,
-    citadosCecorex: d.citadosCecorex || 0,
-    citadosUcrif: d.citadosUcrif || 0,
-    detenidos: d.detenidos || [],
-    colaboraciones: d.colaboraciones || [],
-    inspecciones: d.inspecciones || [],
-    gestiones: d.gestiones || [],
-    observaciones: d.observaciones || ""
-  };
-  $('numDetenidos').value = state.numDetenidos || 0;
-  $('identificados').value = state.identificados || 0;
-  $('citadosCecorex').value = state.citadosCecorex || 0;
-  $('citadosUcrif').value = state.citadosUcrif || 0;
-  $('observaciones').value = state.observaciones || "";
+  const data = doc.data();
+
+  // Arrays
+  state.detenidos = data.detenidos || [];
+  state.colaboraciones = data.colaboraciones || [];
+  state.gestiones = data.gestiones || [];
+
+  // Individuales
+  $('identificados').value = data.identificados || 0;
+  $('citadosCecorex').value = data.citadosCecorex || 0;
+  $('citadosUcrif').value = data.citadosUcrif || 0;
+  $('citadosObservaciones').value = data.citadosObservaciones || "";
+  $('observaciones').value = data.observaciones || "";
+
   renderListas();
   mostrarResumen();
 }
@@ -157,72 +125,88 @@ async function cargarRegistro() {
 function nuevoRegistro() {
   if (confirm("¿Limpiar el formulario para nuevo registro?")) {
     state = {
-      numDetenidos: 0, identificados: 0, citadosCecorex: 0, citadosUcrif: 0,
-      detenidos: [], colaboraciones: [], inspecciones: [], gestiones: [], observaciones: ""
+      detenidos: [],
+      colaboraciones: [],
+      gestiones: [],
+      identificados: 0,
+      citadosCecorex: 0,
+      citadosUcrif: 0,
+      citadosObservaciones: "",
+      observaciones: ""
     };
-    $('numDetenidos').value = 0;
     $('identificados').value = 0;
     $('citadosCecorex').value = 0;
     $('citadosUcrif').value = 0;
+    $('citadosObservaciones').value = "";
     $('observaciones').value = "";
     renderListas();
     mostrarResumen();
   }
 }
+
 async function eliminarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!confirm("¿Eliminar el registro de esta fecha?")) return;
   await db.collection(NOMBRE_COLECCION).doc(fecha).delete();
-  nuevoRegistro();
+  state = {
+    detenidos: [],
+    colaboraciones: [],
+    gestiones: [],
+    identificados: 0,
+    citadosCecorex: 0,
+    citadosUcrif: 0,
+    citadosObservaciones: "",
+    observaciones: ""
+  };
+  $('identificados').value = 0;
+  $('citadosCecorex').value = 0;
+  $('citadosUcrif').value = 0;
+  $('citadosObservaciones').value = "";
+  $('observaciones').value = "";
+  renderListas();
+  mostrarResumen();
   alert("Registro eliminado.");
   cargarHistorial();
 }
 
-// --------- Mostrar resumen cargado -----------
 function mostrarResumen() {
+  const d = state;
   $('resumenRegistro').innerHTML = `
-    <b>Nº Detenidos:</b> ${state.numDetenidos || 0} <br>
-    <b>Identificados:</b> ${state.identificados || 0} <br>
-    <b>Citados Cecorex:</b> ${state.citadosCecorex || 0} <br>
-    <b>Citados UCRIF:</b> ${state.citadosUcrif || 0} <br>
-    <b>Detenidos detallados:</b> ${state.detenidos.length}
-    <ul>${state.detenidos.map(e=>`<li>${e.motivo || "-"} · ${e.nacionalidad || "-"} · ${e.diligencias || "-"} · ${e.observaciones || "-"}</li>`).join("")}</ul>
-    <b>Colaboraciones:</b> ${state.colaboraciones.length}
-    <ul>${state.colaboraciones.map(e=>`<li>${e.unidad || "-"} · ${e.resultado || "-"}</li>`).join("")}</ul>
-    <b>Inspecciones de trabajo:</b> ${state.inspecciones.length}
-    <ul>${state.inspecciones.map(e=>`<li>${e.trabajo || "-"} · ${e.lugar || "-"} · ${e.resultado || "-"}</li>`).join("")}</ul>
-    <b>Gestiones varias:</b> ${state.gestiones.length}
-    <ul>${state.gestiones.map(e=>`<li>${e.descripcion}</li>`).join("")}</ul>
-    <b>Observaciones:</b> ${state.observaciones || "—"}
+    <b>Detenidos:</b> ${d.detenidos.length}<br>
+    <b>Identificados:</b> ${d.identificados}<br>
+    <b>Citados CeCOREX:</b> ${d.citadosCecorex}<br>
+    <b>Citados UCRIF:</b> ${d.citadosUcrif}<br>
+    <b>Colaboraciones:</b> ${d.colaboraciones.length}<br>
+    <b>Gestiones varias:</b> ${d.gestiones.length}<br>
+    <b>Observaciones:</b> ${d.observaciones || "—"}
   `;
   $('panelResumen').style.display = "block";
 }
 
-// --------- Cargar historial de fechas -----------
 async function cargarHistorial() {
   const snap = await db.collection(NOMBRE_COLECCION).orderBy("fecha", "desc").limit(10).get();
   if ($('historialFechas')) {
     $('historialFechas').innerHTML = Array.from(snap.docs).map(doc => {
       const f = doc.data().fecha;
-      return `<button type="button" class="btn-historial" onclick="cargarPorFecha('${f}')">${formatoFechaCorta(f)}</button>`;
+      return `<button type="button" class="btn-historial" onclick="cargarPorFecha('${f}')">${f}</button>`;
     }).join('');
   }
 }
+
 window.cargarPorFecha = async function(fecha) {
   $('fechaRegistro').value = fecha;
   cargarRegistro();
 };
 
-// --------- Listeners y arranque ----------
 window.onload = function() {
-  // Listeners añadir
-  $('btnAddDetenido').onclick = addDetenido;
-  $('btnAddColaboracion').onclick = addColaboracion;
-  $('btnAddInspeccion').onclick = addInspeccion;
-  $('btnAddGestion').onclick = addGestion;
+  $('btnAddDetenido').onclick = () => addItem('detenidos', ['numDetenidos','motivo','nacionalidad','diligencias','observaciones'],
+    ['numDetenidos','detenidoMotivo','detenidoNacionalidad','detenidoDiligencias','detenidoObservaciones']);
+  $('btnAddColaboracion').onclick = () => addItem('colaboraciones',
+    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado','colaboracionTrabajo','colaboracionLugar','colaboracionResultadoI'],
+    ['colaboracionDesc','colaboracionUnidad','colaboracionResultado','colaboracionTrabajo','colaboracionLugar','colaboracionResultadoI']);
+  $('btnAddGestion').onclick = () => addItem('gestiones',['gestionDesc'],['gestionDesc']);
 
-  // Botones CRUD
   $('btnGuardar').onclick = guardarRegistro;
   $('btnCargar').onclick = cargarRegistro;
   $('btnNuevo').onclick = nuevoRegistro;
@@ -233,42 +217,30 @@ window.onload = function() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem("sirex_darkmode", document.body.classList.contains('dark-mode') ? "1" : "0");
   };
-  if (localStorage.getItem("sirex_darkmode") === "1") document.body.classList.add('dark-mode');
+  if (localStorage.getItem("sirex_darkmode") === "1")
+    document.body.classList.add('dark-mode');
 
-  // Buscar
-  $('btnBuscar').onclick = async function() {
-    let q = prompt("¿Qué palabra quieres buscar en registros?");
-    if(!q) return;
-    const col = db.collection(NOMBRE_COLECCION);
-    const snap = await col.get();
-    let resultados = [];
-    snap.forEach(docSnap => {
-      let d = docSnap.data();
-      let str = [
-        d.observaciones,
-        ...(d.detenidos||[]).map(x=>x.motivo+" "+x.nacionalidad+" "+x.diligencias+" "+x.observaciones),
-        ...(d.colaboraciones||[]).map(x=>x.unidad+" "+x.resultado),
-        ...(d.inspecciones||[]).map(x=>x.trabajo+" "+x.lugar+" "+x.resultado),
-        ...(d.gestiones||[]).map(x=>x.descripcion)
-      ].join(" ").toLowerCase();
-      if (str.includes(q.toLowerCase())) resultados.push(d);
-    });
-    if (!resultados.length) return alert("No se encontraron resultados.");
-    $('divResumenFechas').innerHTML = resultados.map(r=>
-      `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-        <b>${r.fecha}</b> · Obs: ${r.observaciones?.slice(0,50)||""}...
-        <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
-      </div>`
-    ).join("");
-  };
+  // Ayuda contextual
+  document.querySelectorAll('.ayuda-btn').forEach(btn => {
+    btn.onclick = () => {
+      const seccion = btn.dataset.seccion;
+      const ayudas = {
+        colaboracion: "Registra colaboraciones con otros cuerpos o unidades.",
+        detenido: "Añade detenidos, indicando motivo y nacionalidad.",
+        gestion: "Otras gestiones relevantes."
+      };
+      alert(ayudas[seccion] || "Sección no documentada.");
+    };
+  });
 
   cargarHistorial();
   renderListas();
 };
 
-// ------------- RESUMENES PDF, CSV, WHATSAPP -------------
+// ====================== RESUMEN, PDF, CSV, WHATSAPP ======================
 
 window._resumenesFiltrados = [];
+
 $('btnResumenFechas').onclick = async function() {
   const desde = $('resumenDesde').value;
   const hasta = $('resumenHasta').value;
@@ -285,72 +257,93 @@ $('btnResumenFechas').onclick = async function() {
     window._resumenesFiltrados = [];
     return;
   }
-  // Resumen por totales
+  // Resumimos por totales
   let agg = {
-    numDetenidos: 0, identificados: 0, citadosCecorex: 0, citadosUcrif: 0
+    detenidos: 0, identificados: 0, citadosCecorex: 0, citadosUcrif: 0, colaboraciones: 0, gestiones: 0
   };
-  resumenes.forEach(r => {
-    agg.numDetenidos += parseInt(r.numDetenidos || 0);
-    agg.identificados += parseInt(r.identificados || 0);
-    agg.citadosCecorex += parseInt(r.citadosCecorex || 0);
-    agg.citadosUcrif += parseInt(r.citadosUcrif || 0);
-  });
   let detalle = "";
   resumenes.forEach(r => {
-    detalle += `<li><b>${formatoFechaCorta(r.fecha)}</b> · Det: ${r.numDetenidos||0} · Ident.: ${r.identificados||0} · Cecorex: ${r.citadosCecorex||0} · Ucrif: ${r.citadosUcrif||0}</li>`;
+    agg.detenidos += (r.detenidos||[]).length;
+    agg.identificados += Number(r.identificados||0);
+    agg.citadosCecorex += Number(r.citadosCecorex||0);
+    agg.citadosUcrif += Number(r.citadosUcrif||0);
+    agg.colaboraciones += (r.colaboraciones||[]).length;
+    agg.gestiones += (r.gestiones||[]).length;
+    detalle += `<li><b>${r.fecha}</b>: Detenidos: ${(r.detenidos||[]).length}, Identificados: ${r.identificados||0}, CeCOREX: ${r.citadosCecorex||0}, UCRIF: ${r.citadosUcrif||0}, Colaboraciones: ${(r.colaboraciones||[]).length}, Gestiones: ${(r.gestiones||[]).length}</li>`;
   });
   $('divResumenFechas').innerHTML = `
-    <b>Resumen total del ${formatoFechaCorta(desde)} al ${formatoFechaCorta(hasta)}:</b><br>
+    <b>Resumen total del ${desde} al ${hasta}:</b><br>
     <ul>
-      <li><b>Nº Detenidos</b>: ${agg.numDetenidos}</li>
+      <li><b>Detenidos</b>: ${agg.detenidos}</li>
       <li><b>Identificados</b>: ${agg.identificados}</li>
-      <li><b>Citados Cecorex</b>: ${agg.citadosCecorex}</li>
+      <li><b>Citados CeCOREX</b>: ${agg.citadosCecorex}</li>
       <li><b>Citados UCRIF</b>: ${agg.citadosUcrif}</li>
+      <li><b>Colaboraciones</b>: ${agg.colaboraciones}</li>
+      <li><b>Gestiones varias</b>: ${agg.gestiones}</li>
     </ul>
     <details><summary>Ver detalle diario</summary><ul>${detalle}</ul></details>
   `;
   window._resumenesFiltrados = resumenes;
 };
-// Exportar PDF
+
+// PDF
 $('btnExportarPDF').onclick = function() {
-  if (!window._resumenesFiltrados.length) return alert("Primero genera un resumen de fechas.");
-  let html = `<h2>Resumen de Grupo 4</h2>
-  <h4>Del ${formatoFechaCorta($('resumenDesde').value)} al ${formatoFechaCorta($('resumenHasta').value)}</h4>`;
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let html = `<h2>Resumen de Gestión</h2>
+  <h4>Del ${$('resumenDesde').value} al ${$('resumenHasta').value}</h4>`;
   window._resumenesFiltrados.forEach(r=>{
-    html += `<hr><b>${formatoFechaCorta(r.fecha)}</b><ul>`;
-    html += `<li><b>Nº Detenidos:</b> ${r.numDetenidos||0}</li>`;
+    html += `<hr><b>${r.fecha}</b><ul>`;
+    if(r.detenidos && r.detenidos.length)
+      html += `<li><b>Detenidos:</b> ${r.detenidos.length}</li>`;
     html += `<li><b>Identificados:</b> ${r.identificados||0}</li>`;
-    html += `<li><b>Citados Cecorex:</b> ${r.citadosCecorex||0}</li>`;
+    html += `<li><b>Citados CeCOREX:</b> ${r.citadosCecorex||0}</li>`;
     html += `<li><b>Citados UCRIF:</b> ${r.citadosUcrif||0}</li>`;
-    html += `<li><b>Observaciones:</b> ${r.observaciones||""}</li>`;
-    html += `</ul>`;
+    if(r.colaboraciones && r.colaboraciones.length)
+      html += `<li><b>Colaboraciones:</b> ${r.colaboraciones.length}</li>`;
+    if(r.gestiones && r.gestiones.length)
+      html += `<li><b>Gestiones varias:</b> ${r.gestiones.length}</li>`;
+    if(r.observaciones) html += `<li><b>Obs:</b> ${r.observaciones}</li>`;
+    html += "</ul>";
   });
   const w = window.open("", "_blank");
-  w.document.write(`<html><head><title>Resumen Grupo 4</title></head><body>${html}</body></html>`);
+  w.document.write(`<html><head><title>Resumen Gestión</title></head><body>${html}</body></html>`);
   w.print();
 };
+
 // WhatsApp
 $('btnWhatsapp').onclick = function() {
-  if (!window._resumenesFiltrados.length) return alert("Primero genera un resumen de fechas.");
-  let resumen = `Resumen SIREX Grupo 4\n${formatoFechaCorta($('resumenDesde').value)} al ${formatoFechaCorta($('resumenHasta').value)}:\n`;
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let resumen = `Resumen Gestión SIREX\n${$('resumenDesde').value} al ${$('resumenHasta').value}:\n`;
   window._resumenesFiltrados.forEach(r=>{
-    resumen += `${formatoFechaCorta(r.fecha)} - Det: ${r.numDetenidos||0}, Ident: ${r.identificados||0}, Cecorex: ${r.citadosCecorex||0}, Ucrif: ${r.citadosUcrif||0}\n`;
+    resumen += `${r.fecha} - Det: ${(r.detenidos||[]).length}, Ident: ${r.identificados||0}, CeCOREX: ${r.citadosCecorex||0}, UCRIF: ${r.citadosUcrif||0}, Colab: ${(r.colaboraciones||[]).length}, Gest: ${(r.gestiones||[]).length}\n`;
   });
   navigator.clipboard.writeText(resumen)
     .then(()=>alert("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
     .catch(()=>alert("No se pudo copiar. Actualiza el navegador."));
 };
+
 // CSV
 $('btnExportarCSV').onclick = function() {
-  if (!window._resumenesFiltrados.length) return alert("Primero genera un resumen de fechas.");
-  let csv = "Fecha,Nº Detenidos,Identificados,Citados Cecorex,Citados UCRIF,Observaciones\n";
+  if (!window._resumenesFiltrados || window._resumenesFiltrados.length===0) {
+    alert("Primero genera un resumen de fechas.");
+    return;
+  }
+  let csv = "Fecha,Detenidos,Identificados,CitadosCeCOREX,CitadosUCRIF,Colaboraciones,Gestiones,Observaciones\n";
   window._resumenesFiltrados.forEach(r => {
     csv += [
       r.fecha,
-      r.numDetenidos||0,
+      (r.detenidos||[]).length,
       r.identificados||0,
       r.citadosCecorex||0,
       r.citadosUcrif||0,
+      (r.colaboraciones||[]).length,
+      (r.gestiones||[]).length,
       JSON.stringify(r.observaciones||"")
     ].join(",") + "\n";
   });
@@ -364,7 +357,7 @@ $('btnExportarCSV').onclick = function() {
   setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 };
 
-// -------- Estado Firebase visual --------
+// ======================= FIN =======================
 window.addEventListener('load', function() {
   const statusDiv = $('statusFirebase');
   if (!statusDiv) return;
