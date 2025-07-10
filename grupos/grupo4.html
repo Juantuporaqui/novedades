@@ -17,7 +17,6 @@
     <div class="header-actions">
       <button class="btn-menu" onclick="window.location.href='../index.html'" title="Menú principal" aria-label="Menú principal">🏠</button>
       <button class="btn-menu" id="btnDarkMode" title="Modo oscuro / claro" aria-label="Modo Oscuro/Claro">🌙</button>
-      <button class="btn-menu" id="btnBuscar" title="Buscar registros" aria-label="Buscar registros">🔎</button>
     </div>
   </header>
 
@@ -35,13 +34,13 @@
 
     <section id="historialFechas"></section>
 
-    <!-- Panel: Detenidos -->
     <form id="formOperativo" autocomplete="off">
+      <!-- BLOQUE: DETENIDOS -->
       <section class="panel-seccion">
         <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="number" id="numDetenidos" placeholder="N. detenidos" min="0" autocomplete="off">
-          <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
+          <input type="number" id="numDetenidos" placeholder="Nº detenidos" min="1" style="width: 95px;">
+          <input type="text" id="detenidoMotivo" placeholder="Motivo" autocomplete="off">
           <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
           <input type="text" id="detenidoDiligencias" placeholder="Diligencias" autocomplete="off">
           <input type="text" id="detenidoObservaciones" placeholder="Observaciones" autocomplete="off">
@@ -50,46 +49,42 @@
         <ul id="listaDetenidos" class="lista"></ul>
       </section>
 
-      <!-- Panel: Identificados y Citados -->
+      <!-- BLOQUE: IDENTIFICADOS / CITADOS -->
       <section class="panel-seccion">
-        <h2>Identificados y Citados</h2>
         <div class="input-row">
-          <input type="number" id="identificados" placeholder="Identificados" min="0" autocomplete="off">
-          <input type="number" id="citadosCecorex" placeholder="Citados CeCOREX" min="0" autocomplete="off">
-          <input type="number" id="citadosUcrif" placeholder="Citados UCRIF" min="0" autocomplete="off">
-          <input type="text" id="citadosObservaciones" placeholder="Observaciones" autocomplete="off">
+          <input type="number" id="identificados" placeholder="Identificados" min="0" style="width:120px;">
+          <input type="number" id="citadosCecorex" placeholder="Citados CeCOREX" min="0" style="width:120px;">
+          <input type="number" id="citadosUcrif" placeholder="Citados UCRIF" min="0" style="width:120px;">
         </div>
+        <textarea id="citadosObservaciones" rows="2" placeholder="Observaciones citados (opcional)" aria-label="Observaciones citados"></textarea>
       </section>
 
-      <!-- Panel: Colaboraciones -->
+      <!-- BLOQUE: COLABORACIONES -->
       <section class="panel-seccion">
         <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="colaboracionDesc" placeholder="Colaboración" autocomplete="off">
-          <input type="text" id="colaboracionUnidad" placeholder="Unidad colaboradora" autocomplete="off">
-          <input type="text" id="colaboracionResultado" placeholder="Resultado colaboración" autocomplete="off">
-          <input type="text" id="colaboracionTrabajo" placeholder="I. Trabajo" autocomplete="off">
-          <input type="text" id="colaboracionLugar" placeholder="Lugar intervención" autocomplete="off">
-          <input type="text" id="colaboracionResultadoI" placeholder="Resultado intervención" autocomplete="off">
+          <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
+          <input type="text" id="colaboracionUnidad" placeholder="Unidad" autocomplete="off">
+          <input type="text" id="colaboracionResultado" placeholder="Resultado" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
         </div>
         <ul id="listaColaboraciones" class="lista"></ul>
       </section>
 
-      <!-- Panel: Gestiones Varias -->
+      <!-- BLOQUE: GESTIONES VARIAS -->
       <section class="panel-seccion">
-        <h2>Gestiones Varias <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
+        <h2>Gestiones varias <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
         <div class="input-row">
-          <input type="text" id="gestionDesc" placeholder="Gestión/Incidencia" autocomplete="off">
+          <input type="text" id="gestionDesc" placeholder="Gestión o nota relevante" autocomplete="off">
           <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
         </div>
         <ul id="listaGestiones" class="lista"></ul>
       </section>
 
-      <!-- Observaciones Generales -->
+      <!-- BLOQUE: OBSERVACIONES GENERALES -->
       <section class="panel-seccion">
-        <h2>Observaciones Generales</h2>
-        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
+        <h2>Observaciones generales</h2>
+        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias, etc..." aria-label="Observaciones"></textarea>
       </section>
     </form>
 
