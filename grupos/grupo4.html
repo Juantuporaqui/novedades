@@ -33,12 +33,12 @@
       <button type="button" class="btn-eliminar" id="btnEliminar" title="Eliminar registro">Eliminar</button>
     </section>
 
-    <section id="historialFechas"></section>
-
     <form id="formOperativo" autocomplete="off">
       <!-- Panel: Colaboraciones -->
       <section class="panel-seccion">
-        <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
+        <h2>Colaboraciones <span class="contador" id="contColab">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
           <input type="number" id="colaboracionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
@@ -46,9 +46,11 @@
         </div>
         <ul id="listaColaboraciones" class="lista"></ul>
       </section>
-            <!-- Panel: Detenidos -->
+      <!-- Panel: Detenidos -->
       <section class="panel-seccion">
-        <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
+        <h2>Detenidos <span class="contador" id="contDetenidos">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
           <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
@@ -57,10 +59,11 @@
         </div>
         <ul id="listaDetenidos" class="lista"></ul>
       </section>
-
       <!-- Panel: Citados -->
       <section class="panel-seccion">
-        <h2>Citados <button type="button" class="btn-secundario ayuda-btn" data-seccion="citado" title="¿Qué es esto?">?</button></h2>
+        <h2>Citados <span class="contador" id="contCitados">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="citado" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="citadoDesc" placeholder="Descripción citado" autocomplete="off">
           <input type="number" id="citadoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
@@ -68,10 +71,11 @@
         </div>
         <ul id="listaCitados" class="lista"></ul>
       </section>
-
       <!-- Panel: Otras gestiones -->
       <section class="panel-seccion">
-        <h2>Otras gestiones <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
+        <h2>Otras gestiones <span class="contador" id="contGestiones">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="gestionDesc" placeholder="Gestión/tarea" autocomplete="off">
           <input type="number" id="gestionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
@@ -79,10 +83,11 @@
         </div>
         <ul id="listaGestiones" class="lista"></ul>
       </section>
-
       <!-- Panel: Inspecciones Trabajo -->
       <section class="panel-seccion">
-        <h2>Inspecciones Trabajo <button type="button" class="btn-secundario ayuda-btn" data-seccion="inspeccionTrabajo" title="¿Qué es esto?">?</button></h2>
+        <h2>Inspecciones Trabajo <span class="contador" id="contInspTrab">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="inspeccionTrabajo" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="inspeccionTrabajoDesc" placeholder="Descripción" autocomplete="off">
           <input type="number" id="inspeccionTrabajoCantidad" placeholder="Cantidad" min="1" autocomplete="off">
@@ -90,10 +95,11 @@
         </div>
         <ul id="listaInspeccionesTrabajo" class="lista"></ul>
       </section>
-
       <!-- Panel: Otras inspecciones -->
       <section class="panel-seccion">
-        <h2>Otras inspecciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="otraInspeccion" title="¿Qué es esto?">?</button></h2>
+        <h2>Otras inspecciones <span class="contador" id="contOtrasInsp">(0)</span>
+          <button type="button" class="btn-secundario ayuda-btn" data-seccion="otraInspeccion" title="¿Qué es esto?">?</button>
+        </h2>
         <div class="input-row">
           <input type="text" id="otraInspeccionDesc" placeholder="Descripción" autocomplete="off">
           <input type="number" id="otraInspeccionCantidad" placeholder="Cantidad" min="1" autocomplete="off">
@@ -101,7 +107,6 @@
         </div>
         <ul id="listaOtrasInspecciones" class="lista"></ul>
       </section>
-
       <!-- Observaciones -->
       <section class="panel-seccion">
         <h2>Observaciones</h2>
@@ -131,7 +136,6 @@
       </div>
     </section>
   </main>
-
   <footer>
     SIREX · Grupo 4 Operativo &copy; 2025
   </footer>
