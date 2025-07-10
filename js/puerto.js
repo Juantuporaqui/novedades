@@ -18,7 +18,7 @@ function formatoFecha(f) {
   if (!f) return "";
   const d = new Date(f);
   if (isNaN(d.getTime())) return f;
-  return `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
+  return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
 }
 function limpiarFormulario() { if (form) form.reset(); limpiarFerrys(); }
 function formatoHora(h) {
@@ -32,7 +32,7 @@ let ferrys = [];
 
 // Referencias DOM (deben existir después del DOMContentLoaded)
 let form, fechaInput, btnCargar, btnNuevo, btnGuardarRegistro, adjuntosInput, observacionesInput;
-let ferryTipo, ferryFecha, ferryHora, ferryPasajeros, ferryVehiculos, btnAddFerry, ferrysListWindow;
+let ferryTipo, ferryDestino, ferryFecha, ferryHora, ferryPasajeros, ferryVehiculos, ferryIncidencia, btnAddFerry, ferrysListWindow;
 let totalFerrysSpan, totalPasajerosSpan, totalVehiculosSpan;
 let desdeResumen, hastaResumen, btnGenerarResumen, btnExportarPDF, btnExportarCSV, btnWhatsapp, resumenAvanzadoVentana;
 let panelResumen, resumenDiv;
@@ -55,20 +55,21 @@ function renderFerrysList() {
     .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora))
     .forEach((ferry, idx) => {
       const div = document.createElement('div');
-      div.className = "ferry-list-item";
+      div.className = "dato-item";
       div.innerHTML = `
         <span class="ferry-chip ferry-${ferry.tipo === "Salida" ? "salida" : "llegada"}">${ferry.tipo}</span>
-        <span class="ferry-fecha">${formatoFecha(ferry.fecha)}</span>
-        <span class="ferry-hora">${formatoHora(ferry.hora)}</span>
-        <span class="ferry-pasajeros">🧑‍🤝‍🧑 ${ferry.pasajeros}</span>
-        <span class="ferry-vehiculos">🚗 ${ferry.vehiculos}</span>
-        <button class="btn-ferry-del" title="Eliminar ferry" data-idx="${idx}">✖️</button>
+        <span><b>${ferry.destino || "—"}</b></span>
+        <span>${formatoFecha(ferry.fecha)} ${formatoHora(ferry.hora)}</span>
+        <span>🧑‍🤝‍🧑 ${ferry.pasajeros}</span>
+        <span>🚗 ${ferry.vehiculos}</span>
+        ${ferry.incidencia ? `<span class="ferry-incidencia">${ferry.incidencia}</span>` : ""}
+        <button class="btn-ferry-del btn btn-police-red" title="Eliminar ferry" data-idx="${idx}">✖️</button>
       `;
       ferrysListWindow.appendChild(div);
     });
   // Listener eliminar ferry
   ferrysListWindow.querySelectorAll('.btn-ferry-del').forEach(btn => {
-    btn.onclick = function() {
+    btn.onclick = function () {
       const i = parseInt(btn.getAttribute('data-idx'));
       ferrys.splice(i, 1);
       renderFerrysList();
@@ -81,33 +82,36 @@ function renderFerrysList() {
 function actualizarTotalesFerrys() {
   if (!totalFerrysSpan || !totalPasajerosSpan || !totalVehiculosSpan) return;
   totalFerrysSpan.textContent = ferrys.length;
-  totalPasajerosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.pasajeros)||0), 0);
-  totalVehiculosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.vehiculos)||0), 0);
+  totalPasajerosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.pasajeros) || 0), 0);
+  totalVehiculosSpan.textContent = ferrys.reduce((ac, f) => ac + (parseInt(f.vehiculos) || 0), 0);
 }
 
 function addFerry() {
-  // Asegúrate de que todos los campos existen y están accesibles
-  if (!ferryTipo || !ferryFecha || !ferryHora || !ferryPasajeros || !ferryVehiculos) {
+  if (!ferryTipo || !ferryDestino || !ferryFecha || !ferryHora || !ferryPasajeros || !ferryVehiculos || !ferryIncidencia) {
     showToast("Error interno en los campos del ferry.");
     return;
   }
   const tipo = ferryTipo.value;
+  const destino = ferryDestino.value.trim();
   const fecha = ferryFecha.value;
   const hora = ferryHora.value;
   const pasajeros = parseInt(ferryPasajeros.value) || 0;
   const vehiculos = parseInt(ferryVehiculos.value) || 0;
+  const incidencia = ferryIncidencia.value.trim();
   if (!fecha || !hora) {
     showToast("Indica fecha y hora del ferry.");
     return;
   }
-  ferrys.push({ tipo, fecha, hora, pasajeros, vehiculos });
+  ferrys.push({ tipo, destino, fecha, hora, pasajeros, vehiculos, incidencia });
   renderFerrysList();
   actualizarTotalesFerrys();
   // Limpiar mini-formulario tras añadir
+  ferryDestino.value = "";
   ferryFecha.value = "";
   ferryHora.value = "";
   ferryPasajeros.value = "";
   ferryVehiculos.value = "";
+  ferryIncidencia.value = "";
 }
 
 // ========== Helpers Firestore ==========
@@ -122,7 +126,6 @@ function getDocRefDia(fecha) {
 
 // ========== FUNCIONES DOMContentLoaded ==========
 window.addEventListener('DOMContentLoaded', () => {
-  // Obtener todas las referencias DOM aquí
   form = document.getElementById('formPuerto');
   fechaInput = document.getElementById('fechaPuerto');
   btnCargar = document.getElementById('btnCargar');
@@ -131,10 +134,12 @@ window.addEventListener('DOMContentLoaded', () => {
   adjuntosInput = document.getElementById('adjuntos');
   observacionesInput = document.getElementById('observaciones');
   ferryTipo = document.getElementById('ferryTipo');
+  ferryDestino = document.getElementById('ferryDestino');
   ferryFecha = document.getElementById('ferryFecha');
   ferryHora = document.getElementById('ferryHora');
   ferryPasajeros = document.getElementById('ferryPasajeros');
   ferryVehiculos = document.getElementById('ferryVehiculos');
+  ferryIncidencia = document.getElementById('ferryIncidencia');
   btnAddFerry = document.getElementById('btnAddFerry');
   ferrysListWindow = document.getElementById('ferrysListWindow');
   totalFerrysSpan = document.getElementById('totalFerrys');
@@ -152,16 +157,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   limpiarFerrys();
 
-  // Asignar evento añadir ferry de forma robusta
   if (btnAddFerry) {
     btnAddFerry.onclick = addFerry;
-    // Depuración
-    console.log("Botón Añadir Ferry OK");
-  } else {
-    console.error("No se encuentra el botón Añadir Ferry");
   }
 
-  // ========== CARGAR REGISTRO ==========
   if (btnCargar) btnCargar.addEventListener('click', async () => {
     if (!fechaInput.value) return showToast("Selecciona una fecha.");
     const docSnap = await getDocRefDia(fechaInput.value).get();
@@ -170,18 +169,15 @@ window.addEventListener('DOMContentLoaded', () => {
     mostrarResumen(docSnap.data());
   });
 
-  // ========== NUEVO REGISTRO ==========
   if (btnNuevo) btnNuevo.addEventListener('click', () => {
     limpiarFormulario();
-    if(panelResumen) panelResumen.style.display = 'none';
-    if(fechaInput) fechaInput.value = '';
+    if (panelResumen) panelResumen.style.display = 'none';
+    if (fechaInput) fechaInput.value = '';
   });
 
-  // ========== GUARDAR REGISTRO ==========
   if (form) form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!fechaInput.value) return showToast("Selecciona una fecha.");
-    // Adjuntos
     let adjuntos = [];
     if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
       for (const file of adjuntosInput.files) {
@@ -191,7 +187,6 @@ window.addEventListener('DOMContentLoaded', () => {
         adjuntos.push({ name: file.name, url });
       }
     }
-    // Datos
     const datos = {
       fecha: form.fechaPuerto.value,
       marinosArgos: parseInt(form.marinosArgos.value) || 0,
@@ -210,44 +205,9 @@ window.addEventListener('DOMContentLoaded', () => {
     await getDocRefDia(fechaInput.value).set(datos, { merge: true });
     showToast("Registro guardado en la nube.");
     mostrarResumen(datos);
-    if(panelResumen) panelResumen.style.display = 'block';
+    if (panelResumen) panelResumen.style.display = 'block';
     if (adjuntosInput) adjuntosInput.value = '';
   });
-
-  // ========== BOTÓN PDF RESUMEN (DÍA) ==========
-  const btnPDF = document.getElementById('btnPDF');
-  if (btnPDF) {
-    btnPDF.addEventListener('click', () => {
-      if (!panelResumen.style.display || panelResumen.style.display === 'none') {
-        showToast("Guarda o carga un registro primero.");
-        return;
-      }
-      // Imprime solo el resumen del día, no el formulario
-      const win = window.open("", "Resumen", "width=800,height=700,scrollbars=yes");
-      win.document.write(`
-        <html>
-          <head>
-            <title>Resumen Grupo Puerto</title>
-            <meta charset="utf-8">
-            <style>
-              body { background: #eef7fa; font-family: 'Inter', Arial, sans-serif; padding: 24px;}
-              h3 { color: #079cd8; }
-              a { color: #114c75; text-decoration: underline;}
-            </style>
-          </head>
-          <body>
-            <h3>Resumen Grupo Puerto</h3>
-            ${resumenDiv.innerHTML}
-            <hr>
-            <div style="text-align:right; margin-top:28px">
-              <button onclick="window.print()" style="font-size:1.13rem; background:#079cd8; color:#fff; border:none; border-radius:7px; padding:9px 22px; font-weight:bold; box-shadow:0 1px 8px #079cd829;">Imprimir PDF</button>
-            </div>
-          </body>
-        </html>
-      `);
-      win.document.close();
-    });
-  }
 
   // ========== RESUMEN AVANZADO Y EXPORTACIONES ==========
   let resumenFiltrado = [];
@@ -411,50 +371,47 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   };
 
-
-// ========== Exportar resumen a WhatsApp ==========
-if (btnWhatsapp) btnWhatsapp.onclick = function () {
-  if (!resumenFiltrado || resumenFiltrado.length === 0) {
-    showToast("Primero genera un resumen.");
-    return;
-  }
-  let resumen = `Resumen grupo puerto:\n`;
-  resumen += `Del ${formatoFecha(desdeResumen.value)} al ${formatoFecha(hastaResumen.value)}\n\n`;
-  resumenFiltrado.forEach(item => {
-    const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
-    const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
-    resumen += `---\n${formatoFecha(item.fecha)}\n`;
-    resumen += `Ferrys: ${(item.ferrys||[]).length}\n`;
-    resumen += `Pasajeros ferry: ${totalPasajeros}\n`;
-    resumen += `Vehículos ferry: ${totalVehiculos}\n`;
-    resumen += `Cruceros: ${item.cruceros||0}\n`;
-    resumen += `Cruceristas: ${item.cruceristas||0}\n`;
-    resumen += `Marinos Argos: ${item.marinosArgos||0}\n`;
-    resumen += `Pasaportes marinos: ${item.controlPasaportes||0}\n`;
-    resumen += `Visados Valencia: ${item.visadosValencia||0}\n`;
-    resumen += `Visados CG: ${item.visadosCG||0}\n`;
-    resumen += `Puerto deportivo: ${item.puertoDeportivo||0}\n`;
-    resumen += `Denegaciones: ${item.denegaciones||0}\n`;
-    resumen += `EIXICS: ${item.certificadosEixics||0}\n`;
-    resumen += `Observaciones: ${(item.observaciones||'---')}\n\n`;
-  });
-  navigator.clipboard.writeText(resumen)
-    .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
-    .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
-};
-// ...resto del código intacto...
-
+  // ========== Exportar resumen a WhatsApp ==========
+  if (btnWhatsapp) btnWhatsapp.onclick = function () {
+    if (!resumenFiltrado || resumenFiltrado.length === 0) {
+      showToast("Primero genera un resumen.");
+      return;
+    }
+    let resumen = `Resumen grupo puerto:\n`;
+    resumen += `Del ${formatoFecha(desdeResumen.value)} al ${formatoFecha(hastaResumen.value)}\n\n`;
+    resumenFiltrado.forEach(item => {
+      const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
+      const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
+      resumen += `---\n${formatoFecha(item.fecha)}\n`;
+      resumen += `Ferrys: ${(item.ferrys||[]).length}\n`;
+      resumen += `Pasajeros ferry: ${totalPasajeros}\n`;
+      resumen += `Vehículos ferry: ${totalVehiculos}\n`;
+      resumen += `Cruceros: ${item.cruceros||0}\n`;
+      resumen += `Cruceristas: ${item.cruceristas||0}\n`;
+      resumen += `Marinos Argos: ${item.marinosArgos||0}\n`;
+      resumen += `Pasaportes marinos: ${item.controlPasaportes||0}\n`;
+      resumen += `Visados Valencia: ${item.visadosValencia||0}\n`;
+      resumen += `Visados CG: ${item.visadosCG||0}\n`;
+      resumen += `Puerto deportivo: ${item.puertoDeportivo||0}\n`;
+      resumen += `Denegaciones: ${item.denegaciones||0}\n`;
+      resumen += `EIXICS: ${item.certificadosEixics||0}\n`;
+      resumen += `Observaciones: ${(item.observaciones||'---')}\n\n`;
+    });
+    navigator.clipboard.writeText(resumen)
+      .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
+      .catch(() => showToast("No se pudo copiar. Actualiza el navegador."));
+  };
 }); // FIN DOMContentLoaded
 
 // ========== CARGAR FORMULARIO ==========
 function cargarFormulario(datos) {
   if (!form) return;
   const campos = [
-    "marinosArgos","controlPasaportes","cruceros","cruceristas","visadosValencia","visadosCG",
-    "puertoDeportivo","denegaciones","certificadosEixics","observaciones"
+    "marinosArgos", "controlPasaportes", "cruceros", "cruceristas", "visadosValencia", "visadosCG",
+    "puertoDeportivo", "denegaciones", "certificadosEixics", "observaciones"
   ];
-  campos.forEach(k=>{
-    if(form[k]) form[k].value = datos[k]||"";
+  campos.forEach(k => {
+    if (form[k]) form[k].value = datos[k] || "";
   });
   ferrys = Array.isArray(datos.ferrys) ? datos.ferrys : [];
   renderFerrysList();
@@ -479,14 +436,20 @@ function mostrarResumen(datos) {
       (Array.isArray(datos.ferrys) && datos.ferrys.length)
         ? datos.ferrys
             .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora))
-            .map(f=>`<li>${f.tipo} - ${formatoFecha(f.fecha)} ${formatoHora(f.hora)}, Pasaj.: ${f.pasajeros}, Vehíc.: ${f.vehiculos}</li>`)
+            .map(f =>
+              `<li>
+                ${f.tipo} - <b>${f.destino || "—"}</b> ${formatoFecha(f.fecha)} ${formatoHora(f.hora)}, 
+                Pasaj.: ${f.pasajeros}, Vehíc.: ${f.vehiculos}
+                ${f.incidencia ? `<span class="ferry-incidencia"> [${f.incidencia}]</span>` : ""}
+              </li>`
+            )
             .join("")
         : "Sin registros"
     }
     </ul>
-    <b>Ferrys:</b> ${Array.isArray(datos.ferrys)?datos.ferrys.length:0} |
-    <b>Pasaj.:</b> ${Array.isArray(datos.ferrys)?datos.ferrys.reduce((a,f)=>a+parseInt(f.pasajeros)||0,0):0} |
-    <b>Vehíc.:</b> ${Array.isArray(datos.ferrys)?datos.ferrys.reduce((a,f)=>a+parseInt(f.vehiculos)||0,0):0}
+    <b>Ferrys:</b> ${Array.isArray(datos.ferrys) ? datos.ferrys.length : 0} |
+    <b>Pasaj.:</b> ${Array.isArray(datos.ferrys) ? datos.ferrys.reduce((a, f) => a + parseInt(f.pasajeros) || 0, 0) : 0} |
+    <b>Vehíc.:</b> ${Array.isArray(datos.ferrys) ? datos.ferrys.reduce((a, f) => a + parseInt(f.vehiculos) || 0, 0) : 0}
     <br>
     <b>Observaciones:</b> ${datos.observaciones || '---'}<br>
     <b>Adjuntos:</b> ${ (datos.adjuntos && datos.adjuntos.length)
