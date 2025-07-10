@@ -1,12 +1,10 @@
 /****************************************************************************************
-*   SIREX · Grupo 4 Operativo · JS extensísimo, robusto y a prueba de errores            *
-*   Incluye: Añadir/cargar/eliminar, historial, resumen por fechas, PDF/CSV/WhatsApp,   *
-*   validaciones, ayuda, sincronía perfecta con HTML, superdiseño                        *
+*   SIREX · Grupo 4 Operativo · JS robusto, sin historial, con contadores               *
 *****************************************************************************************/
 
 // 1. Firebase INIT + helpers
 
-const NOMBRE_COLECCION = "grupo4_operativo"; // ATENCIÓN: Cambia aquí el nombre de la colección si hace falta
+const NOMBRE_COLECCION = "grupo4_operativo";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
@@ -62,22 +60,24 @@ function addItem(tipo, campos, ids) {
   limpiarInputs(...ids);
 }
 
-// -------- Renderizar listas --------
+// -------- Renderizar listas + contadores --------
 function renderListas() {
   [
-    ['colaboraciones', ['descripcion', 'cantidad'], 'listaColaboraciones'],
-    ['detenidos', ['motivo', 'nacionalidad', 'cantidad'], 'listaDetenidos'],
-    ['citados', ['descripcion', 'cantidad'], 'listaCitados'],
-    ['gestiones', ['descripcion', 'cantidad'], 'listaGestiones'],
-    ['inspeccionesTrabajo', ['descripcion', 'cantidad'], 'listaInspeccionesTrabajo'],
-    ['otrasInspecciones', ['descripcion', 'cantidad'], 'listaOtrasInspecciones']
-  ].forEach(([tipo, campos, ulId]) => {
-    if(!$(ulId)) return;
-    $(ulId).innerHTML = state[tipo].map((item, idx) =>
-      `<li>${campos.map(c => item[c]).join(" · ")}
-        <button type="button" class="del-btn" onclick="eliminarItem('${tipo}',${idx})">✕</button>
-      </li>`
-    ).join('');
+    ['colaboraciones', ['descripcion', 'cantidad'], 'listaColaboraciones', 'contColab'],
+    ['detenidos', ['motivo', 'nacionalidad', 'cantidad'], 'listaDetenidos', 'contDetenidos'],
+    ['citados', ['descripcion', 'cantidad'], 'listaCitados', 'contCitados'],
+    ['gestiones', ['descripcion', 'cantidad'], 'listaGestiones', 'contGestiones'],
+    ['inspeccionesTrabajo', ['descripcion', 'cantidad'], 'listaInspeccionesTrabajo', 'contInspTrab'],
+    ['otrasInspecciones', ['descripcion', 'cantidad'], 'listaOtrasInspecciones', 'contOtrasInsp']
+  ].forEach(([tipo, campos, ulId, contId]) => {
+    if($(ulId)) {
+      $(ulId).innerHTML = state[tipo].map((item, idx) =>
+        `<li>${campos.map(c => item[c]).join(" · ")}
+          <button type="button" class="del-btn" onclick="eliminarItem('${tipo}',${idx})">✕</button>
+        </li>`
+      ).join('');
+    }
+    if($(contId)) $(contId).innerText = `(${state[tipo].length})`;
   });
 }
 
@@ -86,26 +86,25 @@ window.eliminarItem = function(tipo, idx) {
   state[tipo].splice(idx, 1);
   renderListas();
 };
+
 // -------- Guardar y cargar registros --------
 
 async function guardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  // ATENCIÓN: ID SÓLO LA FECHA, sin prefijo ni sufijo
-  const docId = fecha; 
+  if (!validateBeforeSave()) return;
+  const docId = fecha;
   await db.collection(NOMBRE_COLECCION).doc(docId).set({
     fecha,
     ...state,
     observaciones: $('observaciones').value
   });
   alert("¡Registro guardado!");
-  cargarHistorial();
 }
 
 async function cargarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
-  // ATENCIÓN: ID SÓLO LA FECHA
   const docId = fecha;
   const doc = await db.collection(NOMBRE_COLECCION).doc(docId).get();
   if (!doc.exists) return alert("No hay registro en esa fecha.");
@@ -129,20 +128,31 @@ async function eliminarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!confirm("¿Eliminar el registro de esta fecha?")) return;
-  const docId = fecha; // ID SOLO FECHA
+  const docId = fecha;
   await db.collection(NOMBRE_COLECCION).doc(docId).delete();
   Object.keys(state).forEach(k => state[k] = []);
   $('observaciones').value = "";
   renderListas();
   mostrarResumen();
   alert("Registro eliminado.");
-  cargarHistorial();
 }
 
 // -------- Mostrar resumen de un registro cargado --------
 
 function mostrarResumen() {
   const d = state;
+  if (
+    d.colaboraciones.length === 0 &&
+    d.detenidos.length === 0 &&
+    d.citados.length === 0 &&
+    d.gestiones.length === 0 &&
+    d.inspeccionesTrabajo.length === 0 &&
+    d.otrasInspecciones.length === 0 &&
+    !$('observaciones').value.trim()
+  ) {
+    $('panelResumen').style.display = "none";
+    return;
+  }
   $('resumenRegistro').innerHTML = `
     <b>Colaboraciones:</b> ${d.colaboraciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
     <b>Detenidos:</b> ${d.detenidos.map(e=>`${e.motivo} - ${e.nacionalidad} (${e.cantidad})`).join(", ") || "—"}<br>
@@ -154,23 +164,6 @@ function mostrarResumen() {
   `;
   $('panelResumen').style.display = "block";
 }
-
-// -------- Cargar historial de fechas --------
-
-async function cargarHistorial() {
-  const snap = await db.collection(NOMBRE_COLECCION).orderBy("fecha", "desc").limit(10).get();
-  if ($('historialFechas')) {
-    $('historialFechas').innerHTML = Array.from(snap.docs).map(doc => {
-      const f = doc.data().fecha;
-      return `<button type="button" class="btn-historial" onclick="cargarPorFecha('${f}')">${formatoFechaCorta(f)}</button>`;
-    }).join('');
-  }
-}
-
-window.cargarPorFecha = async function(fecha) {
-  $('fechaRegistro').value = fecha;
-  cargarRegistro();
-};
 
 // -------- Asignación de listeners y arranque --------
 
@@ -237,14 +230,20 @@ window.onload = function() {
     $('divResumenFechas').innerHTML = resultados.map(r=>
       `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
         <b>${r.fecha}</b> · Obs: ${r.observaciones?.slice(0,50)||""}...
-        <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
+        <button onclick="window.cargarRegistroPorBusqueda && window.cargarRegistroPorBusqueda('${r.fecha}')">Ver</button>
       </div>`
     ).join("");
+    // Cargar registro al pulsar ver (compatibilidad)
+    window.cargarRegistroPorBusqueda = function(fecha) {
+      $('fechaRegistro').value = fecha;
+      cargarRegistro();
+    };
   };
 
-  cargarHistorial();
+  // Estado inicial
   renderListas();
 };
+
 // ----------- RESUMEN POR RANGO DE FECHAS, PDF, WHATSAPP, CSV -----------
 
 // Estado para los registros filtrados por rango
@@ -328,7 +327,6 @@ $('btnExportarPDF').onclick = function() {
     if(r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
     html += "</ul>";
   });
-  // Abre en ventana e imprime PDF
   const w = window.open("", "_blank");
   w.document.write(`<html><head><title>Resumen Gestión</title></head><body>${html}</body></html>`);
   w.print();
@@ -409,58 +407,4 @@ function validateBeforeSave() {
     return false;
   }
   return true;
-}
-
-// Reemplazar guardarRegistro por esta versión más robusta
-async function robustGuardarRegistro() {
-  const fecha = $('fechaRegistro').value;
-  if (!fecha) return alert("Selecciona la fecha");
-  if (!validateBeforeSave()) return;
-  const docId = fecha; // SOLO LA FECHA
-  await db.collection(NOMBRE_COLECCION).doc(docId).set({
-    fecha,
-    ...state,
-    observaciones: $('observaciones').value
-  });
-  alert("¡Registro guardado!");
-  cargarHistorial();
-}
-
-// Asignar la función robusta al botón guardar (sobrescribe anterior)
-window.onload = (function(origOnload){
-  return function() {
-    if(origOnload) origOnload();
-    $('btnGuardar').onclick = robustGuardarRegistro;
-  }
-})(window.onload);
-
-if ($('btnExportarPDF')) $('btnExportarPDF').title = "Exportar el resumen a PDF (abre ventana de impresión)";
-if ($('btnExportarCSV')) $('btnExportarCSV').title = "Exportar el resumen a hoja de cálculo CSV";
-if ($('btnWhatsapp')) $('btnWhatsapp').title = "Copiar resumen al portapapeles para WhatsApp (pega en la app)";
-
-// Mostrar/ocultar resumen si no hay datos
-function mostrarResumen() {
-  const d = state;
-  if (
-    d.colaboraciones.length === 0 &&
-    d.detenidos.length === 0 &&
-    d.citados.length === 0 &&
-    d.gestiones.length === 0 &&
-    d.inspeccionesTrabajo.length === 0 &&
-    d.otrasInspecciones.length === 0 &&
-    !$('observaciones').value.trim()
-  ) {
-    $('panelResumen').style.display = "none";
-    return;
-  }
-  $('resumenRegistro').innerHTML = `
-    <b>Colaboraciones:</b> ${d.colaboraciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Detenidos:</b> ${d.detenidos.map(e=>`${e.motivo} - ${e.nacionalidad} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Citados:</b> ${d.citados.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Otras gestiones:</b> ${d.gestiones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Inspecciones trabajo:</b> ${d.inspeccionesTrabajo.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Otras inspecciones:</b> ${d.otrasInspecciones.map(e=>`${e.descripcion} (${e.cantidad})`).join(", ") || "—"}<br>
-    <b>Observaciones:</b> ${$('observaciones').value || "—"}
-  `;
-  $('panelResumen').style.display = "block";
 }
