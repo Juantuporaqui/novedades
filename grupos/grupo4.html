@@ -4,118 +4,165 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo 4 Operativo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="../css/grupo4.css">
+  <link rel="icon" type="image/png" href="../img/logo_cnp.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
 </head>
-<body>
-  <header class="header">
-    <div class="header-icon" aria-hidden="true"><span>📁</span></div>
-    <div class="header-title">
-      <span class="brand">SIREX</span>
-      <span class="subtitle">· Grupo 4 Operativo</span>
+<body class="bg-police">
+
+  <!-- NAVBAR CORPORATIVO -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
+    <div class="container">
+      <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
+      <span class="navbar-brand fs-3 fw-bold">SIREX · G4 Operativo</span>
+      <button id="btnDarkMode" class="modo-oscuro-btn ms-2" title="Modo oscuro">
+        <i class="bi bi-moon-stars"></i>
+      </button>
+      <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
-    <div class="header-actions">
-      <button class="btn-menu" onclick="window.location.href='../index.html'" title="Menú principal" aria-label="Menú principal">🏠</button>
-      <button class="btn-menu" id="btnDarkMode" title="Modo oscuro / claro" aria-label="Modo Oscuro/Claro">🌙</button>
+  </nav>
+  <div class="text-center mb-2 d-md-none">
+    <a href="../index.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-house-door"></i> Menú principal</a>
+  </div>
+
+  <main class="container mb-5">
+    <!-- BARRA FECHA Y ACCIONES -->
+    <div class="card glass-card p-3 mb-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-3 mb-2 mb-sm-0">
+          <label for="fechaRegistro" class="form-label fw-bold mb-1">Fecha del registro</label>
+          <input type="date" id="fechaRegistro" class="form-control form-control-lg" required>
+        </div>
+        <div class="col-6 col-sm-2">
+          <button id="btnCargar" class="btn btn-police-blue w-100 btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
+        </div>
+        <div class="col-6 col-sm-2">
+          <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+        <div class="col-6 col-sm-2">
+          <button id="btnGuardar" class="btn btn-police-green w-100 btn-lg" type="button"><i class="bi bi-save"></i> Guardar</button>
+        </div>
+        <div class="col-6 col-sm-2">
+          <button id="btnEliminar" class="btn btn-police-red w-100 btn-lg" type="button"><i class="bi bi-trash"></i> Eliminar</button>
+        </div>
+      </div>
     </div>
-  </header>
 
-  <section id="statusFirebase" aria-live="polite"></section>
+    <!-- HISTORIAL FECHAS -->
+    <div id="historialFechas" class="historial-fechas mb-3"></div>
 
-  <main>
-    <section class="registro-bar">
-      <label for="fechaRegistro">Fecha del registro</label>
-      <input type="date" id="fechaRegistro" required>
-      <button type="button" class="btn-secundario" id="btnCargar" title="Cargar registro">Cargar</button>
-      <button type="button" class="btn-secundario" id="btnNuevo" title="Nuevo registro">Nuevo</button>
-      <button type="button" class="btn-principal" id="btnGuardar" title="Guardar registro">Guardar</button>
-      <button type="button" class="btn-eliminar" id="btnEliminar" title="Eliminar registro">Eliminar</button>
-    </section>
-
-    <section id="historialFechas"></section>
-
+    <!-- FORMULARIO PRINCIPAL -->
     <form id="formOperativo" autocomplete="off">
-      <!-- BLOQUE: DETENIDOS -->
-      <section class="panel-seccion">
-        <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
-        <div class="input-row">
-          <input type="number" id="numDetenidos" placeholder="Nº detenidos" min="1" style="width: 95px;">
+      <!-- DETENIDOS -->
+      <section class="glass-card panel-seccion">
+        <h4>
+          <i class="bi bi-person-lock"></i> Detenidos
+          <button type="button" class="ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button>
+        </h4>
+        <div class="row-cols input-row mb-2">
+          <input type="number" id="numDetenidos" placeholder="Nº detenidos" min="1" style="width:100px;">
           <input type="text" id="detenidoMotivo" placeholder="Motivo" autocomplete="off">
           <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
           <input type="text" id="detenidoDiligencias" placeholder="Diligencias" autocomplete="off">
           <input type="text" id="detenidoObservaciones" placeholder="Observaciones" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido" aria-label="Agregar detenido">+</button>
+          <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido">+</button>
         </div>
         <ul id="listaDetenidos" class="lista"></ul>
       </section>
 
-      <!-- BLOQUE: IDENTIFICADOS / CITADOS -->
-      <section class="panel-seccion">
-        <div class="input-row">
+      <!-- IDENTIFICADOS / CITADOS -->
+      <section class="glass-card panel-seccion">
+        <div class="row-cols input-row mb-2">
           <input type="number" id="identificados" placeholder="Identificados" min="0" style="width:120px;">
           <input type="number" id="citadosCecorex" placeholder="Citados CeCOREX" min="0" style="width:120px;">
           <input type="number" id="citadosUcrif" placeholder="Citados UCRIF" min="0" style="width:120px;">
         </div>
-        <textarea id="citadosObservaciones" rows="2" placeholder="Observaciones citados (opcional)" aria-label="Observaciones citados"></textarea>
+        <textarea id="citadosObservaciones" rows="2" placeholder="Observaciones citados (opcional)"></textarea>
       </section>
 
-      <!-- BLOQUE: COLABORACIONES -->
-      <section class="panel-seccion">
-        <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
-        <div class="input-row">
+      <!-- COLABORACIONES -->
+      <section class="glass-card panel-seccion">
+        <h4>
+          <i class="bi bi-handshake"></i> Colaboraciones
+          <button type="button" class="ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button>
+        </h4>
+        <div class="row-cols input-row mb-2">
           <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
           <input type="text" id="colaboracionUnidad" placeholder="Unidad" autocomplete="off">
           <input type="text" id="colaboracionResultado" placeholder="Resultado" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
+          <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración">+</button>
         </div>
         <ul id="listaColaboraciones" class="lista"></ul>
       </section>
 
-      <!-- BLOQUE: GESTIONES VARIAS -->
-      <section class="panel-seccion">
-        <h2>Gestiones varias <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
-        <div class="input-row">
+      <!-- GESTIONES VARIAS -->
+      <section class="glass-card panel-seccion">
+        <h4>
+          <i class="bi bi-journal-text"></i> Gestiones varias
+          <button type="button" class="ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button>
+        </h4>
+        <div class="row-cols input-row mb-2">
           <input type="text" id="gestionDesc" placeholder="Gestión o nota relevante" autocomplete="off">
-          <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
+          <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión">+</button>
         </div>
         <ul id="listaGestiones" class="lista"></ul>
       </section>
 
-      <!-- BLOQUE: OBSERVACIONES GENERALES -->
-      <section class="panel-seccion">
-        <h2>Observaciones generales</h2>
-        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias, etc..." aria-label="Observaciones"></textarea>
+      <!-- OBSERVACIONES GENERALES -->
+      <section class="glass-card panel-seccion">
+        <h4><i class="bi bi-info-circle"></i> Observaciones generales</h4>
+        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias, etc..."></textarea>
       </section>
     </form>
 
-    <section id="panelResumen" class="panel-seccion" style="display:none;">
-      <h2>Resumen del registro</h2>
+    <!-- PANEL RESUMEN -->
+    <section id="panelResumen" class="glass-card panel-seccion" style="display:none;">
+      <h4><i class="bi bi-list-ul"></i> Resumen del registro</h4>
       <div id="resumenRegistro"></div>
     </section>
 
-    <section class="panel panel-glass mt-4">
-      <h3>Resumen por rango de fechas</h3>
+    <!-- RESUMEN POR RANGO DE FECHAS -->
+    <section class="glass-card panel-glass mt-4">
+      <h4><i class="bi bi-calendar-range"></i> Resumen por rango de fechas</h4>
       <div class="row-cols">
         <label for="resumenDesde">Desde</label>
         <input type="date" id="resumenDesde" class="form-control input-date">
         <label for="resumenHasta">Hasta</label>
         <input type="date" id="resumenHasta" class="form-control input-date">
-        <button type="button" class="btn-guardar" id="btnResumenFechas">Mostrar Resumen</button>
+        <button type="button" class="btn-guardar" id="btnResumenFechas"><i class="bi bi-bar-chart-line"></i> Mostrar Resumen</button>
       </div>
       <div id="divResumenFechas"></div>
-      <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px;">
-        <button type="button" class="btn-pdf" id="btnExportarPDF">Exportar PDF</button>
-        <button type="button" class="btn-pdf" id="btnExportarCSV">Exportar CSV</button>
-        <button type="button" class="btn-guardar" id="btnWhatsapp">Resumen WhatsApp</button>
+      <div class="mt-3 d-flex flex-wrap gap-2">
+        <button type="button" class="btn-pdf" id="btnExportarPDF"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+        <button type="button" class="btn-pdf" id="btnExportarCSV"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+        <button type="button" class="btn-guardar" id="btnWhatsapp"><i class="bi bi-whatsapp"></i> WhatsApp</button>
       </div>
     </section>
   </main>
 
-  <footer>
-    SIREX · Grupo 4 Operativo &copy; 2025
+  <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
+    <small>
+      &copy; 2025 UCRIF · Benito · G. Operativo | Plataforma policial
+    </small>
   </footer>
+
+  <!-- Firebase y JS -->
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <script src="../js/grupo4.js" defer></script>
+  <!-- Dark mode -->
+  <script>
+    document.getElementById("btnDarkMode").onclick = function() {
+      document.body.classList.toggle("dark-mode");
+      localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+    };
+    if (localStorage.getItem("sirex_darkmode") === "1") {
+      document.body.classList.add("dark-mode");
+    }
+  </script>
 </body>
 </html>
