@@ -33,86 +33,71 @@
       <button type="button" class="btn-eliminar" id="btnEliminar" title="Eliminar registro">Eliminar</button>
     </section>
 
-    <!-- CAMPOS NUMÉRICOS PRINCIPALES EN FILA COMPACTA -->
-    <section class="panel-seccion">
-      <div class="input-row" style="flex-wrap: wrap; gap: 18px;">
-        <div>
-          <label for="numDetenidos"><b>Nº Detenidos</b></label>
-          <input type="number" id="numDetenidos" min="0" style="width:70px">
+    <section id="historialFechas"></section>
+
+    <!-- Panel: Detenidos -->
+    <form id="formOperativo" autocomplete="off">
+      <section class="panel-seccion">
+        <h2>Detenidos <button type="button" class="btn-secundario ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button></h2>
+        <div class="input-row">
+          <input type="number" id="numDetenidos" placeholder="N. detenidos" min="0" autocomplete="off">
+          <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
+          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
+          <input type="text" id="detenidoDiligencias" placeholder="Diligencias" autocomplete="off">
+          <input type="text" id="detenidoObservaciones" placeholder="Observaciones" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido" aria-label="Agregar detenido">+</button>
         </div>
-        <div>
-          <label for="identificados"><b>Identificados</b></label>
-          <input type="number" id="identificados" min="0" style="width:70px">
+        <ul id="listaDetenidos" class="lista"></ul>
+      </section>
+
+      <!-- Panel: Identificados y Citados -->
+      <section class="panel-seccion">
+        <h2>Identificados y Citados</h2>
+        <div class="input-row">
+          <input type="number" id="identificados" placeholder="Identificados" min="0" autocomplete="off">
+          <input type="number" id="citadosCecorex" placeholder="Citados CeCOREX" min="0" autocomplete="off">
+          <input type="number" id="citadosUcrif" placeholder="Citados UCRIF" min="0" autocomplete="off">
+          <input type="text" id="citadosObservaciones" placeholder="Observaciones" autocomplete="off">
         </div>
-        <div>
-          <label for="citadosCecorex"><b>Citados Cecorex</b></label>
-          <input type="number" id="citadosCecorex" min="0" style="width:70px">
+      </section>
+
+      <!-- Panel: Colaboraciones -->
+      <section class="panel-seccion">
+        <h2>Colaboraciones <button type="button" class="btn-secundario ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button></h2>
+        <div class="input-row">
+          <input type="text" id="colaboracionDesc" placeholder="Colaboración" autocomplete="off">
+          <input type="text" id="colaboracionUnidad" placeholder="Unidad colaboradora" autocomplete="off">
+          <input type="text" id="colaboracionResultado" placeholder="Resultado colaboración" autocomplete="off">
+          <input type="text" id="colaboracionTrabajo" placeholder="I. Trabajo" autocomplete="off">
+          <input type="text" id="colaboracionLugar" placeholder="Lugar intervención" autocomplete="off">
+          <input type="text" id="colaboracionResultadoI" placeholder="Resultado intervención" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración" aria-label="Agregar colaboración">+</button>
         </div>
-        <div>
-          <label for="citadosUcrif"><b>Citados UCRIF</b></label>
-          <input type="number" id="citadosUcrif" min="0" style="width:70px">
+        <ul id="listaColaboraciones" class="lista"></ul>
+      </section>
+
+      <!-- Panel: Gestiones Varias -->
+      <section class="panel-seccion">
+        <h2>Gestiones Varias <button type="button" class="btn-secundario ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button></h2>
+        <div class="input-row">
+          <input type="text" id="gestionDesc" placeholder="Gestión/Incidencia" autocomplete="off">
+          <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión" aria-label="Agregar gestión">+</button>
         </div>
-      </div>
-    </section>
+        <ul id="listaGestiones" class="lista"></ul>
+      </section>
 
-    <!-- DETENIDOS DETALLADOS -->
-    <section class="panel-seccion">
-      <h2>Listado de Detenidos</h2>
-      <div class="input-row">
-        <input type="text" id="detenidoMotivo" placeholder="Motivo/diligencia" autocomplete="off">
-        <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
-        <input type="text" id="detenidoDiligencias" placeholder="Diligencias" autocomplete="off">
-        <input type="text" id="detenidoObservaciones" placeholder="Observaciones" autocomplete="off">
-        <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido">+</button>
-      </div>
-      <ul id="listaDetenidos" class="lista"></ul>
-    </section>
-
-    <!-- COLABORACIONES -->
-    <section class="panel-seccion">
-      <h2>Colaboraciones</h2>
-      <div class="input-row">
-        <input type="text" id="colaboracionUnidad" placeholder="Unidad" autocomplete="off">
-        <input type="text" id="colaboracionResultado" placeholder="Resultado" autocomplete="off">
-        <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración">+</button>
-      </div>
-      <ul id="listaColaboraciones" class="lista"></ul>
-    </section>
-
-    <!-- INSPECCIONES DE TRABAJO -->
-    <section class="panel-seccion">
-      <h2>Inspecciones de Trabajo</h2>
-      <div class="input-row">
-        <input type="text" id="inspeccionTrabajo" placeholder="Inspección realizada" autocomplete="off">
-        <input type="text" id="inspeccionLugar" placeholder="Lugar" autocomplete="off">
-        <input type="text" id="inspeccionResultado" placeholder="Resultado" autocomplete="off">
-        <button type="button" class="btn-add" id="btnAddInspeccion" title="Agregar inspección">+</button>
-      </div>
-      <ul id="listaInspecciones" class="lista"></ul>
-    </section>
-
-    <!-- GESTIONES VARIAS -->
-    <section class="panel-seccion">
-      <h2>Gestiones Varias</h2>
-      <div class="input-row">
-        <input type="text" id="gestionDescripcion" placeholder="Descripción gestión" autocomplete="off" style="min-width:220px">
-        <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión">+</button>
-      </div>
-      <ul id="listaGestiones" class="lista"></ul>
-    </section>
-
-    <!-- OBSERVACIONES -->
-    <section class="panel-seccion">
-      <h2>Observaciones generales</h2>
-      <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
-    </section>
+      <!-- Observaciones Generales -->
+      <section class="panel-seccion">
+        <h2>Observaciones Generales</h2>
+        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias..." aria-label="Observaciones"></textarea>
+      </section>
+    </form>
 
     <section id="panelResumen" class="panel-seccion" style="display:none;">
       <h2>Resumen del registro</h2>
       <div id="resumenRegistro"></div>
     </section>
 
-    <!-- Resumen por rango de fechas -->
     <section class="panel panel-glass mt-4">
       <h3>Resumen por rango de fechas</h3>
       <div class="row-cols">
