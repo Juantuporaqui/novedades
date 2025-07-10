@@ -91,17 +91,19 @@
             onclick="alert('Añade cada ferry indicando tipo, fecha, hora, pasajeros, vehículos y una posible incidencia.')">?</button>
         </h4>
         <div class="mini-form-ferry">
-          <select id="ferryTipo" class="form-control" title="Tipo">
-            <option value="Llegada">Llegada</option>
-            <option value="Salida">Salida</option>
-          </select>
-          <input type="date" id="ferryFecha" class="form-control" title="Fecha">
-          <input type="time" id="ferryHora" class="form-control" title="Hora">
-          <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
-          <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
-          <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
-          <button type="button" class="btn btn-police-blue" id="btnAddFerry">➕ Añadir</button>
-        </div>
+  <select id="ferryTipo" class="form-control" title="Tipo">
+    <option value="Llegada">Llegada</option>
+    <option value="Salida">Salida</option>
+  </select>
+  <input type="text" id="ferryDestino" class="form-control" placeholder="Destino" title="Destino">
+  <input type="date" id="ferryFecha" class="form-control" title="Fecha">
+  <input type="time" id="ferryHora" class="form-control" title="Hora">
+  <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
+  <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
+  <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
+  <button type="button" class="btn btn-police-blue" id="btnAddFerry">➕ Añadir</button>
+</div>
+
         <!-- Listado de ferrys -->
         <div class="ventana-datos ventana-ferrys" id="ferrysListWindow"></div>
         <div class="totales-ferry">
