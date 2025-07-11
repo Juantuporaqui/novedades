@@ -104,13 +104,21 @@
               <label for="fechaDia" class="form-label fw-bold mb-1">Fecha de trabajo</label>
               <input type="date" id="fechaDia" class="form-control form-control-lg" autocomplete="off" required>
             </div>
-            <div class="col-6 col-sm-3">
-              <button id="btnBuscar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-search"></i> Buscar</button>
+            <div class="col-6 col-sm-2">
+              <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-upload"></i> Cargar</button>
             </div>
-            <div class="col-6 col-sm-3">
+            <div class="col-6 col-sm-2">
+              <button id="btnGrabar" class="btn btn-success w-100 btn-lg" type="button"><i class="bi bi-save"></i> Grabar</button>
+            </div>
+            <div class="col-6 col-sm-2">
+              <button id="btnBorrar" class="btn btn-danger w-100 btn-lg" type="button"><i class="bi bi-trash"></i> Borrar</button>
+            </div>
+            <div class="col-6 col-sm-2">
               <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
             </div>
-            <div class="col-12 col-sm-2 text-end mt-2 mt-sm-0">
+          </div>
+          <div class="row mt-2">
+            <div class="col-12 text-end">
               <span class="badge bg-info text-dark py-2 px-2 w-100">Guardado online automático</span>
             </div>
           </div>
@@ -127,9 +135,6 @@
           <h2 class="mb-4 text-police-blue">
             <i class="bi bi-person-fill-lock"></i> Gestión de expulsados, detenidos y novedades
           </h2>
-
-        
-<!-- ... todo el head y lo anterior igual ... -->
 
           <!-- SECCIÓN DETENIDOS -->
           <div class="mb-4">
@@ -162,7 +167,6 @@
             </div>
           </div>
 
-
           <!-- SECCIÓN EXPULSADOS -->
           <div class="mb-4">
             <h4 class="mb-2">Expulsados
@@ -188,6 +192,31 @@
             <div class="expulsados-list mt-2">
               <small class="text-muted">Listado expulsados (día):</small>
               <div id="expulsadosVentana" class="ventana-datos mt-1"></div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN EXPULSIONES FRUSTRADAS -->
+          <div class="mb-4">
+            <h4 class="mb-2">Expulsiones Frustradas
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Registra aquí las expulsiones que finalmente no han podido ejecutarse: nombre, nacionalidad y motivo de la frustración.')">?</button>
+            </h4>
+            <form id="frustradaForm" class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <input type="text" id="nombreFrustrada" class="form-control" placeholder="Nombre" maxlength="60">
+              </div>
+              <div class="col-12 col-md-4">
+                <input type="text" id="nacionalidadFrustrada" class="form-control" placeholder="Nacionalidad" maxlength="30">
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="motivoFrustrada" class="form-control" placeholder="Motivo" maxlength="90">
+              </div>
+              <div class="col-12 col-md-1 d-grid">
+                <button type="submit" class="btn btn-police-yellow"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div class="frustradas-list mt-2">
+              <small class="text-muted">Listado expulsiones frustradas:</small>
+              <div id="frustradasVentana" class="ventana-datos mt-1"></div>
             </div>
           </div>
 
