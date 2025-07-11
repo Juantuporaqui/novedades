@@ -195,7 +195,8 @@ function autoDetectAndParse(html){
         const { datos, fecha } = parseGrupo4(html);
         return { detectado: GROUP4, datos, fecha };
     }
-    if(txt.includes("PUERTO") && (txt.includes("CTRL.MARINOS") || txt.includes("MARINOS ARGOS") || txt.includes("FERRYS"))){
+    // Mejorada: detecta partes de Puerto de forma robusta
+    if(txt.includes("PUERTO") && (txt.includes("CTRL.MARINOS") || txt.includes("MARINOS ARGOS") || txt.includes("CRUCEROS") || txt.includes("FERRYS"))){
         const { datos, fecha } = parseGrupoPuerto(html);
         return { detectado: GROUPPUERTO, datos, fecha };
     }
@@ -433,7 +434,11 @@ function parseGrupoPuerto(html){
         const head = tabla.querySelector('tr')?.textContent?.toUpperCase()||'';
 
         // --- Estadísticas principales ---
-        if(head.includes('CTRL. MARINOS') || head.includes('CRUCEROS') || head.includes('VISADOS')){
+        if(
+            (head.includes('CTRL.MARINOS') || head.includes('CTRL. MARINOS'))
+            && head.includes('MARINOS ARGOS')
+            && head.includes('CRUCEROS')
+        ){
             const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
             filas.forEach(tr=>{
                 const td = Array.from(tr.querySelectorAll('td'));
