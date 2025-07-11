@@ -293,3 +293,22 @@ body.dark-mode .btn-police-red {
   min-width: 130px;
   margin-bottom: 4px;
 }
+
+.ventana-ferrys {
+  min-height: 28px;
+  background: #fffbe7;
+  border-radius: 12px;
+  border: 1.2px solid #e1dbbe;
+  box-shadow: 0 2px 8px #ffeeb422;
+  padding: .54em 1em;
+  font-size: 1.03rem;
+  margin-bottom: .5em;
+  margin-top: 5px;
+}
+.totales-ferry {
+  font-weight: 700;
+  margin-top: .7em;
+  color: #29497a;
+  font-size: 1.08em;
+}
+
