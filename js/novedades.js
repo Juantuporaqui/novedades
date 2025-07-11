@@ -127,7 +127,7 @@ async function handleDocxUpload(e){
     showFechaEditable(fecha);
     showResults({ ...resultados, fecha });
 
-    erroresValidacion = validarDatosPorTodos(resultados);
+    erroresValidacion = validarDatosPorTodos(resultados, fecha);
     if (erroresValidacion.length) {
       showStatus('<ul>'+erroresValidacion.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
       btnConfirmarGuardado.disabled = true;
@@ -159,6 +159,14 @@ async function onConfirmSave() {
     return;
   }
 
+  // VALIDACIÓN JUSTO ANTES DE GUARDAR (usa la fecha final elegida)
+  const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+  if (erroresFinal.length) {
+    showStatus('<ul>'+erroresFinal.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
+    showConfirmationUI(true);
+    return;
+  }
+
   showSpinner(true);
   showConfirmationUI(false);
   statusContainer.innerHTML = '';
@@ -175,7 +183,7 @@ async function onConfirmSave() {
   for (const grupo in datosParaGuardar) {
     if (!collectionMap[grupo]) continue;
     const collectionName = collectionMap[grupo];
-    const datosDelGrupo  = datosParaGuardar[grupo];
+    const datosDelGrupo  = { ...datosParaGuardar[grupo], fecha: fechaFinal }; // <-- GUARDA FECHA MANUAL
     try {
       const ref = db.collection(collectionName).doc(fechaFinal);
       const snapshot = await ref.get();
@@ -215,12 +223,12 @@ function onCancel(){
   fechaEdicionDiv.style.display = "none";
 }
 
-/* ======================  PARSERS ======================== */
+/* ========================= PARSERS ========================= */
 function parseGrupo1(html){
   const root  = document.createElement('div'); root.innerHTML = html;
   const tablas= Array.from(root.querySelectorAll('table'));
   const plain = root.innerText || root.textContent || "";
-  let m       = plain.match(/(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})/);
+  let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
 
   const data = {};
@@ -358,7 +366,7 @@ function parseGrupo4(html){
   const root  = document.createElement('div'); root.innerHTML = html;
   const tablas= Array.from(root.querySelectorAll('table'));
   const plain = root.innerText || root.textContent || "";
-  let m       = plain.match(/(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})/);
+  let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
 
   const data = {};
@@ -410,7 +418,7 @@ function parseGrupoPuerto(html){
   const root  = document.createElement('div'); root.innerHTML = html;
   const tablas= Array.from(root.querySelectorAll('table'));
   const plain = root.innerText || root.textContent || "";
-  let m       = plain.match(/(\\d{4})[\\/-](\\d{2})[\\/-](\\d{2})|(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})/);
+  let m       = plain.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   const fecha = m
     ? (m[1] ? `${m[1]}-${m[2]}-${m[3]}` : `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`)
     : '';
@@ -484,7 +492,7 @@ function parseGrupoPuerto(html){
 }
 
 /* ===========================  VALIDACIÓN  ================================ */
-function validarDatos(data, grupo) {
+function validarDatos(data, grupo, fecha) {
   if (!data || typeof data!=='object') {
     return ['No se han extraído datos válidos para este grupo.'];
   }
@@ -508,18 +516,17 @@ function validarDatos(data, grupo) {
     }
   }
 
-  const fechaVal = obtenerFechaFormateada();
-  if (!fechaVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
+  if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
     errores.push('La fecha es obligatoria y debe ser válida.');
   }
 
   return errores.length? errores : [];
 }
 
-function validarDatosPorTodos(allData) {
+function validarDatosPorTodos(allData, fecha) {
   let errs = [];
   Object.entries(allData).forEach(([grupo,d])=>{
-    errs = errs.concat(validarDatos(d, grupo));
+    errs = errs.concat(validarDatos(d, grupo, fecha));
   });
   return errs;
 }
