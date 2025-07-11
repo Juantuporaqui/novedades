@@ -37,6 +37,21 @@ const fechaManualInput     = $('fechaManualInput');
 const fechaDetectadaBadge  = $('fechaDetectadaBadge');
 const spinnerArea          = $('spinner-area');
 
+    fechaManualInput.addEventListener('input', () => {
+  const fechaFinal = obtenerFechaFormateada();
+  // Vuelve a validar todos los datos usando la fecha elegida
+  if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
+    const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+    if (!errores.length) {
+      btnConfirmarGuardado.disabled = false;
+      showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
+    } else {
+      btnConfirmarGuardado.disabled = true;
+      showStatus('<ul>'+errores.map(e=>`<li>${e}</li>`).join(''),'danger');
+    }
+  }
+});
+
 /* ===============================  STATE  ================================== */
 let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
 let erroresValidacion         = [];
