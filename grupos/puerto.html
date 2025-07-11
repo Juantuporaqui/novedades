@@ -30,155 +30,151 @@
     <div class="row justify-content-center">
       <div class="col-lg-10">
         <div class="card shadow p-3 bg-police-dark text-white border-0">
-          <div class="row g-2 align-items-end">
-            <div class="col-12 col-sm-4 mb-2 mb-sm-0">
-              <label for="fechaPuerto" class="form-label fw-bold mb-1">Fecha de trabajo</label>
-              <input type="date" id="fechaPuerto" class="form-control form-control-lg" autocomplete="off" required>
+          <form id="formPuerto" autocomplete="off">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-sm-4 mb-2 mb-sm-0">
+                <label for="fechaPuerto" class="form-label fw-bold mb-1">Fecha de trabajo</label>
+                <input type="date" id="fechaPuerto" name="fechaPuerto" class="form-control form-control-lg" autocomplete="off" required>
+              </div>
+              <div class="col-6 col-sm-3">
+                <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
+              </div>
+              <div class="col-6 col-sm-3">
+                <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+              </div>
+              <div class="col-12 col-sm-2 text-end mt-2 mt-sm-0">
+                <button id="btnBorrarRegistro" class="btn btn-police-red w-100 btn-lg" type="button">
+                  <i class="bi bi-trash"></i> Borrar registro
+                </button>
+              </div>
             </div>
-            <div class="col-6 col-sm-3">
-              <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
+
+            <!-- Estadísticas principales -->
+            <div class="mb-4">
+              <h4 class="mb-2">Estadísticas portuarias</h4>
+              <div class="row g-3">
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Ctrl. Marinos</label>
+                  <input type="number" min="0" id="ctrlMarinos" name="ctrlMarinos" class="form-control" placeholder="Control Marinos">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Marinos Argos</label>
+                  <input type="number" min="0" id="marinosArgos" name="marinosArgos" class="form-control" placeholder="Argos">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Cruceros</label>
+                  <input type="number" min="0" id="cruceros" name="cruceros" class="form-control" placeholder="Cruceros">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Cruceristas</label>
+                  <input type="number" min="0" id="cruceristas" name="cruceristas" class="form-control" placeholder="Pasajeros">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Visados CGEF</label>
+                  <input type="number" min="0" id="visadosCgef" name="visadosCgef" class="form-control" placeholder="CGEF">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Visados Valencia</label>
+                  <input type="number" min="0" id="visadosValencia" name="visadosValencia" class="form-control" placeholder="Valencia">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Visados Expedidos</label>
+                  <input type="number" min="0" id="visadosExp" name="visadosExp" class="form-control" placeholder="Expedidos">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Vehículos Chequeados</label>
+                  <input type="number" min="0" id="vehChequeados" name="vehChequeados" class="form-control" placeholder="Veh.">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Pasajeros Chequeados</label>
+                  <input type="number" min="0" id="paxChequeadas" name="paxChequeadas" class="form-control" placeholder="Pax.">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Detenidos</label>
+                  <input type="number" min="0" id="detenidos" name="detenidos" class="form-control" placeholder="Detenidos">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Denegaciones</label>
+                  <input type="number" min="0" id="denegaciones" name="denegaciones" class="form-control" placeholder="Denegaciones">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Entr. Excep.</label>
+                  <input type="number" min="0" id="entrExcep" name="entrExcep" class="form-control" placeholder="Entr. Excep.">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">EIXICS</label>
+                  <input type="number" min="0" id="eixics" name="eixics" class="form-control" placeholder="EIXICS">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Puertos Deportivos</label>
+                  <input type="number" min="0" id="ptosDeportivos" name="ptosDeportivos" class="form-control" placeholder="Ptos. Deportivos">
+                </div>
+              </div>
             </div>
-            <div class="col-6 col-sm-3">
-              <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+
+            <!-- Ferrys -->
+            <div class="mb-4">
+              <h4 class="mb-2">Ferrys
+                <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys"
+                  onclick="alert('Añade cada ferry indicando tipo, destino, fecha, hora, pasajeros, vehículos e incidencia.')">?</button>
+              </h4>
+              <div class="row g-2 align-items-end" id="ferryForm">
+                <div class="col-6 col-md-2">
+                  <select id="ferryTipo" class="form-select" title="Tipo">
+                    <option value="Llegada">Llegada</option>
+                    <option value="Salida">Salida</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-2">
+                  <input type="text" id="ferryDestino" class="form-control" placeholder="Destino" title="Destino">
+                </div>
+                <div class="col-6 col-md-2">
+                  <input type="date" id="ferryFecha" class="form-control" title="Fecha">
+                </div>
+                <div class="col-6 col-md-2">
+                  <input type="time" id="ferryHora" class="form-control" title="Hora">
+                </div>
+                <div class="col-6 col-md-2">
+                  <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
+                </div>
+                <div class="col-6 col-md-2">
+                  <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
+                </div>
+                <div class="col-12 col-md-6 mt-2">
+                  <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
+                </div>
+                <div class="col-12 col-md-2 d-grid mt-2">
+                  <button type="button" class="btn btn-police-blue w-100" id="btnAddFerry"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+              </div>
+              <!-- Listado de ferrys -->
+              <div class="ventana-datos ventana-ferrys mt-2" id="ferrysListWindow"></div>
+              <div class="totales-ferry">
+                Ferrys: <span id="totalFerrys">0</span> |
+                Pasaj.: <span id="totalPasajeros">0</span> |
+                Vehíc.: <span id="totalVehiculos">0</span>
+              </div>
             </div>
-           <div class="col-12 col-sm-2 text-end mt-2 mt-sm-0">
-  <button id="btnBorrarRegistro" class="btn btn-police-red w-100 btn-lg" type="button">
-    <i class="bi bi-trash"></i> Borrar registro
-  </button>
-</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- FORMULARIO PRINCIPAL -->
-  <div class="container mb-5">
-    <div class="row justify-content-center">
-      <div class="col-lg-10">
-        <div class="card shadow-lg p-4">
-          <h2 class="mb-4 text-police-blue">
-            <i class="bi bi-ship"></i> Estadísticas y novedades Grupo Puerto
-          </h2>
-          
-          <!-- Estadísticas principales -->
-          <div class="mb-4">
-            <h4 class="mb-2">Estadísticas portuarias</h4>
-            <form class="row g-3">
-              <div class="col-6 col-md-3">
-                <label class="form-label">Ctrl. Marinos</label>
-                <input type="number" min="0" id="ctrlMarinos" class="form-control" placeholder="Control Marinos">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Marinos Argos</label>
-                <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Argos">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Cruceros</label>
-                <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Cruceristas</label>
-                <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Visados CGEF</label>
-                <input type="number" min="0" id="visadosCgef" class="form-control" placeholder="CGEF">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Visados Valencia</label>
-                <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Visados Expedidos</label>
-                <input type="number" min="0" id="visadosExp" class="form-control" placeholder="Expedidos">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Vehículos Chequeados</label>
-                <input type="number" min="0" id="vehChequeados" class="form-control" placeholder="Veh.">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Pasajeros Chequeados</label>
-                <input type="number" min="0" id="paxChequeadas" class="form-control" placeholder="Pax.">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Detenidos</label>
-                <input type="number" min="0" id="detenidos" class="form-control" placeholder="Detenidos">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Denegaciones</label>
-                <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Denegaciones">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Entr. Excep.</label>
-                <input type="number" min="0" id="entrExcep" class="form-control" placeholder="Entr. Excep.">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">EIXICS</label>
-                <input type="number" min="0" id="eixics" class="form-control" placeholder="EIXICS">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Puertos Deportivos</label>
-                <input type="number" min="0" id="ptosDeportivos" class="form-control" placeholder="Ptos. Deportivos">
-              </div>
-            </form>
-          </div>
-
-          <!-- Ferrys -->
-          <div class="mb-4">
-            <h4 class="mb-2">Ferrys
-              <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys"
-                onclick="alert('Añade cada ferry indicando tipo, destino, fecha, hora, pasajeros, vehículos e incidencia.')">?</button>
-            </h4>
-            <form class="row g-2 align-items-end" id="ferryForm">
-              <div class="col-6 col-md-2">
-                <select id="ferryTipo" class="form-select" title="Tipo">
-                  <option value="Llegada">Llegada</option>
-                  <option value="Salida">Salida</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <input type="text" id="ferryDestino" class="form-control" placeholder="Destino" title="Destino">
-              </div>
-              <div class="col-6 col-md-2">
-                <input type="date" id="ferryFecha" class="form-control" title="Fecha">
-              </div>
-              <div class="col-6 col-md-2">
-                <input type="time" id="ferryHora" class="form-control" title="Hora">
-              </div>
-              <div class="col-6 col-md-2">
-                <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
-              </div>
-              <div class="col-6 col-md-2">
-                <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
-              </div>
-              <div class="col-12 col-md-6 mt-2">
-                <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
-              </div>
-              <div class="col-12 col-md-2 d-grid mt-2">
-                <button type="button" class="btn btn-police-blue w-100" id="btnAddFerry"><i class="bi bi-plus"></i> Añadir</button>
-              </div>
-            </form>
-            <!-- Listado de ferrys -->
-            <div class="ventana-datos ventana-ferrys mt-2" id="ferrysListWindow"></div>
-            <div class="totales-ferry">
-              Ferrys: <span id="totalFerrys">0</span> |
-              Pasaj.: <span id="totalPasajeros">0</span> |
-              Vehíc.: <span id="totalVehiculos">0</span>
+            <!-- Observaciones -->
+            <div class="mb-4">
+              <h4 class="mb-2">Observaciones</h4>
+              <textarea id="observaciones" name="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
             </div>
-          </div>
 
-          <!-- Observaciones -->
-          <div class="mb-4">
-            <h4 class="mb-2">Observaciones</h4>
-            <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
-          </div>
+            <!-- Adjuntos -->
+            <div class="mb-4">
+              <label class="form-label">Adjuntar doc./imágenes</label>
+              <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+            </div>
 
-          <!-- Adjuntos -->
-          <div class="mb-4">
-            <label class="form-label">Adjuntar doc./imágenes</label>
-            <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
-          </div>
+            <!-- Botón de grabar -->
+            <div class="d-grid gap-2 mb-4">
+              <button type="submit" class="btn btn-police-green btn-lg" id="btnGuardarRegistro">
+                <i class="bi bi-save2"></i> Grabar registro
+              </button>
+            </div>
+          </form>
 
           <!-- RESUMEN AVANZADO / EXPORTACIÓN -->
           <div class="bg-police-light rounded-3 p-4 mt-5">
@@ -206,6 +202,10 @@
             <div id="resumenAvanzadoVentana" class="ventana-datos mt-4"></div>
           </div>
 
+          <div class="card p-4 mt-4" id="panelResumenPuerto" style="display:none;">
+            <h4>Resumen del día</h4>
+            <div id="resumenPuerto"></div>
+          </div>
           <div id="mensajeGuardado" class="mensaje-guardado"></div>
           <div id="errorMensaje" class="mensaje-error"></div>
           <div id="toast" class="toast"></div>
