@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
   <style>
-    /* Ajustes extra para columnas y mini-form ferry */
     .row-cols {
       display: flex;
       flex-wrap: wrap;
@@ -70,40 +69,43 @@
         <!-- Estadísticas principales -->
         <h4 class="mt-4">Estadísticas portuarias</h4>
         <div class="row-cols" style="gap:1.1em;">
+          <label>Ctrl. Marinos <input type="number" min="0" id="ctrlMarinos" class="form-control" placeholder="Control Marinos"></label>
           <label>Marinos Argos <input type="number" min="0" id="marinosArgos" class="form-control" placeholder="Argos"></label>
-          <label>Pasaportes Marinos <input type="number" min="0" id="controlPasaportes" class="form-control" placeholder="Pasaportes"></label>
           <label>Cruceros <input type="number" min="0" id="cruceros" class="form-control" placeholder="Cruceros"></label>
           <label>Cruceristas <input type="number" min="0" id="cruceristas" class="form-control" placeholder="Pasajeros"></label>
         </div>
         <div class="row-cols" style="gap:1.1em;">
+          <label>Visados CGEF <input type="number" min="0" id="visadosCgef" class="form-control" placeholder="CGEF"></label>
           <label>Visados Valencia <input type="number" min="0" id="visadosValencia" class="form-control" placeholder="Valencia"></label>
-          <label>Visados CG <input type="number" min="0" id="visadosCG" class="form-control" placeholder="CG"></label>
-          <label>Pto. Deportivo <input type="number" min="0" id="puertoDeportivo" class="form-control" placeholder="Registros"></label>
+          <label>Visados Expedidos <input type="number" min="0" id="visadosExp" class="form-control" placeholder="Expedidos"></label>
+          <label>Vehículos Chequeados <input type="number" min="0" id="vehChequeados" class="form-control" placeholder="Veh."></label>
+          <label>Pasajeros Chequeados <input type="number" min="0" id="paxChequeadas" class="form-control" placeholder="Pax."></label>
         </div>
         <div class="row-cols" style="gap:1.1em;">
+          <label>Detenidos <input type="number" min="0" id="detenidos" class="form-control" placeholder="Detenidos"></label>
           <label>Denegaciones <input type="number" min="0" id="denegaciones" class="form-control" placeholder="Denegaciones"></label>
-          <label>Cert. EIXICS <input type="number" min="0" id="certificadosEixics" class="form-control" placeholder="EIXICS"></label>
+          <label>Entr. Excep. <input type="number" min="0" id="entrExcep" class="form-control" placeholder="Entr. Excep."></label>
+          <label>EIXICS <input type="number" min="0" id="eixics" class="form-control" placeholder="EIXICS"></label>
+          <label>Puertos Deportivos <input type="number" min="0" id="ptosDeportivos" class="form-control" placeholder="Ptos. Deportivos"></label>
         </div>
-
         <!-- FERRYS -->
         <h4 class="mt-4">Ferrys 
           <button class="ayuda-btn" type="button" title="Ayuda sobre ferrys" 
             onclick="alert('Añade cada ferry indicando tipo, fecha, hora, pasajeros, vehículos y una posible incidencia.')">?</button>
         </h4>
         <div class="mini-form-ferry">
-  <select id="ferryTipo" class="form-control" title="Tipo">
-    <option value="Llegada">Llegada</option>
-    <option value="Salida">Salida</option>
-  </select>
-  <input type="text" id="ferryDestino" class="form-control" placeholder="Destino" title="Destino">
-  <input type="date" id="ferryFecha" class="form-control" title="Fecha">
-  <input type="time" id="ferryHora" class="form-control" title="Hora">
-  <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
-  <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
-  <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
-  <button type="button" class="btn btn-police-blue" id="btnAddFerry">➕ Añadir</button>
-</div>
-
+          <select id="ferryTipo" class="form-control" title="Tipo">
+            <option value="Llegada">Llegada</option>
+            <option value="Salida">Salida</option>
+          </select>
+          <input type="text" id="ferryDestino" class="form-control" placeholder="Destino" title="Destino">
+          <input type="date" id="ferryFecha" class="form-control" title="Fecha">
+          <input type="time" id="ferryHora" class="form-control" title="Hora">
+          <input type="number" min="0" id="ferryPasajeros" class="form-control" placeholder="Pasaj." title="Pasajeros">
+          <input type="number" min="0" id="ferryVehiculos" class="form-control" placeholder="Vehíc." title="Vehículos">
+          <input type="text" id="ferryIncidencia" class="form-control" placeholder="Incidencia (opcional)" title="Incidencia">
+          <button type="button" class="btn btn-police-blue" id="btnAddFerry">➕ Añadir</button>
+        </div>
         <!-- Listado de ferrys -->
         <div class="ventana-datos ventana-ferrys" id="ferrysListWindow"></div>
         <div class="totales-ferry">
