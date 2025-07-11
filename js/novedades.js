@@ -446,16 +446,15 @@ function parseGrupoPuerto(html){
     ferrys:[], observaciones:''
   };
 
-  tablas.forEach(tabla=>{
-    const head = tabla.querySelector('tr')?.textContent.toUpperCase()||'';
-    // Stats
-    if ((head.includes('CTRL.MARINOS')||head.includes('CTRL. MARINOS'))
-        && head.includes('MARINOS ARGOS')
-        && head.includes('CRUCEROS')) {
+  // --- Stats principales (encontrar tabla con cabecera CTRL.MARINOS)
+  tablas.forEach(tabla => {
+    const headers = Array.from(tabla.querySelectorAll('tr th, tr td')).map(e => e.textContent.trim().toUpperCase());
+    if (headers.includes('CTRL.MARINOS') && headers.includes('CRUCEROS')) {
+      // Busca la PRIMERA fila de datos (que NO sea cabecera)
       const rows = Array.from(tabla.querySelectorAll('tr')).slice(1);
-      rows.forEach(tr=>{
+      for (const tr of rows) {
         const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length>=14) {
+        if (td.length >= 4) { // Al menos primeros 4 campos
           data.ctrlMarinos     = td[0]?.textContent.trim()||'';
           data.marinosArgos    = td[1]?.textContent.trim()||'';
           data.cruceros        = td[2]?.textContent.trim()||'';
@@ -471,26 +470,33 @@ function parseGrupoPuerto(html){
           data.eixics          = td[12]?.textContent.trim()||'';
           data.ptosDeportivos  = td[13]?.textContent.trim()||'';
         }
-      });
+      }
     }
-    // Ferrys
-    if (head.includes('FERRYS')) {
+  });
+
+  // --- FERRYS
+  tablas.forEach(tabla=>{
+    const headers = Array.from(tabla.querySelectorAll('tr th, tr td')).map(e => e.textContent.trim().toUpperCase());
+    if (headers.includes('FERRYS')) {
       const rows = Array.from(tabla.querySelectorAll('tr')).slice(1);
       data.ferrys = rows.map(tr=>{
         const td = Array.from(tr.querySelectorAll('td'));
         return {
           tipo:       td[0]?.textContent.trim()||'',
           destino:    td[1]?.textContent.trim()||'',
-          fecha:      td[2]?.textContent.trim()||'',
-          hora:       td[3]?.textContent.trim()||'',
-          pasajeros:  td[4]?.textContent.trim()||'',
-          vehiculos:  td[5]?.textContent.trim()||'',
-          incidencia: td[6]?.textContent.trim()||''
+          hora:       td[2]?.textContent.trim()||'',
+          pasajeros:  td[3]?.textContent.trim()||'',
+          vehiculos:  td[4]?.textContent.trim()||'',
+          incidencia: td[5]?.textContent.trim()||''
         };
       }).filter(o=>Object.values(o).some(v=>v));
     }
-    // Observaciones
-    if (head.includes('OBSERVACIONES')) {
+  });
+
+  // --- Observaciones (opcional)
+  tablas.forEach(tabla=>{
+    const headers = Array.from(tabla.querySelectorAll('tr th, tr td')).map(e => e.textContent.trim().toUpperCase());
+    if (headers.includes('OBSERVACIONES')) {
       const txt = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ');
       if (txt) data.observaciones = txt;
     }
@@ -501,6 +507,11 @@ function parseGrupoPuerto(html){
     if (Array.isArray(data[k]) ? data[k].length===0 : data[k]==='') {
       delete data[k];
     }
+  });
+
+  return { datos: data, fecha };
+}
+
   });
 
   return { datos: data, fecha };
