@@ -30,8 +30,8 @@ function formatoHora(h) {
 // ========== FERRYS DINÁMICOS Y GESTIÓN VISUAL ==========
 let ferrys = [];
 
-// Referencias DOM (deben existir después del DOMContentLoaded)
-let form, fechaInput, btnCargar, btnNuevo, btnGuardarRegistro, adjuntosInput, observacionesInput;
+// Referencias DOM
+let form, fechaInput, btnCargar, btnNuevo, btnBorrarRegistro, adjuntosInput, observacionesInput;
 let ferryTipo, ferryDestino, ferryFecha, ferryHora, ferryPasajeros, ferryVehiculos, ferryIncidencia, btnAddFerry, ferrysListWindow;
 let totalFerrysSpan, totalPasajerosSpan, totalVehiculosSpan;
 let desdeResumen, hastaResumen, btnGenerarResumen, btnExportarPDF, btnExportarCSV, btnWhatsapp, resumenAvanzadoVentana;
@@ -67,7 +67,6 @@ function renderFerrysList() {
       `;
       ferrysListWindow.appendChild(div);
     });
-  // Listener eliminar ferry
   ferrysListWindow.querySelectorAll('.btn-ferry-del').forEach(btn => {
     btn.onclick = function () {
       const i = parseInt(btn.getAttribute('data-idx'));
@@ -130,7 +129,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fechaInput = document.getElementById('fechaPuerto');
   btnCargar = document.getElementById('btnCargar');
   btnNuevo = document.getElementById('btnNuevo');
-  btnGuardarRegistro = document.getElementById('btnGuardarRegistro');
+  btnBorrarRegistro = document.getElementById('btnBorrarRegistro');
   adjuntosInput = document.getElementById('adjuntos');
   observacionesInput = document.getElementById('observaciones');
   ferryTipo = document.getElementById('ferryTipo');
@@ -175,6 +174,17 @@ window.addEventListener('DOMContentLoaded', () => {
     if (fechaInput) fechaInput.value = '';
   });
 
+  // BORRADO DE REGISTRO
+  if (btnBorrarRegistro) btnBorrarRegistro.addEventListener('click', async () => {
+    if (!fechaInput.value) return showToast("Selecciona una fecha para borrar.");
+    if (!confirm("¿Seguro que deseas borrar el registro de este día? Esta acción no se puede deshacer.")) return;
+    await getDocRefDia(fechaInput.value).delete();
+    limpiarFormulario();
+    showToast("Registro eliminado.");
+    if (panelResumen) panelResumen.style.display = 'none';
+    if (fechaInput) fechaInput.value = '';
+  });
+
   if (form) form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!fechaInput.value) return showToast("Selecciona una fecha.");
@@ -189,15 +199,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     const datos = {
       fecha: form.fechaPuerto.value,
+      ctrlMarinos: parseInt(form.ctrlMarinos.value) || 0,
       marinosArgos: parseInt(form.marinosArgos.value) || 0,
-      controlPasaportes: parseInt(form.controlPasaportes.value) || 0,
       cruceros: parseInt(form.cruceros.value) || 0,
       cruceristas: parseInt(form.cruceristas.value) || 0,
+      visadosCgef: parseInt(form.visadosCgef.value) || 0,
       visadosValencia: parseInt(form.visadosValencia.value) || 0,
-      visadosCG: parseInt(form.visadosCG.value) || 0,
-      puertoDeportivo: parseInt(form.puertoDeportivo.value) || 0,
+      visadosExp: parseInt(form.visadosExp.value) || 0,
+      vehChequeados: parseInt(form.vehChequeados.value) || 0,
+      paxChequeadas: parseInt(form.paxChequeadas.value) || 0,
+      detenidos: parseInt(form.detenidos.value) || 0,
       denegaciones: parseInt(form.denegaciones.value) || 0,
-      certificadosEixics: parseInt(form.certificadosEixics.value) || 0,
+      entrExcep: parseInt(form.entrExcep.value) || 0,
+      eixics: parseInt(form.eixics.value) || 0,
+      ptosDeportivos: parseInt(form.ptosDeportivos.value) || 0,
       observaciones: observacionesInput.value.trim(),
       ferrys: ferrys,
       adjuntos: adjuntos
@@ -243,15 +258,20 @@ window.addEventListener('DOMContentLoaded', () => {
     let html = `<div class='table-responsive'><table class='table table-striped'>
       <thead><tr>
         <th>Fecha</th>
-        <th>Marinos</th>
-        <th>Pasap.</th>
-        <th>Cruc.</th>
-        <th>Crucer.</th>
-        <th>Vis.V</th>
-        <th>Vis.CG</th>
-        <th>PtoDep.</th>
-        <th>Deneg.</th>
+        <th>Ctrl. Marinos</th>
+        <th>Argos</th>
+        <th>Cruceros</th>
+        <th>Cruceristas</th>
+        <th>Vis.CGEF</th>
+        <th>Vis.Valencia</th>
+        <th>Vis.Exp.</th>
+        <th>Veh.Chq.</th>
+        <th>Pax.Chq.</th>
+        <th>Detenidos</th>
+        <th>Denegaciones</th>
+        <th>Entr.Excep</th>
         <th>EIXICS</th>
+        <th>Ptos.Deportivos</th>
         <th>Ferrys</th>
         <th>Pasaj.</th>
         <th>Vehíc.</th>
@@ -262,15 +282,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
       html += `<tr>
         <td>${formatoFecha(item.fecha)}</td>
+        <td>${item.ctrlMarinos||0}</td>
         <td>${item.marinosArgos||0}</td>
-        <td>${item.controlPasaportes||0}</td>
         <td>${item.cruceros||0}</td>
         <td>${item.cruceristas||0}</td>
+        <td>${item.visadosCgef||0}</td>
         <td>${item.visadosValencia||0}</td>
-        <td>${item.visadosCG||0}</td>
-        <td>${item.puertoDeportivo||0}</td>
+        <td>${item.visadosExp||0}</td>
+        <td>${item.vehChequeados||0}</td>
+        <td>${item.paxChequeadas||0}</td>
+        <td>${item.detenidos||0}</td>
         <td>${item.denegaciones||0}</td>
-        <td>${item.certificadosEixics||0}</td>
+        <td>${item.entrExcep||0}</td>
+        <td>${item.eixics||0}</td>
+        <td>${item.ptosDeportivos||0}</td>
         <td>${(item.ferrys||[]).length}</td>
         <td>${totalPasajeros}</td>
         <td>${totalVehiculos}</td>
@@ -293,15 +318,20 @@ window.addEventListener('DOMContentLoaded', () => {
     <thead>
       <tr>
         <th>Fecha</th>
-        <th>Marinos</th>
-        <th>Pasap.</th>
-        <th>Cruc.</th>
-        <th>Crucer.</th>
-        <th>Vis.V</th>
-        <th>Vis.CG</th>
-        <th>PtoDep.</th>
-        <th>Deneg.</th>
+        <th>Ctrl. Marinos</th>
+        <th>Argos</th>
+        <th>Cruceros</th>
+        <th>Cruceristas</th>
+        <th>Vis.CGEF</th>
+        <th>Vis.Valencia</th>
+        <th>Vis.Exp.</th>
+        <th>Veh.Chq.</th>
+        <th>Pax.Chq.</th>
+        <th>Detenidos</th>
+        <th>Denegaciones</th>
+        <th>Entr.Excep</th>
         <th>EIXICS</th>
+        <th>Ptos.Deportivos</th>
         <th>Ferrys</th>
         <th>Pasaj.</th>
         <th>Vehíc.</th>
@@ -313,15 +343,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
       html += `<tr>
         <td>${formatoFecha(item.fecha)}</td>
+        <td>${item.ctrlMarinos||0}</td>
         <td>${item.marinosArgos||0}</td>
-        <td>${item.controlPasaportes||0}</td>
         <td>${item.cruceros||0}</td>
         <td>${item.cruceristas||0}</td>
+        <td>${item.visadosCgef||0}</td>
         <td>${item.visadosValencia||0}</td>
-        <td>${item.visadosCG||0}</td>
-        <td>${item.puertoDeportivo||0}</td>
+        <td>${item.visadosExp||0}</td>
+        <td>${item.vehChequeados||0}</td>
+        <td>${item.paxChequeadas||0}</td>
+        <td>${item.detenidos||0}</td>
         <td>${item.denegaciones||0}</td>
-        <td>${item.certificadosEixics||0}</td>
+        <td>${item.entrExcep||0}</td>
+        <td>${item.eixics||0}</td>
+        <td>${item.ptosDeportivos||0}</td>
         <td>${(item.ferrys||[]).length}</td>
         <td>${totalPasajeros}</td>
         <td>${totalVehiculos}</td>
@@ -340,21 +375,26 @@ window.addEventListener('DOMContentLoaded', () => {
       showToast("Primero genera un resumen.");
       return;
     }
-    let csv = "Fecha,Marinos,Pasap.,Cruc.,Crucer.,Vis.V,Vis.CG,PtoDep.,Deneg.,EIXICS,Ferrys,Pasaj.,Vehíc.,Obs.\n";
+    let csv = "Fecha,CtrlMarinos,Argos,Cruceros,Cruceristas,VisCGEF,VisValencia,VisExp,VehChequeados,PaxChequeadas,Detenidos,Denegaciones,EntrExcep,EIXICS,PtosDeportivos,Ferrys,Pasaj,Vehic,Obs\n";
     resumenFiltrado.forEach(item => {
       const totalPasajeros = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.pasajeros)||0,0);
       const totalVehiculos = (item.ferrys||[]).reduce((a,f)=>a+parseInt(f.vehiculos)||0,0);
       csv += [
         item.fecha,
+        item.ctrlMarinos||0,
         item.marinosArgos||0,
-        item.controlPasaportes||0,
         item.cruceros||0,
         item.cruceristas||0,
+        item.visadosCgef||0,
         item.visadosValencia||0,
-        item.visadosCG||0,
-        item.puertoDeportivo||0,
+        item.visadosExp||0,
+        item.vehChequeados||0,
+        item.paxChequeadas||0,
+        item.detenidos||0,
         item.denegaciones||0,
-        item.certificadosEixics||0,
+        item.entrExcep||0,
+        item.eixics||0,
+        item.ptosDeportivos||0,
         (item.ferrys||[]).length,
         totalPasajeros,
         totalVehiculos,
@@ -389,12 +429,15 @@ window.addEventListener('DOMContentLoaded', () => {
       resumen += `Cruceros: ${item.cruceros||0}\n`;
       resumen += `Cruceristas: ${item.cruceristas||0}\n`;
       resumen += `Marinos Argos: ${item.marinosArgos||0}\n`;
-      resumen += `Pasaportes marinos: ${item.controlPasaportes||0}\n`;
+      resumen += `Control marinos: ${item.ctrlMarinos||0}\n`;
       resumen += `Visados Valencia: ${item.visadosValencia||0}\n`;
-      resumen += `Visados CG: ${item.visadosCG||0}\n`;
-      resumen += `Puerto deportivo: ${item.puertoDeportivo||0}\n`;
+      resumen += `Visados CGEF: ${item.visadosCgef||0}\n`;
+      resumen += `Visados Expedidos: ${item.visadosExp||0}\n`;
+      resumen += `Vehículos chequeados: ${item.vehChequeados||0}\n`;
+      resumen += `Pasajeros chequeados: ${item.paxChequeadas||0}\n`;
+      resumen += `Puerto deportivo: ${item.ptosDeportivos||0}\n`;
       resumen += `Denegaciones: ${item.denegaciones||0}\n`;
-      resumen += `EIXICS: ${item.certificadosEixics||0}\n`;
+      resumen += `EIXICS: ${item.eixics||0}\n`;
       resumen += `Observaciones: ${(item.observaciones||'---')}\n\n`;
     });
     navigator.clipboard.writeText(resumen)
@@ -407,8 +450,9 @@ window.addEventListener('DOMContentLoaded', () => {
 function cargarFormulario(datos) {
   if (!form) return;
   const campos = [
-    "marinosArgos", "controlPasaportes", "cruceros", "cruceristas", "visadosValencia", "visadosCG",
-    "puertoDeportivo", "denegaciones", "certificadosEixics", "observaciones"
+    "ctrlMarinos", "marinosArgos", "cruceros", "cruceristas", "visadosCgef",
+    "visadosValencia", "visadosExp", "vehChequeados", "paxChequeadas", "detenidos",
+    "denegaciones", "entrExcep", "eixics", "ptosDeportivos", "observaciones"
   ];
   campos.forEach(k => {
     if (form[k]) form[k].value = datos[k] || "";
@@ -423,13 +467,13 @@ function mostrarResumen(datos) {
   panelResumen.style.display = 'block';
   resumenDiv.innerHTML = `
     <b>Fecha:</b> ${formatoFecha(datos.fecha)}<br>
+    <b>Ctrl. Marinos:</b> ${datos.ctrlMarinos}<br>
     <b>Marinos Argos:</b> ${datos.marinosArgos}<br>
-    <b>Pasaportes Marinos:</b> ${datos.controlPasaportes}<br>
     <b>Cruceros:</b> ${datos.cruceros} / <b>Cruceristas:</b> ${datos.cruceristas}<br>
-    <b>Visados Valencia:</b> ${datos.visadosValencia} / <b>CG:</b> ${datos.visadosCG}<br>
-    <b>Pto. deportivo:</b> ${datos.puertoDeportivo}<br>
-    <b>Deneg.:</b> ${datos.denegaciones}<br>
-    <b>Cert. EIXICS:</b> ${datos.certificadosEixics}<br>
+    <b>Visados CGEF:</b> ${datos.visadosCgef} / <b>Valencia:</b> ${datos.visadosValencia} / <b>Exp:</b> ${datos.visadosExp}<br>
+    <b>Vehículos chequeados:</b> ${datos.vehChequeados} / <b>Pasajeros chequeados:</b> ${datos.paxChequeadas}<br>
+    <b>Detenidos:</b> ${datos.detenidos} / <b>Denegaciones:</b> ${datos.denegaciones}<br>
+    <b>Entr. Excep.:</b> ${datos.entrExcep} / <b>EIXICS:</b> ${datos.eixics} / <b>Ptos. deportivos:</b> ${datos.ptosDeportivos}<br>
     <b>Ferrys:</b>
     <ul style="margin-top:4px;">
     ${
