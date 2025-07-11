@@ -191,11 +191,11 @@ function autoDetectAndParse(html){
         const { datos, fecha } = parseGrupo1(html);
         return { detectado: GROUP1, datos, fecha };
     }
-    if(txt.includes("COLABORACIONES") && txt.includes("CITADOS")){
+    if(txt.includes("COLABORACION") && txt.includes("CITADOS")){
         const { datos, fecha } = parseGrupo4(html);
         return { detectado: GROUP4, datos, fecha };
     }
-    if(txt.includes("ARGOS") && txt.includes("FERRYS")){
+    if(txt.includes("PUERTO") && (txt.includes("CTRL.MARINOS") || txt.includes("MARINOS ARGOS") || txt.includes("FERRYS"))){
         const { datos, fecha } = parseGrupoPuerto(html);
         return { detectado: GROUPPUERTO, datos, fecha };
     }
@@ -362,7 +362,7 @@ function parseGrupo4(html){
 
     const grupo4={};
 
-    const mapSeccion = (palabras, campos, parseFn)=>{ /* ← devuelve array */
+    const mapSeccion = (palabras, campos, parseFn)=>{
         for(const t of tablas){
             const cab = t.querySelector('tr')?.textContent?.toUpperCase()||'';
             if(!palabras.every(p=>cab.includes(p.toUpperCase()))) continue;
@@ -411,7 +411,7 @@ function parseGrupo4(html){
 }
 
 /* ------------------------------------------------------------------------- */
-/*                           PARSER GRUPO PUERTO                             */
+/*                           PARSER GRUPO PUERTO (ADAPTADO)                  */
 /* ------------------------------------------------------------------------- */
 function parseGrupoPuerto(html){
     const root  = document.createElement('div'); root.innerHTML=html;
@@ -422,58 +422,64 @@ function parseGrupoPuerto(html){
         ? (m[1] ? `${m[1]}-${m[2]}-${m[3]}` : `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`)
         : '';
 
+    // Aquí añadimos TODOS los campos del nuevo formato de PUERTO
     const puerto={
-        marinosArgos:'',controlPasaportes:'',cruceros:'',cruceristas:'',visadosValencia:'',
-        visadosCG:'',puertoDeportivo:'',denegaciones:'',certificadosEixics:'',ferrys:[],observaciones:''
+        ctrlMarinos:'', marinosArgos:'', cruceros:'', cruceristas:'', visadosCgef:'', visadosValencia:'',
+        visadosExp:'', vehChequeados:'', paxChequeadas:'', detenidos:'', denegaciones:'',
+        entrExcep:'', eixics:'', ptosDeportivos:'', ferrys:[], observaciones:''
     };
 
     tablas.forEach(tabla=>{
         const head = tabla.querySelector('tr')?.textContent?.toUpperCase()||'';
 
-        /* ------------  valores simples en línea  ------------ */
-        if(head.includes('CTRL.MARINOS')||head.includes('ARGOS')||head.includes('CRUCEROS')){
+        // --- Estadísticas principales ---
+        if(head.includes('CTRL. MARINOS') || head.includes('CRUCEROS') || head.includes('VISADOS')){
             const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
             filas.forEach(tr=>{
                 const td = Array.from(tr.querySelectorAll('td'));
-                [
-                    {k:'marinosArgos',       match:'ARGOS'},
-                    {k:'controlPasaportes',  match:'PASAPORTES'},
-                    {k:'cruceros',           match:'CRUCEROS'},
-                    {k:'cruceristas',        match:'CRUCERISTAS'},
-                    {k:'visadosValencia',    match:'VALEN'},
-                    {k:'visadosCG',          match:' CG '},
-                    {k:'puertoDeportivo',    match:'DEPOR'},
-                    {k:'denegaciones',       match:'DENEG'},
-                    {k:'certificadosEixics', match:'EIXICS'}
-                ].forEach(({k,match},i)=>{
-                    if(td[i] && head.includes(match)) puerto[k]=td[i].textContent.trim();
-                });
+                if(td.length>=14){
+                    puerto.ctrlMarinos     = td[0]?.textContent.trim()||'';
+                    puerto.marinosArgos    = td[1]?.textContent.trim()||'';
+                    puerto.cruceros        = td[2]?.textContent.trim()||'';
+                    puerto.cruceristas     = td[3]?.textContent.trim()||'';
+                    puerto.visadosCgef     = td[4]?.textContent.trim()||'';
+                    puerto.visadosValencia = td[5]?.textContent.trim()||'';
+                    puerto.visadosExp      = td[6]?.textContent.trim()||'';
+                    puerto.vehChequeados   = td[7]?.textContent.trim()||'';
+                    puerto.paxChequeadas   = td[8]?.textContent.trim()||'';
+                    puerto.detenidos       = td[9]?.textContent.trim()||'';
+                    puerto.denegaciones    = td[10]?.textContent.trim()||'';
+                    puerto.entrExcep       = td[11]?.textContent.trim()||'';
+                    puerto.eixics          = td[12]?.textContent.trim()||'';
+                    puerto.ptosDeportivos  = td[13]?.textContent.trim()||'';
+                }
             });
         }
 
-        /* ------------------  FERRYS  ------------------ */
+        // --- FERRYS ---
         if(head.includes('FERRYS')){
             const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
             puerto.ferrys = filas.map(tr=>{
                 const td=Array.from(tr.querySelectorAll('td'));
                 return {
                     tipo:       td[0]?.textContent.trim()||'',
-                    fecha:      td[1]?.textContent.trim()||'',
-                    hora:       td[2]?.textContent.trim()||'',
-                    pasajeros:  td[3]?.textContent.trim()||'',
-                    vehiculos:  td[4]?.textContent.trim()||''
+                    destino:    td[1]?.textContent.trim()||'',
+                    fecha:      td[2]?.textContent.trim()||'',
+                    hora:       td[3]?.textContent.trim()||'',
+                    pasajeros:  td[4]?.textContent.trim()||'',
+                    vehiculos:  td[5]?.textContent.trim()||'',
+                    incidencia: td[6]?.textContent.trim()||''
                 };
             }).filter(f=>Object.values(f).some(v=>v));
         }
 
-        /* ---------------  OBSERVACIONES --------------- */
+        // --- OBSERVACIONES ---
         if(head.includes('OBSERVACIONES')){
-            puerto.observaciones = Array.from(tabla.querySelectorAll('tr td'))
-                                         .slice(1).map(td=>td.textContent.trim()).join(' ').trim();
+            puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ').trim();
         }
     });
 
-    /* eliminar vacíos */
+    // Eliminar vacíos
     Object.keys(puerto).forEach(k=>{
         if(Array.isArray(puerto[k]) && !puerto[k].length)          delete puerto[k];
         else if(!Array.isArray(puerto[k]) && puerto[k]==='')       delete puerto[k];
@@ -509,7 +515,6 @@ function validarDatos(data, grupo) {
 
     // --- Grupo 4 ---
     if (grupo === "grupo4_operativo") {
-        // Mínimo un campo relevante (incluye campos texto y arrays)
         const camposClave = [
             'colaboraciones', 'detenidos', 'inspeccionesTrabajo', 
             'citados', 'gestiones', 'otrasInspecciones', 'observaciones'
@@ -524,16 +529,15 @@ function validarDatos(data, grupo) {
             if (!data.colaboraciones || data.colaboraciones.length === 0) advertencias.push('No hay colaboraciones.');
             if (!data.detenidos || data.detenidos.length === 0) advertencias.push('No hay detenidos.');
             if (!data.inspeccionesTrabajo || data.inspeccionesTrabajo.length === 0) advertencias.push('No hay inspecciones de trabajo.');
-            // Otros campos puedes añadir advertencias si quieres.
         }
     }
 
     // --- Grupo Puerto ---
     if (grupo === "grupoPuerto") {
         const camposClave = [
-            'marinosArgos', 'controlPasaportes', 'cruceros', 'cruceristas',
-            'visadosValencia', 'visadosCG', 'puertoDeportivo', 'denegaciones',
-            'certificadosEixics', 'ferrys', 'observaciones'
+            'ctrlMarinos', 'marinosArgos', 'cruceros', 'cruceristas', 'visadosCgef', 'visadosValencia',
+            'visadosExp', 'vehChequeados', 'paxChequeadas', 'detenidos', 'denegaciones', 'entrExcep', 'eixics', 'ptosDeportivos',
+            'ferrys', 'observaciones'
         ];
         const hayAlMenosUno = camposClave.some(k => data[k] && (
             (Array.isArray(data[k]) && data[k].length > 0) ||
@@ -542,10 +546,9 @@ function validarDatos(data, grupo) {
         if (!hayAlMenosUno) {
             errores.push('Debe haber al menos un campo con información en el parte de Puerto.');
         } else {
-            if (!data.marinosArgos) advertencias.push('No hay marinos/ARGOS.');
+            if (!data.ctrlMarinos) advertencias.push('No hay control de marinos.');
             if (!data.ferrys || data.ferrys.length === 0) advertencias.push('No hay ferrys.');
             if (!data.cruceros) advertencias.push('No hay cruceros.');
-            // Puedes añadir advertencias para otros campos principales.
         }
     }
 
@@ -557,10 +560,8 @@ function validarDatos(data, grupo) {
         }
     }
 
-    // --- Lógica de retorno ---
     if (errores.length > 0) return errores;
     if (advertencias.length > 0) return advertencias.map(a => '⚠️ ' + a);
     return [];
 }
 }); // DOMContentLoaded
-
