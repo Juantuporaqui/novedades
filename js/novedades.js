@@ -44,7 +44,13 @@ let erroresValidacion         = [];
 
 /* ============================  UI HELPERS  ================================ */
 const showStatus = (msg, type='info')=>{
-    const cls = {info:'alert-info',success:'alert-success',warning:'alert-warning',danger:'alert-danger',error:'alert-danger'};
+    const cls = {
+      info:'alert-info',
+      success:'alert-success',
+      warning:'alert-warning',
+      danger:'alert-danger',
+      error:'alert-danger'
+    };
     statusContainer.innerHTML = `<div class="alert ${cls[type]||cls.info}" role="alert">${msg}</div>`;
 };
 const showSpinner        = v => spinnerArea.style.display = v?'flex':'none';
@@ -154,7 +160,8 @@ async function onConfirmSave(){
         const collectionName = ({
             [GROUP1]:      "grupo1_expulsiones",
             [GROUP4]:      "grupo4_operativo",
-            [GROUPPUERTO]: "grupoPuerto_registros"})[grupoDetectado];
+            [GROUPPUERTO]: "grupoPuerto_registros"
+        })[grupoDetectado];
 
         const ref  = db.collection(collectionName).doc(fechaFinal);
         if((await ref.get()).exists){
@@ -195,8 +202,8 @@ function autoDetectAndParse(html){
         const { datos, fecha } = parseGrupo4(html);
         return { detectado: GROUP4, datos, fecha };
     }
-    // Mejorada: detecta partes de Puerto de forma robusta
-    if(txt.includes("PUERTO") && (txt.includes("CTRL.MARINOS") || txt.includes("MARINOS ARGOS") || txt.includes("CRUCEROS") || txt.includes("FERRYS"))){
+    // Detecta partes de Puerto de forma robusta
+    if(txt.includes("PUERTO") && (txt.includes("CTRL.MARINOS") || txt.includes("CRUCEROS") || txt.includes("FERRYS"))){
         const { datos, fecha } = parseGrupoPuerto(html);
         return { detectado: GROUPPUERTO, datos, fecha };
     }
@@ -220,7 +227,7 @@ function parseGrupo1(html){
         return !head.includes('GESTIONES');
     };
 
-    /* -------------------  Detenidos  ------------------- */
+    // Detenidos
     grupo1.detenidos=[];
     tablas.filter(sinGestiones).forEach(tabla=>{
         const rows = Array.from(tabla.querySelectorAll('tr'));
@@ -236,14 +243,13 @@ function parseGrupo1(html){
                     diligencias:   td[3].textContent.trim()||'',
                     observaciones: td[4]?.textContent.trim()||''
                 };
-                if(Object.values(obj).some(x=>x!==''))
-                    grupo1.detenidos.push(obj);
+                if(Object.values(obj).some(x=>x!=='')) grupo1.detenidos.push(obj);
             });
         }
     });
     if(!grupo1.detenidos.length) delete grupo1.detenidos;
 
-    /* -------------------  Expulsados  ------------------ */
+    // Expulsados
     grupo1.expulsados=[];
     tablas.filter(sinGestiones).forEach(tabla=>{
         const rows = Array.from(tabla.querySelectorAll('tr'));
@@ -266,7 +272,7 @@ function parseGrupo1(html){
     });
     if(!grupo1.expulsados.length) delete grupo1.expulsados;
 
-    /* -------------------  Fletados actuales ------------- */
+    // Fletados actuales
     grupo1.fletados=[];
     tablas.filter(sinGestiones).forEach(tabla=>{
         const rows=Array.from(tabla.querySelectorAll('tr'));
@@ -286,7 +292,7 @@ function parseGrupo1(html){
     });
     if(!grupo1.fletados.length) delete grupo1.fletados;
 
-    /* -------------------  Fletados futuros ------------- */
+    // Fletados futuros
     grupo1.fletadosFuturos=[];
     tablas.filter(sinGestiones).forEach(tabla=>{
         const rows=Array.from(tabla.querySelectorAll('tr'));
@@ -306,7 +312,7 @@ function parseGrupo1(html){
     });
     if(!grupo1.fletadosFuturos.length) delete grupo1.fletadosFuturos;
 
-    /* -------------  Conducciones positivas/negativas --------------- */
+    // Conducciones positivas/negativas
     const extraerConducciones = (clave, palabra)=>{
         grupo1[clave]=[];
         tablas.filter(sinGestiones).forEach(tabla=>{
@@ -329,7 +335,7 @@ function parseGrupo1(html){
     extraerConducciones('conduccionesPositivas','CONDUCCIONES POSITIVAS');
     extraerConducciones('conduccionesNegativas','CONDUCCIONES NEGATIVAS');
 
-    /* -------------------  Pendientes  ------------------ */
+    // Pendientes
     grupo1.pendientes=[];
     tablas.filter(sinGestiones).forEach(tabla=>{
         const rows=Array.from(tabla.querySelectorAll('tr'));
@@ -385,8 +391,7 @@ function parseGrupo4(html){
     grupo4.colaboraciones      = mapSeccion(['COLABORACIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
     if(!grupo4.colaboraciones.length) delete grupo4.colaboraciones;
 
-    grupo4.detenidos           = mapSeccion(['DETENIDOS'],['motivo','nacionalidad','cantidad'],
-                                            o=>({motivo:o.motivo,nacionalidad:o.nacionalidad,cantidad:parseInt(o.cantidad)||0}));
+    grupo4.detenidos           = mapSeccion(['DETENIDOS'],['motivo','nacionalidad','cantidad'],o=>({motivo:o.motivo,nacionalidad:o.nacionalidad,cantidad:parseInt(o.cantidad)||0}));
     if(!grupo4.detenidos.length) delete grupo4.detenidos;
 
     grupo4.citados             = mapSeccion(['CITADOS'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
@@ -423,7 +428,6 @@ function parseGrupoPuerto(html){
         ? (m[1] ? `${m[1]}-${m[2]}-${m[3]}` : `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`)
         : '';
 
-    // Aquí añadimos TODOS los campos del nuevo formato de PUERTO
     const puerto={
         ctrlMarinos:'', marinosArgos:'', cruceros:'', cruceristas:'', visadosCgef:'', visadosValencia:'',
         visadosExp:'', vehChequeados:'', paxChequeadas:'', detenidos:'', denegaciones:'',
@@ -433,7 +437,7 @@ function parseGrupoPuerto(html){
     tablas.forEach(tabla=>{
         const head = tabla.querySelector('tr')?.textContent?.toUpperCase()||'';
 
-        // --- Estadísticas principales ---
+        // Estadísticas principales
         if(
             (head.includes('CTRL.MARINOS') || head.includes('CTRL. MARINOS'))
             && head.includes('MARINOS ARGOS')
@@ -461,7 +465,7 @@ function parseGrupoPuerto(html){
             });
         }
 
-        // --- FERRYS ---
+        // FERRYS
         if(head.includes('FERRYS')){
             const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
             puerto.ferrys = filas.map(tr=>{
@@ -478,7 +482,7 @@ function parseGrupoPuerto(html){
             }).filter(f=>Object.values(f).some(v=>v));
         }
 
-        // --- OBSERVACIONES ---
+        // Observaciones
         if(head.includes('OBSERVACIONES')){
             puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ').trim();
         }
@@ -486,8 +490,8 @@ function parseGrupoPuerto(html){
 
     // Eliminar vacíos
     Object.keys(puerto).forEach(k=>{
-        if(Array.isArray(puerto[k]) && !puerto[k].length)          delete puerto[k];
-        else if(!Array.isArray(puerto[k]) && puerto[k]==='')       delete puerto[k];
+        if(Array.isArray(puerto[k]) && !puerto[k].length)       delete puerto[k];
+        else if(!Array.isArray(puerto[k]) && puerto[k]==='' )    delete puerto[k];
     });
 
     return { datos: puerto, fecha };
@@ -503,7 +507,7 @@ function validarDatos(data, grupo) {
     let errores = [];
     let advertencias = [];
 
-    // --- Grupo 1 ---
+    // Grupo 1
     if (grupo === "grupo1_expulsiones") {
         if (
             (!data.detenidos || data.detenidos.length === 0) &&
@@ -518,10 +522,10 @@ function validarDatos(data, grupo) {
         }
     }
 
-    // --- Grupo 4 ---
+    // Grupo 4
     if (grupo === "grupo4_operativo") {
         const camposClave = [
-            'colaboraciones', 'detenidos', 'inspeccionesTrabajo', 
+            'colaboraciones', 'detenidos', 'inspeccionesTrabajo',
             'citados', 'gestiones', 'otrasInspecciones', 'observaciones'
         ];
         const hayAlMenosUno = camposClave.some(k => data[k] && (
@@ -537,12 +541,12 @@ function validarDatos(data, grupo) {
         }
     }
 
-    // --- Grupo Puerto ---
+    // Grupo Puerto
     if (grupo === "grupoPuerto") {
         const camposClave = [
-            'ctrlMarinos', 'marinosArgos', 'cruceros', 'cruceristas', 'visadosCgef', 'visadosValencia',
-            'visadosExp', 'vehChequeados', 'paxChequeadas', 'detenidos', 'denegaciones', 'entrExcep', 'eixics', 'ptosDeportivos',
-            'ferrys', 'observaciones'
+            'ctrlMarinos','marinosArgos','cruceros','cruceristas','visadosCgef','visadosValencia',
+            'visadosExp','vehChequeados','paxChequeadas','detenidos','denegaciones','entrExcep','eixics','ptosDeportivos',
+            'ferrys','observaciones'
         ];
         const hayAlMenosUno = camposClave.some(k => data[k] && (
             (Array.isArray(data[k]) && data[k].length > 0) ||
@@ -557,16 +561,15 @@ function validarDatos(data, grupo) {
         }
     }
 
-    // --- Fecha válida para todos los grupos ---
-    if (typeof obtenerFechaFormateada === 'function') {
-        const fechaValida = obtenerFechaFormateada();
-        if (!fechaValida || !/^\d{4}-\d{2}-\d{2}$/.test(fechaValida)) {
-            errores.push('La fecha es obligatoria y debe ser válida.');
-        }
+    // Fecha válida para todos los grupos
+    const fechaValida = obtenerFechaFormateada();
+    if (!fechaValida || !/^\d{4}-\d{2}-\d{2}$/.test(fechaValida)) {
+        errores.push('La fecha es obligatoria y debe ser válida.');
     }
 
     if (errores.length > 0) return errores;
     if (advertencias.length > 0) return advertencias.map(a => '⚠️ ' + a);
     return [];
 }
+
 }); // DOMContentLoaded
