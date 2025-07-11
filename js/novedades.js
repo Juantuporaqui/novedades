@@ -3,6 +3,7 @@
 /*  Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en   */
 /*  Firebase.                                                                 */
 /* --------------------------------------------------------------------------- */
+let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -53,7 +54,6 @@ const spinnerArea          = $('spinner-area');
 });
 
 /* ===============================  STATE  ================================== */
-let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
 let erroresValidacion         = [];
 
 /* ============================  UI HELPERS  ================================ */
