@@ -20,7 +20,11 @@ function formatoFecha(f) {
   if (isNaN(d.getTime())) return f;
   return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
 }
-function limpiarFormulario() { if (form) form.reset(); limpiarFerrys(); }
+function limpiarFormulario() {
+  if (form) form.reset();
+  limpiarFerrys();
+  if (adjuntosInput) adjuntosInput.value = "";
+}
 function formatoHora(h) {
   if (!h) return "";
   if (h.length === 5 && h[2] === ":") return h;
@@ -156,9 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   limpiarFerrys();
 
-  if (btnAddFerry) {
-    btnAddFerry.onclick = addFerry;
-  }
+  if (btnAddFerry) btnAddFerry.onclick = addFerry;
 
   if (btnCargar) btnCargar.addEventListener('click', async () => {
     if (!fechaInput.value) return showToast("Selecciona una fecha.");
@@ -171,7 +173,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnNuevo) btnNuevo.addEventListener('click', () => {
     limpiarFormulario();
     if (panelResumen) panelResumen.style.display = 'none';
-    if (fechaInput) fechaInput.value = '';
+    // No resetees la fecha, así se puede crear nuevo registro para el mismo día si lo deseas
   });
 
   // BORRADO DE REGISTRO
@@ -182,7 +184,6 @@ window.addEventListener('DOMContentLoaded', () => {
     limpiarFormulario();
     showToast("Registro eliminado.");
     if (panelResumen) panelResumen.style.display = 'none';
-    if (fechaInput) fechaInput.value = '';
   });
 
   if (form) form.addEventListener('submit', async function (e) {
@@ -234,8 +235,7 @@ window.addEventListener('DOMContentLoaded', () => {
       showToast("Selecciona rango de fechas.");
       return;
     }
-    const col = db.collection("grupoPuerto_registros");
-    col.get().then(snapshot => {
+    db.collection("grupoPuerto_registros").get().then(snapshot => {
       let resumen = [];
       snapshot.forEach(docSnap => {
         const docId = docSnap.id;
