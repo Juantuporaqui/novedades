@@ -1,406 +1,395 @@
-/* -----------------------------------------------------------------------------
- * novedades.js · SIREX 2025
- * Procesa un único DOCX diario y guarda simultáneamente los datos de
- * Grupo 1 (Expulsiones), Grupo 4 (Operativo) y Grupo Puerto en Firebase.
- *
- * ➊  Incluir en el <head> del HTML:
- *        <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
- *        <script type="module" src="./novedades.js"></script>
- * ➋  Asegurarse de tener un <input type="file" id="inputDocx" />
- *     y un <div id="statusMsg"></div> para mensajes.
- * --------------------------------------------------------------------------- */
+// ========== SIREX 2025 - novedades.js COMPLETO ==========
+// Subida DOCX multi-grupo y edición por grupo. Firebase modular + Mammoth.js
+// Requiere: <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+//           <input type="file" id="inputDocx" accept=".docx">
 
-/* ===========================  IMPORTS FIREBASE  ============================ */
-import {
-  initializeApp,         // core
-  getApps
-}                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore,          // database
-  doc, getDoc,
-  writeBatch
-}                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-/* ============================  CONFIG GLOBAL  ============================= */
+/* ====== CONFIG FIREBASE ====== */
 const firebaseConfig = {
-  apiKey:            "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-  authDomain:        "ucrif-5bb75.firebaseapp.com",
-  projectId:         "ucrif-5bb75",
-  storageBucket:     "ucrif-5bb75.appspot.com",
+  apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+  authDomain: "ucrif-5bb75.firebaseapp.com",
+  projectId: "ucrif-5bb75",
+  storageBucket: "ucrif-5bb75.appspot.com",
   messagingSenderId: "241698436443",
-  appId:             "1:241698436443:web:1f333b3ae3f813b755167e"
+  appId: "1:241698436443:web:1f333b3ae3f813b755167e"
 };
 if (!getApps().length) initializeApp(firebaseConfig);
 const db = getFirestore();
 
-/* ==============================  CONSTANTES  ============================== */
 const GRUPO1      = "grupo1_expulsiones";
 const GRUPO4      = "grupo4_operativo";
 const GRUPOPUERTO = "grupoPuerto";
-
-const MAPA_COLECCION = {
+const MAPA_COLEC  = {
   [GRUPO1]:      "grupo1_expulsiones",
   [GRUPO4]:      "grupo4_operativo",
   [GRUPOPUERTO]: "grupoPuerto_registros"
 };
 
-/* ==========================================================================
- *                            UTILIDADES BÁSICAS
- * =========================================================================*/
+/* ====== PARSEO DOCX Y SUBIDA ====== */
+async function parseDocx(file) {
+  const { value: html } = await window.mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+  const upper = html.toUpperCase();
+  const fechaMatch = upper.match(/(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})/);
+  const fechaISO = fechaMatch ? `${fechaMatch[3]}-${fechaMatch[2].padStart(2, '0')}-${fechaMatch[1].padStart(2, '0')}` : "";
 
-/** Devuelve texto de estado en #statusMsg */
-const status = (msg, tipo = "info") => {
-  const node = document.getElementById("statusMsg");
-  if (!node) return;
-  const colores = { info: "#1565c0", ok: "#2e7d32", warn: "#ed6c02", err: "#c62828" };
-  node.style.color = colores[tipo] || colores.info;
-  node.textContent = msg;
-};
+  const resultados = {};
+  if (upper.includes("DETENIDOS") && upper.includes("EXPULSADOS"))
+    resultados[GRUPO1] = parseGrupo1(html);
+  if (upper.includes("COLABORACION") && upper.includes("CITADOS"))
+    resultados[GRUPO4] = parseGrupo4(html);
+  if (upper.includes("PUERTO") && (upper.includes("CTRL.MARINOS") || upper.includes("MARINOS ARGOS") || upper.includes("CRUCEROS") || upper.includes("FERRYS")))
+    resultados[GRUPOPUERTO] = parseGrupoPuerto(html);
 
-/** Devuelve yyyy-mm-dd si encuentra una fecha dd/mm/aaaa o dd-mm-aaaa en un texto */
-const extraerFechaISO = txt => {
-  const m = txt.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-  return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : "";
-};
-
-/** Convierte HTML a un elemento DOM contenedor */
-const htmlToDiv = html => {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div;
-};
-
-/* ==========================================================================
- *                       PARSER PRINCIPAL DEL DOCX
- * =========================================================================*/
-
-/**
- * Lee un File .docx, lo pasa a HTML (via mammoth) y devuelve
- * { fechaISO, grupos: { grupoClave: datosExtraídos } }
- */
-export const parseDocx = async file => {
-  const arrayBuffer = await file.arrayBuffer();
-  const { value: html } = await window.mammoth.convertToHtml({ arrayBuffer });
-  const textoMayus = html.toUpperCase();
-  const fechaISO   = extraerFechaISO(textoMayus);
-
-  const grupos = {};
-  if (textoMayus.includes("DETENIDOS")   && textoMayus.includes("EXPULSADOS"))
-    grupos[GRUPO1] = parseGrupo1(html);
-  if (textoMayus.includes("COLABORACION") && textoMayus.includes("CITADOS"))
-    grupos[GRUPO4] = parseGrupo4(html);
-  if (textoMayus.includes("PUERTO") &&
-      (textoMayus.includes("CTRL.MARINOS") || textoMayus.includes("MARINOS ARGOS")))
-    grupos[GRUPOPUERTO] = parseGrupoPuerto(html);
-
-  if (!Object.keys(grupos).length)
-    throw Error("No se reconoció ninguno de los formatos de grupo en el DOCX.");
-
-  return { fechaISO, grupos };
-};
-
-/* ==========================================================================
- *                      PARSER DETALLADO · GRUPO 1                           *
- *   (Expulsiones – Detenidos / Expulsados / Fletados …)
- * =========================================================================*/
-function parseGrupo1(html) {
-  const root   = htmlToDiv(html);
-  const tablas = Array.from(root.querySelectorAll("table"));
-  const plain  = root.textContent || "";
-  const fecha  = extraerFechaISO(plain);
-
-  const g1 = {
-    fecha,
-    detenidos: [],
-    expulsados: [],
-    fletados: [],
-    fletadosFuturos: [],
-    conduccionesPositivas: [],
-    conduccionesNegativas: [],
-    pendientes: []
-  };
-
-  /* --- util interno --- */
-  const sinGestiones = t => !t.querySelector("tr")?.textContent?.toUpperCase().includes("GESTIONES");
-  const filas   = tb => Array.from(tb.querySelectorAll("tr"));
-  const celdas  = tr => Array.from(tr.querySelectorAll("td"));
-  const toInt   = s  => parseInt(s) || 0;
-
-  tablas.filter(sinGestiones).forEach(tabla => {
-    const head = filas(tabla)[0]?.textContent?.toUpperCase() || "";
-
-    // Detenidos
-    if (head.includes("DETENIDOS") && head.includes("MOTIVO")) {
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (t.length < 4) return;
-        g1.detenidos.push({
-          numero:        toInt(t[0].textContent.trim()),
-          motivo:        t[1].textContent.trim(),
-          nacionalidad:  t[2].textContent.trim(),
-          diligencias:   t[3].textContent.trim(),
-          observaciones: t[4]?.textContent.trim() || ""
-        });
-      });
-    }
-
-    // Expulsados
-    if (head.includes("EXPULSADOS") && head.includes("NACIONALIDAD")) {
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (!t.length) return;
-        g1.expulsados.push({
-          nombre:           t[0].textContent.trim(),
-          nacionalidad:     t[1].textContent.trim(),
-          diligencias:      t[2]?.textContent.trim() || "",
-          nConduccionesPos: toInt(t[3]?.textContent.trim()),
-          conduccionesNeg:  toInt(t[4]?.textContent.trim()),
-          observaciones:    t[5]?.textContent.trim() || ""
-        });
-      });
-    }
-
-    // Fletados actuales
-    if (head.includes("FLETADOS") && head.includes("DESTINO") && !head.includes("FUTUROS")) {
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (t.length < 2) return;
-        g1.fletados.push({
-          destino:       t[0].textContent.trim(),
-          pax:           toInt(t[1].textContent.trim()),
-          observaciones: t[2]?.textContent.trim() || ""
-        });
-      });
-    }
-
-    // Fletados futuros
-    if (head.includes("FLETADOS FUTUROS")) {
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (t.length < 2) return;
-        g1.fletadosFuturos.push({
-          destino: t[0].textContent.trim(),
-          pax:     toInt(t[1].textContent.trim()),
-          fecha:   t[2]?.textContent.trim() || ""
-        });
-      });
-    }
-
-    // Conducciones positivas / negativas
-    const conducciones = (palabra, campo) => {
-      if (!head.includes(palabra)) return;
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (!t.length) return;
-        g1[campo].push({ numero: toInt(t[0].textContent.trim()), fecha: t[1]?.textContent.trim() || "" });
-      });
-    };
-    conducciones("CONDUCCIONES POSITIVAS", "conduccionesPositivas");
-    conducciones("CONDUCCIONES NEGATIVAS", "conduccionesNegativas");
-
-    // Pendientes
-    if (head.includes("PENDIENTES")) {
-      filas(tabla).slice(1).forEach(tr => {
-        const t = celdas(tr);
-        if (!t.length) return;
-        g1.pendientes.push({ descripcion: t[0].textContent.trim(), fecha: t[1]?.textContent.trim() || "" });
-      });
-    }
-  });
-
-  // Limpieza de vacíos
-  Object.keys(g1).forEach(k => {
-    if (Array.isArray(g1[k]) && !g1[k].length) delete g1[k];
-  });
-  return g1;
+  return { fechaISO, resultados };
 }
 
-/* ==========================================================================
- *                      PARSER DETALLADO · GRUPO 4                           *
- * =========================================================================*/
+/* ====== PARSER GRUPO 1 ====== */
+function parseGrupo1(html) {
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  const plain = root.innerText || root.textContent || "";
+  let m = plain.match(/(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})/);
+  const fecha = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+
+  const grupo1 = {};
+
+  const sinGestiones = t => {
+    const head = t.querySelector('tr')?.textContent?.toUpperCase() || '';
+    return !head.includes('GESTIONES');
+  };
+
+  // Detenidos
+  grupo1.detenidos = [];
+  tablas.filter(sinGestiones).forEach(tabla => {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    const encabezado = rows[0].textContent.toUpperCase();
+    if (encabezado.includes('DETENIDOS') && encabezado.includes('MOTIVO')) {
+      rows.slice(1).forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length < 4) return;
+        const obj = {
+          numero:        parseInt(td[0].textContent.trim()) || '',
+          motivo:        td[1].textContent.trim() || '',
+          nacionalidad:  td[2].textContent.trim() || '',
+          diligencias:   td[3].textContent.trim() || '',
+          observaciones: td[4]?.textContent.trim() || ''
+        };
+        if (Object.values(obj).some(x => x !== ''))
+          grupo1.detenidos.push(obj);
+      });
+    }
+  });
+  if (!grupo1.detenidos.length) delete grupo1.detenidos;
+
+  // Expulsados
+  grupo1.expulsados = [];
+  tablas.filter(sinGestiones).forEach(tabla => {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    const head = rows[0].textContent.toUpperCase();
+    if (head.includes('EXPULSADOS') && head.includes('NACIONALIDAD')) {
+      rows.slice(1).forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length < 2) return;
+        const obj = {
+          nombre:            td[0].textContent.trim() || '',
+          nacionalidad:      td[1].textContent.trim() || '',
+          diligencias:       td[2]?.textContent.trim() || '',
+          nConduccionesPos:  parseInt(td[3]?.textContent.trim()) || 0,
+          conduccionesNeg:   parseInt(td[4]?.textContent.trim()) || 0,
+          observaciones:     td[5]?.textContent.trim() || ''
+        };
+        if (obj.nombre || obj.nacionalidad) grupo1.expulsados.push(obj);
+      });
+    }
+  });
+  if (!grupo1.expulsados.length) delete grupo1.expulsados;
+
+  // Fletados actuales
+  grupo1.fletados = [];
+  tablas.filter(sinGestiones).forEach(tabla => {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    const head = rows[0].textContent.toUpperCase();
+    if (head.includes('FLETADOS') && head.includes('DESTINO') && !head.includes('FUTUROS')) {
+      rows.slice(1).forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length < 2) return;
+        const obj = {
+          destino:       td[0].textContent.trim() || '',
+          pax:           parseInt(td[1].textContent.trim()) || 0,
+          observaciones: td[2]?.textContent.trim() || ''
+        };
+        if (obj.destino) grupo1.fletados.push(obj);
+      });
+    }
+  });
+  if (!grupo1.fletados.length) delete grupo1.fletados;
+
+  // Fletados futuros
+  grupo1.fletadosFuturos = [];
+  tablas.filter(sinGestiones).forEach(tabla => {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    const head = rows[0].textContent.toUpperCase();
+    if (head.includes('FLETADOS FUTUROS')) {
+      rows.slice(1).forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length < 2) return;
+        const obj = {
+          destino: td[0].textContent.trim() || '',
+          pax:     parseInt(td[1].textContent.trim()) || 0,
+          fecha:   td[2]?.textContent.trim() || ''
+        };
+        if (obj.destino) grupo1.fletadosFuturos.push(obj);
+      });
+    }
+  });
+  if (!grupo1.fletadosFuturos.length) delete grupo1.fletadosFuturos;
+
+  // Conducciones positivas/negativas
+  const extraerConducciones = (clave, palabra) => {
+    grupo1[clave] = [];
+    tablas.filter(sinGestiones).forEach(tabla => {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      const head = rows[0].textContent.toUpperCase();
+      if (head.includes(palabra)) {
+        rows.slice(1).forEach(tr => {
+          const td = Array.from(tr.querySelectorAll('td'));
+          if (!td.length) return;
+          const obj = {
+            numero: parseInt(td[0].textContent.trim()) || 0,
+            fecha : td[1]?.textContent.trim() || ''
+          };
+          if (obj.numero) grupo1[clave].push(obj);
+        });
+      }
+    });
+    if (!grupo1[clave].length) delete grupo1[clave];
+  };
+  extraerConducciones('conduccionesPositivas','CONDUCCIONES POSITIVAS');
+  extraerConducciones('conduccionesNegativas','CONDUCCIONES NEGATIVAS');
+
+  // Pendientes
+  grupo1.pendientes = [];
+  tablas.filter(sinGestiones).forEach(tabla => {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    const head = rows[0].textContent.toUpperCase();
+    if (head.includes('PENDIENTES')) {
+      rows.slice(1).forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (!td.length) return;
+        const obj = {
+          descripcion: td[0].textContent.trim() || '',
+          fecha:       td[1]?.textContent.trim() || ''
+        };
+        if (obj.descripcion) grupo1.pendientes.push(obj);
+      });
+    }
+  });
+  if (!grupo1.pendientes.length) delete grupo1.pendientes;
+
+  return grupo1;
+}
+
+/* ====== PARSER GRUPO 4 ====== */
 function parseGrupo4(html) {
-  const root   = htmlToDiv(html);
-  const tablas = Array.from(root.querySelectorAll("table"));
-  const plain  = root.textContent || "";
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  const plain = root.innerText || root.textContent || "";
+  let m = plain.match(/(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})/);
+  const fecha = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
 
-  const g4 = { fecha: extraerFechaISO(plain) };
+  const grupo4 = {};
 
-  const map = (claves, campos, transform) => {
+  const mapSeccion = (palabras, campos, parseFn) => {
     for (const t of tablas) {
-      const cab = t.querySelector("tr")?.textContent?.toUpperCase() || "";
-      if (!claves.every(c => cab.includes(c.toUpperCase()))) continue;
-      const arr = Array.from(t.querySelectorAll("tr")).slice(1).map(tr => {
-        const td = Array.from(tr.querySelectorAll("td"));
-        if (td.length < campos.length) return null;
+      const cab = t.querySelector('tr')?.textContent?.toUpperCase() || '';
+      if (!palabras.every(p => cab.includes(p.toUpperCase()))) continue;
+      const filas = Array.from(t.querySelectorAll('tr')).slice(1);
+      const arr = [];
+      filas.forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length < campos.length) return;
         const obj = {};
-        campos.forEach((campo, i) => (obj[campo] = td[i].textContent.trim()));
-        return transform ? transform(obj) : obj;
-      }).filter(Boolean);
+        campos.forEach((campo, i) => obj[campo] = td[i].textContent.trim() || '');
+        if (parseFn) Object.assign(obj, parseFn(obj));
+        if (Object.values(obj).some(v => v !== '')) arr.push(obj);
+      });
       return arr;
     }
     return [];
   };
 
-  g4.colaboraciones      = map(["COLABORACIONES"], ["descripcion", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
-  g4.detenidos           = map(["DETENIDOS"], ["motivo", "nacionalidad", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
-  g4.citados             = map(["CITADOS"], ["descripcion", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
-  g4.gestiones           = map(["OTRAS GESTIONES"], ["descripcion", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
-  g4.inspeccionesTrabajo = map(["INSPECCIONES TRABAJO"], ["descripcion", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
-  g4.otrasInspecciones   = map(["OTRAS INSPECCIONES"], ["descripcion", "cantidad"], o => ({ ...o, cantidad: +o.cantidad || 0 }));
+  grupo4.colaboraciones      = mapSeccion(['COLABORACIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.colaboraciones.length) delete grupo4.colaboraciones;
 
-  // Observaciones
-  for (const t of tablas) {
-    const cab = t.querySelector("tr")?.textContent?.toUpperCase() || "";
-    if (!cab.includes("OBSERVACIONES")) continue;
-    g4.observaciones = Array.from(t.querySelectorAll("tr td")).slice(1).map(td => td.textContent.trim()).join(" ");
-    break;
-  }
+  grupo4.detenidos           = mapSeccion(['DETENIDOS'],['motivo','nacionalidad','cantidad'],
+                                          o=>({motivo:o.motivo,nacionalidad:o.nacionalidad,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.detenidos.length) delete grupo4.detenidos;
 
-  Object.keys(g4).forEach(k => {
-    if (Array.isArray(g4[k]) && !g4[k].length) delete g4[k];
-    if (typeof g4[k] === "string" && !g4[k]) delete g4[k];
+  grupo4.citados             = mapSeccion(['CITADOS'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.citados.length) delete grupo4.citados;
+
+  grupo4.gestiones           = mapSeccion(['OTRAS GESTIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.gestiones.length) delete grupo4.gestiones;
+
+  grupo4.inspeccionesTrabajo = mapSeccion(['INSPECCIONES TRABAJO'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.inspeccionesTrabajo.length) delete grupo4.inspeccionesTrabajo;
+
+  grupo4.otrasInspecciones   = mapSeccion(['OTRAS INSPECCIONES'],['desc','cantidad'],o=>({descripcion:o.desc,cantidad:parseInt(o.cantidad)||0}));
+  if(!grupo4.otrasInspecciones.length) delete grupo4.otrasInspecciones;
+
+  tablas.forEach(t => {
+    const cab = t.querySelector('tr')?.textContent?.toUpperCase() || '';
+    if (!cab.includes('OBSERVACIONES')) return;
+    const txt = Array.from(t.querySelectorAll('tr td')).slice(1).map(td => td.textContent.trim()).join(' ');
+    if (txt) grupo4.observaciones = txt;
   });
-  return g4;
+
+  return grupo4;
 }
 
-/* ==========================================================================
- *                   PARSER DETALLADO · GRUPO PUERTO                         *
- * =========================================================================*/
+/* ====== PARSER GRUPO PUERTO ====== */
 function parseGrupoPuerto(html) {
-  const root   = htmlToDiv(html);
-  const tablas = Array.from(root.querySelectorAll("table"));
-  const plain  = root.textContent || "";
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  const plain = root.innerText || root.textContent || "";
+  let m = plain.match(/(\\d{4})[\\/\\-](\\d{2})[\\/\\-](\\d{2})|(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})/);
+  const fecha = m
+    ? (m[1] ? `${m[1]}-${m[2]}-${m[3]}` : `${m[6]}-${m[5].padStart(2, '0')}-${m[4].padStart(2, '0')}`)
+    : '';
 
-  const puerto = { fecha: extraerFechaISO(plain), ferrys: [] };
+  const puerto = {
+    ctrlMarinos:'', marinosArgos:'', cruceros:'', cruceristas:'', visadosCgef:'', visadosValencia:'',
+    visadosExp:'', vehChequeados:'', paxChequeadas:'', detenidos:'', denegaciones:'',
+    entrExcep:'', eixics:'', ptosDeportivos:'', ferrys:[], observaciones:''
+  };
 
   tablas.forEach(tabla => {
-    const head = tabla.querySelector("tr")?.textContent?.toUpperCase() || "";
-    const rows = Array.from(tabla.querySelectorAll("tr")).slice(1);
-    const cells = tr => Array.from(tr.querySelectorAll("td"));
+    const head = tabla.querySelector('tr')?.textContent?.toUpperCase() || '';
 
-    // Estadísticas generales (una fila, muchas columnas)
-    if (head.includes("CTRL.MARINOS") && head.includes("MARINOS ARGOS")) {
-      rows.forEach(tr => {
-        const t = cells(tr);
-        if (t.length < 14) return;
-        Object.assign(puerto, {
-          ctrlMarinos:     t[0].textContent.trim(),
-          marinosArgos:    t[1].textContent.trim(),
-          cruceros:        t[2].textContent.trim(),
-          cruceristas:     t[3].textContent.trim(),
-          visadosCgef:     t[4].textContent.trim(),
-          visadosValencia: t[5].textContent.trim(),
-          visadosExp:      t[6].textContent.trim(),
-          vehChequeados:   t[7].textContent.trim(),
-          paxChequeadas:   t[8].textContent.trim(),
-          detenidos:       t[9].textContent.trim(),
-          denegaciones:    t[10].textContent.trim(),
-          entrExcep:       t[11].textContent.trim(),
-          eixics:          t[12].textContent.trim(),
-          ptosDeportivos:  t[13].textContent.trim()
-        });
+    // Estadísticas principales
+    if ((head.includes('CTRL.MARINOS') || head.includes('CTRL. MARINOS'))
+        && head.includes('MARINOS ARGOS')
+        && head.includes('CRUCEROS')) {
+      const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+      filas.forEach(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        if (td.length >= 14) {
+          puerto.ctrlMarinos     = td[0]?.textContent.trim()||'';
+          puerto.marinosArgos    = td[1]?.textContent.trim()||'';
+          puerto.cruceros        = td[2]?.textContent.trim()||'';
+          puerto.cruceristas     = td[3]?.textContent.trim()||'';
+          puerto.visadosCgef     = td[4]?.textContent.trim()||'';
+          puerto.visadosValencia = td[5]?.textContent.trim()||'';
+          puerto.visadosExp      = td[6]?.textContent.trim()||'';
+          puerto.vehChequeados   = td[7]?.textContent.trim()||'';
+          puerto.paxChequeadas   = td[8]?.textContent.trim()||'';
+          puerto.detenidos       = td[9]?.textContent.trim()||'';
+          puerto.denegaciones    = td[10]?.textContent.trim()||'';
+          puerto.entrExcep       = td[11]?.textContent.trim()||'';
+          puerto.eixics          = td[12]?.textContent.trim()||'';
+          puerto.ptosDeportivos  = td[13]?.textContent.trim()||'';
+        }
       });
     }
 
     // Ferrys
-    if (head.includes("FERRYS")) {
-      rows.forEach(tr => {
-        const t = cells(tr);
-        if (!t.length) return;
-        puerto.ferrys.push({
-          tipo:       t[0].textContent.trim(),
-          destino:    t[1].textContent.trim(),
-          fecha:      t[2].textContent.trim(),
-          hora:       t[3].textContent.trim(),
-          pasajeros:  t[4].textContent.trim(),
-          vehiculos:  t[5].textContent.trim(),
-          incidencia: t[6]?.textContent.trim() || ""
-        });
-      });
+    if (head.includes('FERRYS')) {
+      const filas = Array.from(tabla.querySelectorAll('tr')).slice(1);
+      puerto.ferrys = filas.map(tr => {
+        const td = Array.from(tr.querySelectorAll('td'));
+        return {
+          tipo:       td[0]?.textContent.trim()||'',
+          destino:    td[1]?.textContent.trim()||'',
+          fecha:      td[2]?.textContent.trim()||'',
+          hora:       td[3]?.textContent.trim()||'',
+          pasajeros:  td[4]?.textContent.trim()||'',
+          vehiculos:  td[5]?.textContent.trim()||'',
+          incidencia: td[6]?.textContent.trim()||''
+        };
+      }).filter(f=>Object.values(f).some(v=>v));
     }
 
     // Observaciones
-    if (head.includes("OBSERVACIONES")) {
-      puerto.observaciones = rows.map(tr => tr.textContent.trim()).join(" ");
+    if (head.includes('OBSERVACIONES')) {
+      puerto.observaciones = Array.from(tabla.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ').trim();
     }
   });
 
-  // Limpieza
-  Object.keys(puerto).forEach(k => {
-    if (Array.isArray(puerto[k]) && !puerto[k].length) delete puerto[k];
-    if (typeof puerto[k] === "string" && !puerto[k]) delete puerto[k];
+  // Eliminar vacíos
+  Object.keys(puerto).forEach(k=>{
+    if(Array.isArray(puerto[k]) && !puerto[k].length)          delete puerto[k];
+    else if(!Array.isArray(puerto[k]) && puerto[k]==='')       delete puerto[k];
   });
+
   return puerto;
 }
 
-/* ==========================================================================
- *                       VALIDACIÓN LIGERA (solo avisos)                     *
- * =========================================================================*/
-function validar(grupo, datos) {
-  const vacio = Array.isArray(datos)
-    ? datos.length === 0
-    : typeof datos === "object"
-      ? !Object.keys(datos).length
-      : !datos;
+/* ====== VALIDACIÓN (solo AVISA, no bloquea) ====== */
+function valida(grupo, datos) {
+  const vacio = Array.isArray(datos) ? datos.length === 0
+    : typeof datos === "object" ? Object.keys(datos).length === 0
+    : !datos;
   return vacio ? `⚠️ ${grupo}: sin datos` : "";
 }
 
-/* ==========================================================================
- *                       GUARDADO EN FIRESTORE (batch)                       *
- * =========================================================================*/
-async function guardarParte({ fechaISO, grupos }) {
+/* ====== GUARDA LOS TRES GRUPOS EN BATCH ====== */
+async function guardarParte({ fechaISO, resultados }) {
   if (!fechaISO) throw Error("No se detectó la fecha en el documento.");
-  const batch  = writeBatch(db);
+
+  const batch = writeBatch(db);
   const avisos = [];
 
-  for (const [grupoClave, datos] of Object.entries(grupos)) {
-    const ref     = doc(db, MAPA_COLECCION[grupoClave], fechaISO);
-    const existe  = await getDoc(ref);
-    let continuar = true;
-
-    if (existe.exists()) {
-      continuar = confirm(`Ya existe parte de ${grupoClave} para ${fechaISO}.\n¿Sobrescribir?`);
+  for (const [grupo, datos] of Object.entries(resultados)) {
+    const ref = doc(db, MAPA_COLEC[grupo], fechaISO);
+    const ya = await getDoc(ref);
+    if (ya.exists()) {
+      const sobre = confirm(`Ya existe parte de ${grupo} para ${fechaISO}.\n¿Sustituirlo?`);
+      if (!sobre) continue;
     }
-    if (!continuar) {
-      avisos.push(`↩️ ${grupoClave}: no se ha modificado (existía y se canceló).`);
-      continue;
-    }
-
-    const aviso = validar(grupoClave, datos);
+    const aviso = valida(grupo, datos);
     if (aviso) avisos.push(aviso);
     batch.set(ref, datos, { merge: true });
   }
-
   await batch.commit();
   return avisos;
 }
 
-/* ==========================================================================
- *                          UI / EVENTOS PRINCIPALES                         *
- * =========================================================================*/
-const inputDocx = document.getElementById("inputDocx");
-if (inputDocx) {
-  inputDocx.addEventListener("change", async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    status("Procesando DOCX …", "info");
+/* ====== SUBIDA DE DOCX ====== */
+document.getElementById("inputDocx").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    try {
-      const info   = await parseDocx(file);
-      const avisos = await guardarParte(info);
-      const okMsg  = avisos.length ? `Parte guardado.\n${avisos.join("\n")}` : "Parte guardado correctamente.";
-      status(okMsg, "ok");
-    } catch (err) {
-      console.error(err);
-      status(err.message, "err");
-    } finally {
-      e.target.value = ""; // limpia input file
-    }
-  });
-} else {
-  console.warn("[novedades.js] Falta el input #inputDocx en el DOM.");
-}
+  try {
+    const info = await parseDocx(file);
+    const avisos = await guardarParte(info);
 
-/* ==========================================================================
- *                               FIN DEL SCRIPT                              *
- * =========================================================================*/
+    alert("✅ Parte guardado correctamente.\n\n" + avisos.join("\\n"));
+  } catch (err) {
+    console.error(err);
+    alert("❌ " + err.message);
+  } finally {
+    e.target.value = "";
+  }
+});
+
+/* ====== HELPERS PARA CONSULTA Y EDICIÓN ====== */
+// Consulta parte de grupo y fecha
+window.cargarGrupo = async function (grupo, fechaISO, callback) {
+  if (!MAPA_COLEC[grupo]) throw Error("Grupo no válido");
+  const ref = doc(db, MAPA_COLEC[grupo], fechaISO);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw Error("No hay parte en esa fecha");
+  if (callback) callback(snap.data());
+  return snap.data();
+};
+
+// Guarda edición de grupo y fecha
+window.guardarGrupo = async function (grupo, fechaISO, datosFn) {
+  if (!MAPA_COLEC[grupo]) throw Error("Grupo no válido");
+  if (!fechaISO) throw Error("Debes indicar la fecha");
+  let datos = (typeof datosFn === 'function') ? datosFn() : datosFn;
+  await setDoc(doc(db, MAPA_COLEC[grupo], fechaISO), datos, { merge: true });
+  alert("Guardado correctamente.");
+};
