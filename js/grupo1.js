@@ -8,7 +8,6 @@ const firebaseConfig = {
     appId: "1:241698436443:web:1f333b3ae3f813b755167e",
     measurementId: "G-S2VPQNWZ21"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -32,10 +31,12 @@ function scrollVentana(idVentana) {
 
 // ====== Referencias DOM ======
 const fechaDiaInput = document.getElementById('fechaDia');
-const btnBuscar = document.getElementById('btnBuscar');
+const btnCargar = document.getElementById('btnCargar');
+const btnGrabar = document.getElementById('btnGrabar');
+const btnBorrar = document.getElementById('btnBorrar');
 const btnNuevo = document.getElementById('btnNuevo');
 
-// Detenidos (ahora por número, no nombre)
+// Detenidos
 const detenidoForm = document.getElementById('detenidoForm');
 const numeroDetenido = document.getElementById('numeroDetenido');
 const motivoDetenido = document.getElementById('motivoDetenido');
@@ -51,6 +52,13 @@ const nacionalidadExpulsado = document.getElementById('nacionalidadExpulsado');
 const diligenciasExpulsado = document.getElementById('diligenciasExpulsado');
 const nConduccionesPos = document.getElementById('nConduccionesPos');
 const expulsadosVentana = document.getElementById('expulsadosVentana');
+
+// Expulsiones Frustradas
+const frustradaForm = document.getElementById('frustradaForm');
+const nombreFrustrada = document.getElementById('nombreFrustrada');
+const nacionalidadFrustrada = document.getElementById('nacionalidadFrustrada');
+const motivoFrustrada = document.getElementById('motivoFrustrada');
+const frustradasVentana = document.getElementById('frustradasVentana');
 
 // Fletados
 const fletadoForm = document.getElementById('fletadoForm');
@@ -95,6 +103,7 @@ const btnWhatsapp = document.getElementById('btnWhatsapp');
 
 // ====== Estado ======
 let fechaActual = null;
+let datosEnPantalla = {};
 
 // ====== Helpers Firestore ======
 function getDocIdDia(fecha) {
@@ -113,12 +122,15 @@ async function cargarDia(fecha) {
     const ref = getDocRefDia(fecha);
     const docSnap = await ref.get();
     if (!docSnap.exists) {
+        datosEnPantalla = {};
         return;
     }
     const datos = docSnap.data();
+    datosEnPantalla = JSON.parse(JSON.stringify(datos)); // copia profunda
 
     mostrarListaDetenidos(datos.detenidos || []);
     mostrarListaVentana(expulsadosVentana, datos.expulsados || [], 'expulsado', true);
+    mostrarListaVentana(frustradasVentana, datos.frustradas || [], 'frustrada', true);
     mostrarListaVentana(fletadosVentana, datos.fletados || [], 'fletado', true);
     mostrarListaVentana(fletadosFuturosVentana, datos.fletadosFuturos || [], 'fletadoFuturo', true);
     mostrarListaVentana(conduccionesPosVentana, datos.conduccionesPositivas || [], 'conduccionPositiva', false);
@@ -129,11 +141,13 @@ async function cargarDia(fecha) {
 function limpiarTodo() {
     detenidosVentana.innerHTML = "";
     expulsadosVentana.innerHTML = "";
+    frustradasVentana.innerHTML = "";
     fletadosVentana.innerHTML = "";
     fletadosFuturosVentana.innerHTML = "";
     conduccionesPosVentana.innerHTML = "";
     conduccionesNegVentana.innerHTML = "";
     pendientesVentana.innerHTML = "";
+    datosEnPantalla = {};
 }
 
 // ====== Mantener fecha seleccionada ======
@@ -175,6 +189,9 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
         switch (tipo) {
             case "expulsado":
                 texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
+                break;
+            case "frustrada":
+                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) - ${item.motivo || ""}`;
                 break;
             case "fletado":
                 texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
@@ -253,6 +270,49 @@ async function eliminarDetenido(idx) {
     if (idx < 0 || idx >= lista.length) return;
     lista.splice(idx, 1);
     await ref.set({ detenidos: lista }, { merge: true });
+    cargarDia(fechaActual);
+}
+
+// ====== Expulsiones Frustradas ======
+async function añadirFrustrada(e) {
+    e.preventDefault();
+    if (!fechaDiaInput.value) { showToast("Selecciona una fecha de trabajo."); return; }
+    fechaActual = fechaDiaInput.value;
+    const nombre = nombreFrustrada.value.trim();
+    const nacionalidad = nacionalidadFrustrada.value.trim();
+    const motivo = motivoFrustrada.value.trim();
+    if (!nombre) { showToast("Introduce nombre."); return; }
+    if (!nacionalidad) { showToast("Introduce nacionalidad."); return; }
+    if (!motivo) { showToast("Introduce motivo de frustración."); return; }
+    const frustrada = { nombre, nacionalidad, motivo };
+    const ref = getDocRefDia(fechaActual);
+    await ref.set({
+        frustradas: firebase.firestore.FieldValue.arrayUnion(frustrada)
+    }, { merge: true });
+    cargarDia(fechaActual);
+    limpiarFormulario(frustradaForm);
+}
+
+// Eliminar frustrada
+async function eliminarDato(tipo, idx) {
+    if (!fechaDiaInput.value) return;
+    fechaActual = fechaDiaInput.value;
+    const ref = getDocRefDia(fechaActual);
+    const docSnap = await ref.get();
+    if (!docSnap.exists) return;
+    const datos = docSnap.data();
+    let key = tipo;
+    if (tipo === "expulsado") key = "expulsados";
+    if (tipo === "frustrada") key = "frustradas";
+    if (tipo === "fletado") key = "fletados";
+    if (tipo === "fletadoFuturo") key = "fletadosFuturos";
+    if (tipo === "pendiente") key = "pendientes";
+    let lista = datos[key] || [];
+    if (idx < 0 || idx >= lista.length) return;
+    lista.splice(idx, 1);
+    await ref.set({
+        [key]: lista
+    }, { merge: true });
     cargarDia(fechaActual);
 }
 
@@ -354,28 +414,9 @@ async function añadirPendiente(e) {
     limpiarFormulario(pendienteForm);
 }
 
-// ====== Eliminar dato de cualquier lista (menos detenidos) ======
-async function eliminarDato(tipo, idx) {
-    if (!fechaDiaInput.value) return;
-    fechaActual = fechaDiaInput.value;
-    const ref = getDocRefDia(fechaActual);
-    const docSnap = await ref.get();
-    if (!docSnap.exists) return;
-    const datos = docSnap.data();
-    let key = tipo + (tipo.endsWith('a') ? 's' : '');
-    if (tipo === 'detenido') key = 'detenidos';
-    let lista = datos[key] || [];
-    if (idx < 0 || idx >= lista.length) return;
-    lista.splice(idx, 1);
-    await ref.set({
-        [key]: lista
-    }, { merge: true });
-    cargarDia(fechaActual);
-}
-
-// ====== Buscar y nuevo registro ======
-btnBuscar.addEventListener('click', () => {
-    if (!fechaDiaInput.value) { showToast("Introduce una fecha para buscar."); return; }
+// ====== Buscar/Cargar, Nuevo, Grabar y Borrar ======
+btnCargar.addEventListener('click', () => {
+    if (!fechaDiaInput.value) { showToast("Introduce una fecha para cargar."); return; }
     fechaActual = fechaDiaInput.value;
     cargarDia(fechaActual);
 });
@@ -384,10 +425,28 @@ btnNuevo.addEventListener('click', () => {
     fechaActual = fechaDiaInput.value;
     limpiarTodo();
 });
+btnGrabar.addEventListener('click', async () => {
+    if (!fechaDiaInput.value) { showToast("Introduce la fecha a grabar."); return; }
+    fechaActual = fechaDiaInput.value;
+    const ref = getDocRefDia(fechaActual);
+    await ref.set(datosEnPantalla, { merge: false });
+    showToast("Registro guardado correctamente.");
+    cargarDia(fechaActual);
+});
+btnBorrar.addEventListener('click', async () => {
+    if (!fechaDiaInput.value) { showToast("Introduce la fecha a borrar."); return; }
+    fechaActual = fechaDiaInput.value;
+    if (!confirm("¿Seguro que deseas borrar el registro del día seleccionado?")) return;
+    const ref = getDocRefDia(fechaActual);
+    await ref.delete();
+    showToast("Registro borrado.");
+    limpiarTodo();
+});
 
 // ====== Formularios: eventos ======
 detenidoForm.addEventListener('submit', añadirDetenido);
 expulsadoForm.addEventListener('submit', añadirExpulsado);
+frustradaForm.addEventListener('submit', añadirFrustrada);
 fletadoForm.addEventListener('submit', añadirFletado);
 fletadoFuturoForm.addEventListener('submit', añadirFletadoFuturo);
 conduccionPosForm.addEventListener('submit', añadirConduccionPositiva);
@@ -427,6 +486,7 @@ function mostrarResumen(resumen) {
       <th>Fecha</th>
       <th>Detenidos</th>
       <th>Expulsados</th>
+      <th>Frustradas</th>
       <th>Fletados</th>
       <th>Fletados Futuros</th>
       <th>Cond. Positivas</th>
@@ -438,6 +498,7 @@ function mostrarResumen(resumen) {
           <td>${formatoFecha(item.fecha)}</td>
           <td>${(item.detenidos||[]).length}</td>
           <td>${(item.expulsados||[]).length}</td>
+          <td>${(item.frustradas||[]).length}</td>
           <td>${(item.fletados||[]).length}</td>
           <td>${(item.fletadosFuturos||[]).length}</td>
           <td>${(item.conduccionesPositivas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0)}</td>
@@ -464,6 +525,7 @@ if (btnExportarPDF) {
           <th>Fecha</th>
           <th>Detenidos</th>
           <th>Expulsados</th>
+          <th>Frustradas</th>
           <th>Fletados</th>
           <th>Fletados Futuros</th>
           <th>Conducciones +</th>
@@ -476,6 +538,7 @@ if (btnExportarPDF) {
               <td>${formatoFecha(item.fecha)}</td>
               <td>${(item.detenidos||[]).map(x => x.numero ? x.numero : "-").join(", ")}</td>
               <td>${(item.expulsados||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
+              <td>${(item.frustradas||[]).map(x => x.nombre ? x.nombre : "-").join(", ")}</td>
               <td>${(item.fletados||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
               <td>${(item.fletadosFuturos||[]).map(x => x.destino ? x.destino : "-").join(", ")}</td>
               <td>${(item.conduccionesPositivas||[]).map(x => x.numero).reduce((a,b)=>a+b,0)}</td>
@@ -497,12 +560,13 @@ if (btnExportarCSV) {
             showToast("Primero genera un resumen.");
             return;
         }
-        let csv = "Fecha,Detenidos,Expulsados,Fletados,FletadosFuturos,ConduccionesPos,ConduccionesNeg,Pendientes\n";
+        let csv = "Fecha,Detenidos,Expulsados,Frustradas,Fletados,FletadosFuturos,ConduccionesPos,ConduccionesNeg,Pendientes\n";
         resumenFiltrado.forEach(item => {
             csv += [
                 item.fecha,
                 (item.detenidos||[]).map(x => x.numero).join("|"),
                 (item.expulsados||[]).map(x => x.nombre).join("|"),
+                (item.frustradas||[]).map(x => x.nombre).join("|"),
                 (item.fletados||[]).map(x => x.destino).join("|"),
                 (item.fletadosFuturos||[]).map(x => x.destino).join("|"),
                 (item.conduccionesPositivas||[]).map(x => x.numero).reduce((a,b)=>a+b,0),
@@ -530,7 +594,7 @@ if (btnWhatsapp) {
         }
         let resumen = `Resumen Gestión SIREX\n${desdeResumen.value} al ${hastaResumen.value}:\n`;
         resumenFiltrado.forEach(item => {
-            resumen += `${formatoFecha(item.fecha)} - Det: ${(item.detenidos||[]).length}, Exp: ${(item.expulsados||[]).length}, Flet: ${(item.fletados||[]).length}, FletF: ${(item.fletadosFuturos||[]).length}, C+: ${(item.conduccionesPositivas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, C-: ${(item.conduccionesNegativas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, Pend: ${(item.pendientes||[]).length}\n`;
+            resumen += `${formatoFecha(item.fecha)} - Det: ${(item.detenidos||[]).length}, Exp: ${(item.expulsados||[]).length}, Frust: ${(item.frustradas||[]).length}, Flet: ${(item.fletados||[]).length}, FletF: ${(item.fletadosFuturos||[]).length}, C+: ${(item.conduccionesPositivas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, C-: ${(item.conduccionesNegativas||[]).map(x=>x.numero).reduce((a,b)=>a+b,0)}, Pend: ${(item.pendientes||[]).length}\n`;
         });
         navigator.clipboard.writeText(resumen)
             .then(() => showToast("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
