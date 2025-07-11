@@ -29,28 +29,34 @@
   <div class="container mb-3">
     <div class="row justify-content-center">
       <div class="col-lg-10">
-        <div class="card shadow p-3 bg-police-dark text-white border-0">
+        <!-- Cambiado a fondo claro y texto oscuro -->
+        <div class="card shadow p-3 bg-police-light text-black border-0">
           <form id="formPuerto" autocomplete="off">
             <div class="row g-2 align-items-end">
               <div class="col-12 col-sm-4 mb-2 mb-sm-0">
                 <label for="fechaPuerto" class="form-label fw-bold mb-1">Fecha de trabajo</label>
                 <input type="date" id="fechaPuerto" name="fechaPuerto" class="form-control form-control-lg" autocomplete="off" required>
               </div>
-              <div class="col-6 col-sm-3">
+              <div class="col-6 col-sm-2">
                 <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
               </div>
-              <div class="col-6 col-sm-3">
+              <div class="col-6 col-sm-2">
                 <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
               </div>
-              <div class="col-12 col-sm-2 text-end mt-2 mt-sm-0">
+              <div class="col-6 col-sm-2">
                 <button id="btnBorrarRegistro" class="btn btn-police-red w-100 btn-lg" type="button">
                   <i class="bi bi-trash"></i> Borrar registro
                 </button>
               </div>
+              <!-- El botón guardar registro aquí a la derecha del todo -->
+              <div class="col-6 col-sm-2">
+                <button type="submit" class="btn btn-police-green w-100 btn-lg" id="btnGuardarRegistro">
+                  <i class="bi bi-save2"></i> Grabar registro
+                </button>
+              </div>
             </div>
-
             <!-- Estadísticas principales -->
-            <div class="mb-4">
+            <div class="mb-4 mt-4">
               <h4 class="mb-2">Estadísticas portuarias</h4>
               <div class="row g-3">
                 <div class="col-6 col-md-3">
@@ -147,7 +153,6 @@
                   <button type="button" class="btn btn-police-blue w-100" id="btnAddFerry"><i class="bi bi-plus"></i> Añadir</button>
                 </div>
               </div>
-              <!-- Listado de ferrys -->
               <div class="ventana-datos ventana-ferrys mt-2" id="ferrysListWindow"></div>
               <div class="totales-ferry">
                 Ferrys: <span id="totalFerrys">0</span> |
@@ -155,27 +160,17 @@
                 Vehíc.: <span id="totalVehiculos">0</span>
               </div>
             </div>
-
             <!-- Observaciones -->
             <div class="mb-4">
               <h4 class="mb-2">Observaciones</h4>
               <textarea id="observaciones" name="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
             </div>
-
             <!-- Adjuntos -->
             <div class="mb-4">
               <label class="form-label">Adjuntar doc./imágenes</label>
               <input type="file" id="adjuntos" class="form-control" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
             </div>
-
-            <!-- Botón de grabar -->
-            <div class="d-grid gap-2 mb-4">
-              <button type="submit" class="btn btn-police-green btn-lg" id="btnGuardarRegistro">
-                <i class="bi bi-save2"></i> Grabar registro
-              </button>
-            </div>
           </form>
-
           <!-- RESUMEN AVANZADO / EXPORTACIÓN -->
           <div class="bg-police-light rounded-3 p-4 mt-5">
             <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen avanzado</h4>
@@ -201,7 +196,6 @@
             </div>
             <div id="resumenAvanzadoVentana" class="ventana-datos mt-4"></div>
           </div>
-
           <div class="card p-4 mt-4" id="panelResumenPuerto" style="display:none;">
             <h4>Resumen del día</h4>
             <div id="resumenPuerto"></div>
@@ -213,14 +207,12 @@
       </div>
     </div>
   </div>
-
   <!-- FOOTER -->
   <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
     <small>
       &copy; 2025 UCRIF · Benito · G. Puerto | Plataforma policial
     </small>
   </footer>
-
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Firebase (ajusta si cambias de versión) -->
