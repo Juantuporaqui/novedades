@@ -7,7 +7,6 @@
   <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <!-- Estilo para los nuevos botones globales -->
   <style>
     .global-actions {
       display: flex;
@@ -26,95 +25,134 @@
       transition: transform 0.2s;
       text-align: center;
     }
-    .btn-global:hover {
-      transform: translateY(-2px);
+    .btn-global:hover { transform: translateY(-2px);}
+    .btn-novedades { background-color: #198754;}
+    .btn-consulta { background-color: #0d6efd;}
+    /* Estilo simple login */
+    #login-container {
+      max-width: 350px;
+      margin: 80px auto 0;
+      display: none;
+      text-align: center;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px #1876d112;
+      padding: 30px 18px 20px 18px;
     }
-    .btn-novedades {
-      background-color: #198754; /* Berde */
-    }
-    .btn-consulta {
-      background-color: #0d6efd; /* Asul */
-    }
+    #login-container input { margin: 7px 0; width: 90%; padding: 8px; border-radius: 5px; border: 1px solid #aaa; }
+    #login-container button { margin: 10px 0; border-radius: 5px; border: none; padding: 8px 16px; font-weight: bold;}
+    #btn-login { background: #198754; color: #fff;}
+    #btn-logout { float: right; margin-top: 15px;}
   </style>
 </head>
 <body>
-  <!-- CABECERA GRANDE -->
-  <header class="sirex-header">
-    <div class="sirex-title">SIREX</div>
-    <div class="sirex-desc">Sistema Inteligente de Registro de Extranjería</div>
-  </header>
+  <!-- LOGIN LOCAL -->
+  <div id="login-container">
+    <h2>Acceso SIREX</h2>
+    <input type="text" id="user" placeholder="Usuario"><br>
+    <input type="password" id="pass" placeholder="Contraseña"><br>
+    <button id="btn-login">Entrar</button>
+    <div id="login-error" style="color:#e53935;min-height:20px;margin-top:10px;"></div>
+  </div>
 
-  <!-- MENÚ DE GRUPOS CON AVATARES CÓMIC -->
-  <main>
-    <div class="grupos-menu">
-      <!-- GRUPO 1: Expulsiones -->
-      <a href="grupos/grupo1.html" class="grupo-btn" title="Expulsiones">
-        <span class="grupo-ico">
-          <img src="img/grupo1.png" alt="Grupo 1 Expulsiones" loading="lazy">
-        </span>
-        <span class="grupo-label">Expulsiones</span>
-      </a>
-      <!-- GRUPO 2: Investigación 1 -->
-      <a href="grupos/grupo2.html" class="grupo-btn" title="Investigación 1">
-        <span class="grupo-ico">
-          <img src="img/grupo2.png" alt="Grupo 2 Investigación" loading="lazy">
-        </span>
-        <span class="grupo-label">Investigación 1</span>
-      </a>
-      <!-- GRUPO 3: Investigación 2 -->
-      <a href="grupos/grupo3.html" class="grupo-btn" title="Investigación 2">
-        <span class="grupo-ico">
-          <img src="img/grupo3.png" alt="Grupo 3 Investigación" loading="lazy">
-        </span>
-        <span class="grupo-label">Investigación 2</span>
-      </a>
-      <!-- GRUPO 4: Operativo -->
-      <a href="grupos/grupo4.html" class="grupo-btn" title="Operativo">
-        <span class="grupo-ico">
-          <img src="img/grupo4.png" alt="Grupo 4 Operativo" loading="lazy">
-        </span>
-        <span class="grupo-label">Operativo</span>
-      </a>
-      <!-- PUERTO -->
-      <a href="grupos/puerto.html" class="grupo-btn" title="Puerto">
-        <span class="grupo-ico">
-          <img src="img/puerto.png" alt="Puerto" loading="lazy">
-        </span>
-        <span class="grupo-label">Puerto</span>
-      </a>
-      <!-- GESTIÓN -->
-      <a href="grupos/gestion.html" class="grupo-btn" title="Gestión">
-        <span class="grupo-ico">
-          <img src="img/gestion.png" alt="Gestión" loading="lazy">
-        </span>
-        <span class="grupo-label">Gestión</span>
-      </a>
-      <!-- CECOREX -->
-      <a href="grupos/cecorex.html" class="grupo-btn" title="Cecorex">
-        <span class="grupo-ico">
-          <img src="img/cecorex.png" alt="Cecorex" loading="lazy">
-        </span>
-        <span class="grupo-label">CECOREX</span>
-      </a>
-      <!-- CIE -->
-      <a href="grupos/cie.html" class="grupo-btn" title="CIE">
-        <span class="grupo-ico">
-          <img src="img/cie.png" alt="CIE" loading="lazy">
-        </span>
-        <span class="grupo-label">CIE</span>
-      </a>
-    </div>
-    
-    <!-- FUNCIONES GLOBALES -->
-    <div class="text-center mt-4 global-actions">
-      <a href="novedades.html" class="btn-global btn-novedades">Cargar Novedades PDF</a>
-      <a href="consulta.html" class="btn-global btn-consulta">Consulta Global / Resúmenes</a>
-    </div>
-  </main>
+  <!-- CONTENIDO SOLO SI ESTÁ LOGUEADO -->
+  <div id="app-container" style="display:none;">
+    <header class="sirex-header">
+      <div class="sirex-title">SIREX</div>
+      <div class="sirex-desc">Sistema Inteligente de Registro de Extranjería</div>
+      <button id="btn-logout" style="float:right;">Salir</button>
+    </header>
+    <main>
+      <div class="grupos-menu">
+        <a href="grupos/grupo1.html" class="grupo-btn" title="Expulsiones">
+          <span class="grupo-ico"><img src="img/grupo1.png" alt="Grupo 1 Expulsiones" loading="lazy"></span>
+          <span class="grupo-label">Expulsiones</span>
+        </a>
+        <a href="grupos/grupo2.html" class="grupo-btn" title="Investigación 1">
+          <span class="grupo-ico"><img src="img/grupo2.png" alt="Grupo 2 Investigación" loading="lazy"></span>
+          <span class="grupo-label">Investigación 1</span>
+        </a>
+        <a href="grupos/grupo3.html" class="grupo-btn" title="Investigación 2">
+          <span class="grupo-ico"><img src="img/grupo3.png" alt="Grupo 3 Investigación" loading="lazy"></span>
+          <span class="grupo-label">Investigación 2</span>
+        </a>
+        <a href="grupos/grupo4.html" class="grupo-btn" title="Operativo">
+          <span class="grupo-ico"><img src="img/grupo4.png" alt="Grupo 4 Operativo" loading="lazy"></span>
+          <span class="grupo-label">Operativo</span>
+        </a>
+        <a href="grupos/puerto.html" class="grupo-btn" title="Puerto">
+          <span class="grupo-ico"><img src="img/puerto.png" alt="Puerto" loading="lazy"></span>
+          <span class="grupo-label">Puerto</span>
+        </a>
+        <a href="grupos/gestion.html" class="grupo-btn" title="Gestión">
+          <span class="grupo-ico"><img src="img/gestion.png" alt="Gestión" loading="lazy"></span>
+          <span class="grupo-label">Gestión</span>
+        </a>
+        <a href="grupos/cecorex.html" class="grupo-btn" title="Cecorex">
+          <span class="grupo-ico"><img src="img/cecorex.png" alt="Cecorex" loading="lazy"></span>
+          <span class="grupo-label">CECOREX</span>
+        </a>
+        <a href="grupos/cie.html" class="grupo-btn" title="CIE">
+          <span class="grupo-ico"><img src="img/cie.png" alt="CIE" loading="lazy"></span>
+          <span class="grupo-label">CIE</span>
+        </a>
+      </div>
+      <div class="text-center mt-4 global-actions">
+        <a href="novedades.html" class="btn-global btn-novedades">Cargar Novedades PDF</a>
+        <a href="consulta.html" class="btn-global btn-consulta">Consulta Global / Resúmenes</a>
+      </div>
+    </main>
+    <footer class="footer">
+      &copy; 2025 SIREX · UCRIF · CNP
+    </footer>
+  </div>
+  <script>
+    // --- Parámetros ---
+    const USUARIO = "Benito";
+    const PASSWORD = "Boniato091";
 
-  <!-- FOOTER SIMPLE -->
-  <footer class="footer">
-    &copy; 2025 SIREX · UCRIF · CNP
-  </footer>
+    // --- Elementos ---
+    const loginContainer = document.getElementById('login-container');
+    const appContainer   = document.getElementById('app-container');
+    const btnLogin       = document.getElementById('btn-login');
+    const btnLogout      = document.getElementById('btn-logout');
+    const loginError     = document.getElementById('login-error');
+    const userInput      = document.getElementById('user');
+    const passInput      = document.getElementById('pass');
+
+    // Mostrar login al iniciar
+    loginContainer.style.display = "block";
+
+    // Login simple
+    btnLogin.onclick = function() {
+      const user = userInput.value.trim();
+      const pass = passInput.value;
+      if (user === USUARIO && pass === PASSWORD) {
+        loginContainer.style.display = "none";
+        appContainer.style.display = "block";
+        userInput.value = "";
+        passInput.value = "";
+        loginError.textContent = "";
+      } else {
+        loginError.textContent = "Usuario o contraseña incorrectos.";
+        passInput.value = "";
+      }
+    };
+
+    // Permitir intro para enviar
+    passInput.addEventListener('keydown', function(e) {
+      if (e.key === "Enter") btnLogin.click();
+    });
+    userInput.addEventListener('keydown', function(e) {
+      if (e.key === "Enter") btnLogin.click();
+    });
+
+    // Logout
+    btnLogout.onclick = function() {
+      appContainer.style.display = "none";
+      loginContainer.style.display = "block";
+      loginError.textContent = "";
+    };
+  </script>
 </body>
 </html>
