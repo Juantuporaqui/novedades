@@ -4,17 +4,22 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo 4 Operativo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="../css/grupo4.css">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <style>
+    .historial-fechas:empty { display: none !important; }
+    .input-row { gap: .5rem; display: flex; flex-wrap: wrap; align-items: center; }
+    .panel-seccion { margin-bottom: 2rem; }
+    textarea.form-control, textarea { min-height: 40px; }
+    .lista { margin-bottom: 0; }
+  </style>
 </head>
 <body class="bg-police">
 
-  <!-- NAVBAR CORPORATIVO -->
+  <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
     <div class="container">
       <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
@@ -52,61 +57,75 @@
       </div>
     </div>
 
-    <!-- HISTORIAL FECHAS -->
+    <!-- HISTORIAL FECHAS (oculto si vacío) -->
     <div id="historialFechas" class="historial-fechas mb-3"></div>
 
     <!-- FORMULARIO PRINCIPAL -->
     <form id="formOperativo" autocomplete="off">
+
       <!-- DETENIDOS -->
       <section class="glass-card panel-seccion">
         <h4>
           <i class="bi bi-person-lock"></i> Detenidos
-          <button type="button" class="ayuda-btn" data-seccion="detenido" title="¿Qué es esto?">?</button>
         </h4>
-        <div class="row-cols input-row mb-2">
-          <input type="number" id="numDetenidos" placeholder="Nº detenidos" min="1" style="width:100px;">
-          <input type="text" id="detenidoMotivo" placeholder="Motivo" autocomplete="off">
-          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" autocomplete="off">
-          <input type="text" id="detenidoDiligencias" placeholder="Diligencias" autocomplete="off">
-          <input type="text" id="detenidoObservaciones" placeholder="Observaciones" autocomplete="off">
+        <div class="input-row mb-2">
+          <input type="number" id="numDetenidos" placeholder="Nº detenidos" min="1" style="width:110px;">
+          <input type="text" id="detenidoMotivo" placeholder="Motivo">
+          <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad">
+          <input type="text" id="detenidoDiligencias" placeholder="Diligencias">
+          <input type="text" id="detenidoObservaciones" placeholder="Observaciones">
           <button type="button" class="btn-add" id="btnAddDetenido" title="Agregar detenido">+</button>
         </div>
         <ul id="listaDetenidos" class="lista"></ul>
       </section>
 
-      <!-- IDENTIFICADOS / CITADOS -->
+      <!-- IDENTIFICADOS Y CITADOS -->
       <section class="glass-card panel-seccion">
-        <div class="row-cols input-row mb-2">
+        <h4>
+          <i class="bi bi-people"></i> Identificados y citados
+        </h4>
+        <div class="input-row mb-2">
           <input type="number" id="identificados" placeholder="Identificados" min="0" style="width:120px;">
           <input type="number" id="citadosCecorex" placeholder="Citados CeCOREX" min="0" style="width:120px;">
           <input type="number" id="citadosUcrif" placeholder="Citados UCRIF" min="0" style="width:120px;">
         </div>
-        <textarea id="citadosObservaciones" rows="2" placeholder="Observaciones citados (opcional)"></textarea>
+        <textarea id="citadosObservaciones" rows="2" class="form-control mb-2" placeholder="Observaciones citados (opcional)"></textarea>
       </section>
 
       <!-- COLABORACIONES -->
       <section class="glass-card panel-seccion">
         <h4>
           <i class="bi bi-handshake"></i> Colaboraciones
-          <button type="button" class="ayuda-btn" data-seccion="colaboracion" title="¿Qué es esto?">?</button>
         </h4>
-        <div class="row-cols input-row mb-2">
-          <input type="text" id="colaboracionDesc" placeholder="Descripción colaboración" autocomplete="off">
-          <input type="text" id="colaboracionUnidad" placeholder="Unidad" autocomplete="off">
-          <input type="text" id="colaboracionResultado" placeholder="Resultado" autocomplete="off">
+        <div class="input-row mb-2">
+          <input type="text" id="colaboracionDesc" placeholder="Descripción">
+          <input type="text" id="colaboracionUnidad" placeholder="Unidad">
+          <input type="text" id="colaboracionResultado" placeholder="Resultado">
           <button type="button" class="btn-add" id="btnAddColaboracion" title="Agregar colaboración">+</button>
         </div>
         <ul id="listaColaboraciones" class="lista"></ul>
+      </section>
+
+      <!-- INSPECCIONES DE TRABAJO -->
+      <section class="glass-card panel-seccion">
+        <h4>
+          <i class="bi bi-clipboard-check"></i> Inspecciones de trabajo
+        </h4>
+        <div class="input-row mb-2">
+          <input type="text" id="insTrabajoLugar" placeholder="Lugar inspección">
+          <input type="text" id="insTrabajoResultado" placeholder="Resultado">
+          <button type="button" class="btn-add" id="btnAddInsTrabajo" title="Agregar inspección">+</button>
+        </div>
+        <ul id="listaInsTrabajo" class="lista"></ul>
       </section>
 
       <!-- GESTIONES VARIAS -->
       <section class="glass-card panel-seccion">
         <h4>
           <i class="bi bi-journal-text"></i> Gestiones varias
-          <button type="button" class="ayuda-btn" data-seccion="gestion" title="¿Qué es esto?">?</button>
         </h4>
-        <div class="row-cols input-row mb-2">
-          <input type="text" id="gestionDesc" placeholder="Gestión o nota relevante" autocomplete="off">
+        <div class="input-row mb-2">
+          <input type="text" id="gestionDesc" placeholder="Gestión o nota relevante">
           <button type="button" class="btn-add" id="btnAddGestion" title="Agregar gestión">+</button>
         </div>
         <ul id="listaGestiones" class="lista"></ul>
@@ -114,8 +133,10 @@
 
       <!-- OBSERVACIONES GENERALES -->
       <section class="glass-card panel-seccion">
-        <h4><i class="bi bi-info-circle"></i> Observaciones generales</h4>
-        <textarea id="observaciones" rows="2" placeholder="Observaciones, incidencias, etc..."></textarea>
+        <h4>
+          <i class="bi bi-info-circle"></i> Observaciones generales
+        </h4>
+        <textarea id="observaciones" rows="2" class="form-control" placeholder="Observaciones, incidencias, etc..."></textarea>
       </section>
     </form>
 
