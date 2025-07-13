@@ -71,7 +71,6 @@ input.form-control, select.form-control {
   background: #fafdff;
   transition: border-color .15s;
 }
-
 input.form-control:focus {
   border-color: var(--cecorex-azul);
   box-shadow: 0 0 0 1.5px var(--cecorex-azul);
@@ -135,9 +134,26 @@ button, .btn {
   padding: 12px 17px;
 }
 
-/* MODAL DE RESUMEN */
-#resumenModal {
-  /* Los estilos ya están en el HTML, aquí puedes sobreescribir si quieres */
+/* =================== */
+/* MODAL DE RESUMEN    */
+/* =================== */
+#resumenModal .modal-dialog {
+  max-width: 660px;
+  margin: 2.5rem auto;
+}
+#resumenModal .modal-content {
+  box-shadow: 0 8px 40px #1876d166, 0 1.5px 6px #2222;
+  border-radius: 24px;
+  border: 2.5px solid #e6eefb;
+}
+#resumenModal .modal-header {
+  background: linear-gradient(90deg,#f2f7fd 60%, #eaf4ff 100%);
+  border-bottom: none;
+}
+#resumenModal .modal-body {
+  max-height: 66vh;
+  overflow-y: auto;
+  padding: 15px 18px 11px 18px;
 }
 #resumenContent h5, #resumenContent h6 {
   color: var(--cecorex-azul);
@@ -158,8 +174,75 @@ button, .btn {
   margin-bottom: 6px;
 }
 
+/* TABLA DE DETENIDOS EN RESUMEN */
+#resumenContent .table-responsive {
+  overflow-x: auto;
+  margin-bottom: 0.3em;
+}
+#resumenContent table.table {
+  font-size: 1.02em;
+  border-radius: 12px;
+  background: #fafdff;
+  margin-bottom: 10px;
+}
+#resumenContent th, #resumenContent td {
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 7px 11px;
+}
+#resumenContent th {
+  background: #f5fafd;
+  color: #1876d1;
+  font-weight: 700;
+  font-size: 1.01em;
+  border-top: none;
+  border-bottom: 2.5px solid #e6eefb;
+}
+#resumenContent tr:nth-child(even) td {
+  background: #f6f9fc;
+}
+
+/* BOTONES DENTRO DEL MODAL */
+#resumenModal .btn {
+  margin-right: 0.6em;
+  min-width: 110px;
+}
+
+/* SOMBRA Y CIERRE DEL MODAL */
+#resumenModal {
+  background: rgba(33,53,80,0.13) !important;
+  position: fixed !important;
+  z-index: 2222;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  overflow: auto;
+}
+
+/* RESPONSIVE: móvil y tablet */
 @media (max-width: 700px) {
   .puerto-header { flex-direction: column; gap: 5px; text-align: center; padding: 10px 4vw; }
   fieldset { padding: 14px 7px 7px 7px !important; }
   .btn, button { padding: 7px 15px !important; }
+  #resumenModal .modal-dialog { max-width: 99vw !important; margin: 0.5rem; }
+  #resumenModal .modal-content { border-radius: 16px; }
+  #resumenModal .modal-header { border-radius: 15px 15px 0 0; }
+  #resumenModal .modal-body { padding: 8px !important; }
+  #resumenContent table.table { font-size: 0.94em; }
+}
+
+/* OPCIONAL: Estilo para copiar resumen */
+#resumenContent .copy-btn {
+  float: right;
+  font-size: 0.96em;
+  margin-top: -1.6em;
+  margin-bottom: 7px;
+  background: #ececec;
+  border-radius: 8px;
+  border: none;
+  padding: 5px 13px;
+  color: #1876d1;
+  cursor: pointer;
+  transition: background .15s;
+}
+#resumenContent .copy-btn:hover {
+  background: #d7eafd;
 }
