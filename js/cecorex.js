@@ -1,413 +1,366 @@
-// =================================================================================
-// SIREX - SCRIPT CENTRAL DE PROCESAMIENTO DE NOVEDADES (v2.10 - Búsqueda robusta de tablas y fecha + prompt)
-// =================================================================================
+// =====================================================================================
+// SIREX - CECOREX (Gestión Integral: Importación DOCX, Validación Visual, Batch Firebase, CRUD Manual, Resúmenes, Multi-detenidos, Integración Completa)
+// Profesional · Compatible con cecorex.html y novedades.js · 2025
+// =====================================================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
-    // --- CONFIGURACIÓN FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-        authDomain: "ucrif-5bb75.firebaseapp.com",
-        projectId: "ucrif-5bb75",
-        storageBucket: "ucrif-5bb75.appspot.com",
-        messagingSenderId: "241698436443",
-        appId: "1:241698436443:web:1f333b3ae3f813b755167e"
+  // === CONFIGURACIÓN FIREBASE ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+    authDomain: "ucrif-5bb75.firebaseapp.com",
+    projectId: "ucrif-5bb75",
+    storageBucket: "ucrif-5bb75.appspot.com",
+    messagingSenderId: "241698436443",
+    appId: "1:241698436443:web:1f333b3ae3f813b755167e"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // === ELEMENTOS DOM PRINCIPALES ===
+  const fechaInput = document.getElementById('fechaDia');
+  const btnCargar = document.getElementById('btnCargar');
+  const btnGrabar = document.getElementById('btnGrabar');
+  const btnBorrar = document.getElementById('btnBorrar');
+  const btnNuevo = document.getElementById('btnNuevo');
+  const btnImportarDocx = document.getElementById('inputDocx');
+  const btnVerResumen = document.getElementById('btnResumen');
+  const addBtn = document.getElementById('addDetenidoBtn');
+  const detenidosVentana = document.getElementById('detenidosVentana');
+  const resumenModal = document.getElementById('resumenModal');
+  const resumenContent = document.getElementById('resumenContent');
+  const modalClose = document.getElementById('modalClose');
+
+  // === FEEDBACK STATUS ===
+  let statusDiv = document.getElementById('statusCECOREX');
+  if (!statusDiv) {
+    statusDiv = document.createElement('div');
+    statusDiv.id = 'statusCECOREX';
+    document.querySelector('.container.mb-5')?.prepend(statusDiv);
+  }
+  function showStatus(msg, type = 'info') {
+    let cls = { info: 'alert-info', success: 'alert-success', error: 'alert-danger', warning: 'alert-warning' };
+    statusDiv.innerHTML = `<div class="alert ${cls[type] || cls.info}" role="alert">${msg}</div>`;
+  }
+  function clearStatus() { statusDiv.innerHTML = ''; }
+
+  // === UTILIDADES ===
+  function isoDate() { return (new Date()).toISOString().slice(0, 10); }
+  function getFecha() { return fechaInput.value; }
+  function setFecha(f) { fechaInput.value = f; }
+
+  // =================================================================================
+  // DINÁMICA DE DETENIDOS (Lista dinámica, igual que en grupo1, sincronizada con el formulario)
+  // =================================================================================
+  window.detenidos = [];
+  function renderDetenidos() {
+    detenidosVentana.innerHTML = '';
+    if (!window.detenidos.length) {
+      detenidosVentana.innerHTML = '<span class="text-muted">Sin detenidos.</span>';
+      return;
+    }
+    window.detenidos.forEach((d, i) => {
+      const div = document.createElement('div');
+      div.className = 'list-group-item d-flex align-items-center justify-content-between mb-2';
+      div.innerHTML = `
+        <span>
+          <strong>${d.DETENIDOS || ''}</strong> - ${d.MOTIVO || ''} - ${d.NACIONALIDAD || ''} - ${d.PRESENTA || ''} - ${d.OBSERVACIONES || ''}
+        </span>
+        <button class="list-btn-delete" type="button" title="Eliminar" onclick="eliminarDetenido(${i})">&times;</button>
+      `;
+      detenidosVentana.appendChild(div);
+    });
+  }
+  window.renderDetenidos = renderDetenidos;
+  window.eliminarDetenido = function (idx) {
+    window.detenidos.splice(idx, 1);
+    renderDetenidos();
+  };
+  if (addBtn) {
+    addBtn.addEventListener('click', function () {
+      const fields = ['DETENIDOS', 'MOTIVO', 'NACIONALIDAD', 'PRESENTA', 'OBSERVACIONES'];
+      const values = {};
+      let empty = true;
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        values[id] = el ? el.value.trim() : '';
+        if (values[id]) empty = false;
+      });
+      if (empty) return;
+      window.detenidos.push({ ...values });
+      renderDetenidos();
+      fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    });
+  }
+
+  // =================================================================================
+  // FUNCIONES GLOBALES (para integración con novedades.js y otros scripts)
+  // =================================================================================
+  window.setCECOREXData = function (data) {
+    window.detenidos = Array.isArray(data.detenidos) ? data.detenidos : [];
+    renderDetenidos();
+    [
+      "CONS.TFNO", "CONS.PRESC", "CONS. EQUIP", "CITADOS", "NOTIFICACIONES", "AL. ABOGADOS",
+      "REM. SUBDELEGACIÓN", "DECRETOS EXP.", "TRAMITES AUDIENCIA",
+      "CIE CONCEDIDO", "CIES DENEGADO", "PROH. ENTRADA", "MENAS", "Dil. INFORME"
+    ].forEach(k => { if (data[k] !== undefined && document.getElementById(k)) document.getElementById(k).value = data[k]; });
+    if (data["GESTIONES VARIAS"] !== undefined && document.getElementById("GESTIONES VARIAS"))
+      document.getElementById("GESTIONES VARIAS").value = data["GESTIONES VARIAS"];
+  };
+  window.getCECOREXData = function () {
+    return {
+      detenidos: window.detenidos ? [...window.detenidos] : [],
+      "CONS.TFNO": Number(document.getElementById("CONS.TFNO").value) || 0,
+      "CONS.PRESC": Number(document.getElementById("CONS.PRESC").value) || 0,
+      "CONS. EQUIP": Number(document.getElementById("CONS. EQUIP").value) || 0,
+      "CITADOS": Number(document.getElementById("CITADOS").value) || 0,
+      "NOTIFICACIONES": Number(document.getElementById("NOTIFICACIONES").value) || 0,
+      "AL. ABOGADOS": Number(document.getElementById("AL. ABOGADOS").value) || 0,
+      "REM. SUBDELEGACIÓN": Number(document.getElementById("REM. SUBDELEGACIÓN").value) || 0,
+      "DECRETOS EXP.": Number(document.getElementById("DECRETOS EXP.").value) || 0,
+      "TRAMITES AUDIENCIA": Number(document.getElementById("TRAMITES AUDIENCIA").value) || 0,
+      "CIE CONCEDIDO": Number(document.getElementById("CIE CONCEDIDO").value) || 0,
+      "CIES DENEGADO": Number(document.getElementById("CIES DENEGADO").value) || 0,
+      "PROH. ENTRADA": Number(document.getElementById("PROH. ENTRADA").value) || 0,
+      "MENAS": Number(document.getElementById("MENAS").value) || 0,
+      "Dil. INFORME": Number(document.getElementById("Dil. INFORME").value) || 0,
+      "GESTIONES VARIAS": document.getElementById("GESTIONES VARIAS").value
     };
+  };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+  // =================================================================================
+  // LIMPIAR FORMULARIO (Igual que en grupo1, pone todos a cero)
+  // =================================================================================
+  function limpiarForm() {
+    window.setCECOREXData({ detenidos: [] });
+    [
+      "CONS.TFNO", "CONS.PRESC", "CONS. EQUIP", "CITADOS", "NOTIFICACIONES", "AL. ABOGADOS",
+      "REM. SUBDELEGACIÓN", "DECRETOS EXP.", "TRAMITES AUDIENCIA",
+      "CIE CONCEDIDO", "CIES DENEGADO", "PROH. ENTRADA", "MENAS", "Dil. INFORME"
+    ].forEach(k => { if (document.getElementById(k)) document.getElementById(k).value = 0; });
+    if (document.getElementById("GESTIONES VARIAS")) document.getElementById("GESTIONES VARIAS").value = "";
+    window.detenidos = [];
+    renderDetenidos();
+  }
+
+  // =================================================================================
+  // CRUD MANUAL: CARGAR / GUARDAR / BORRAR / NUEVO
+  // =================================================================================
+
+  btnCargar.addEventListener('click', async () => {
+    clearStatus();
+    const fecha = getFecha();
+    if (!fecha) return showStatus('Selecciona una fecha para cargar.', 'warning');
+    try {
+      const ref = db.collection("cecorex_registros").doc(fecha);
+      const snap = await ref.get();
+      if (snap.exists) {
+        setCECOREXData(snap.data());
+        showStatus('Registro cargado correctamente.', 'success');
+      } else {
+        limpiarForm();
+        showStatus('No hay registro para esa fecha. Formulario limpio.', 'info');
+      }
+    } catch (err) {
+      showStatus('Error al cargar: ' + err.message, 'error');
     }
-    const db = firebase.firestore();
+  });
 
-    // --- ELEMENTOS DOM ---
-    const inputDocx = document.getElementById('inputDocx');
-    const statusContainer = document.getElementById('status-container');
-    const resultsContainer = document.getElementById('results-container');
-    const confirmationButtons = document.getElementById('confirmation-buttons');
-    const btnConfirmarGuardado = document.getElementById('btnConfirmarGuardado');
-    const btnCancelar = document.getElementById('btnCancelar');
-
-    let parsedDataForConfirmation = null;
-
-    // --- MANEJO DE EVENTOS ---
-    if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
-    if(btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
-    if(btnCancelar) btnCancelar.addEventListener('click', onCancel);
-
-    // --- FUNCIONES DE UI ---
-    function showStatus(message, type = 'info') {
-        if (!statusContainer) return;
-        let alertClass = 'alert-info';
-        if (type === 'success') alertClass = 'alert-success';
-        if (type === 'error') alertClass = 'alert-danger';
-        statusContainer.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
+  btnGrabar.addEventListener('click', async () => {
+    clearStatus();
+    const fecha = getFecha();
+    if (!fecha) return showStatus('Selecciona una fecha válida antes de guardar.', 'warning');
+    const data = getCECOREXData();
+    try {
+      const ref = db.collection("cecorex_registros").doc(fecha);
+      await ref.set({ ...data, fecha }, { merge: false });
+      showStatus('Guardado correctamente en Firebase.', 'success');
+    } catch (err) {
+      showStatus('Error al guardar: ' + err.message, 'error');
     }
+  });
 
-    function showSpinner(visible) {
-        const spinner = document.getElementById('spinner-area');
-        if (spinner) spinner.style.display = visible ? 'flex' : 'none';
+  btnBorrar.addEventListener('click', async () => {
+    clearStatus();
+    const fecha = getFecha();
+    if (!fecha) return showStatus('Selecciona una fecha para borrar.', 'warning');
+    if (!confirm('¿Seguro que quieres borrar este registro CECOREX?')) return;
+    try {
+      const ref = db.collection("cecorex_registros").doc(fecha);
+      await ref.delete();
+      limpiarForm();
+      showStatus('Registro eliminado.', 'success');
+    } catch (err) {
+      showStatus('Error al borrar: ' + err.message, 'error');
     }
+  });
 
-    function showConfirmationUI(show) {
-        if (confirmationButtons) confirmationButtons.style.display = show ? 'block' : 'none';
+  btnNuevo.addEventListener('click', () => {
+    setFecha(isoDate());
+    limpiarForm();
+    clearStatus();
+  });
+
+  // =================================================================================
+  // IMPORTACIÓN Y PARSING DE DOCX COMPLETO · UI DE REVISIÓN Y VALIDACIÓN
+  // =================================================================================
+
+  // Estados intermedios para confirmación
+  let parsedCECOREXDataForConfirmation = null;
+
+  if (btnImportarDocx) btnImportarDocx.addEventListener('change', handleDocxUpload);
+
+  // --- PARSER DE DOCX SOLO PARA SECCIÓN CECOREX ---
+  async function handleDocxUpload(event) {
+    clearStatus();
+    const file = event.target.files[0];
+    if (!file) return;
+    showStatus('Procesando archivo DOCX...', 'info');
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      const htmlRoot = document.createElement('div');
+      htmlRoot.innerHTML = result.value;
+
+      // Buscar cabecera y tabla de CECOREX
+      const normalized = str => str?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '';
+      const headers = Array.from(htmlRoot.querySelectorAll('h1,h2,h3,h4,p,strong'));
+      let ceHeader = headers.find(h => normalized(h.textContent).includes('CECOREX'));
+      let ceTable = null;
+      if (ceHeader) {
+        let next = ceHeader.nextElementSibling;
+        while (next && next.tagName !== 'TABLE') next = next.nextElementSibling;
+        ceTable = next;
+      }
+      if (!ceTable) throw new Error('No se encontró la tabla CECOREX en el DOCX.');
+
+      // Mapear tabla: clave-valor
+      const rows = ceTable.querySelectorAll('tr');
+      const cecorexData = {};
+      for (let row of rows) {
+        const cells = row.querySelectorAll('td,th');
+        if (cells.length < 2) continue;
+        const key = cells[0].textContent.trim();
+        const value = cells[1].textContent.trim();
+        cecorexData[key] = !isNaN(value) && value !== '' ? Number(value) : value;
+      }
+      // Detenidos: parseo especial si hay tabla detenidos
+      let detenidosTable = null;
+      let idx = headers.findIndex(h => normalized(h.textContent).includes('CECOREX'));
+      for (let i = idx + 1; i < headers.length; i++) {
+        if (normalized(headers[i].textContent).includes('DETENIDOS')) {
+          let n = headers[i].nextElementSibling;
+          while (n && n.tagName !== 'TABLE') n = n.nextElementSibling;
+          if (n && n.tagName === 'TABLE') { detenidosTable = n; break; }
+        }
+      }
+      if (detenidosTable) {
+        const detRows = detenidosTable.querySelectorAll('tr');
+        const detHeader = Array.from(detRows[0].children).map(th => th.textContent.trim().toUpperCase());
+        const detenidos = [];
+        for (let i = 1; i < detRows.length; i++) {
+          const cells = detRows[i].querySelectorAll('td');
+          if (!cells.length) continue;
+          let obj = {};
+          detHeader.forEach((h, j) => obj[h] = cells[j]?.textContent.trim() || '');
+          detenidos.push(obj);
+        }
+        cecorexData.detenidos = detenidos.map(e => ({
+          DETENIDOS: e['DETENIDOS'] || '',
+          MOTIVO: e['MOTIVO'] || '',
+          NACIONALIDAD: e['NACIONALIDAD'] || '',
+          PRESENTA: e['PRESENTA'] || '',
+          OBSERVACIONES: e['OBSERVACIONES'] || ''
+        }));
+      }
+
+      // Guarda en buffer y muestra para revisión visual
+      parsedCECOREXDataForConfirmation = cecorexData;
+      mostrarRevisionVisualCECOREX(cecorexData);
+      showStatus('Datos extraídos. Revisa visualmente y confirma para guardar.', 'info');
+
+    } catch (err) {
+      showStatus('Error al procesar DOCX: ' + err.message, 'error');
+    } finally {
+      event.target.value = '';
     }
+  }
 
-    function showResults(parsedData) {
-        if (!resultsContainer) return;
-        resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos Extraídos para Validación</h3>';
-        for (const key in parsedData) {
-            const dataContent = parsedData[key];
-            if (dataContent && (Object.keys(dataContent).length > 0 || (Array.isArray(dataContent) && dataContent.length > 0))) {
-                const card = document.createElement('div');
-                card.className = 'card mb-3 shadow-sm';
-                card.innerHTML = `
-                    <div class="card-header bg-light"><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong></div>
-                    <div class="card-body">
-                        <pre class="results-card">${JSON.stringify(dataContent, null, 2)}</pre>
-                    </div>
-                `;
-                resultsContainer.appendChild(card);
-            }
-        }
+  // --- Muestra UI de revisión visual para CECOREX ---
+  function mostrarRevisionVisualCECOREX(data) {
+    // Aquí puedes personalizar el modal/resumen visual a tu gusto (puedes hacerlo tipo card, tabla, etc.)
+    let html = '<h5>Datos extraídos de CECOREX</h5><ul class="list-group mb-3">';
+    Object.keys(data).forEach(k => {
+      if (k === 'detenidos') return;
+      html += `<li class="list-group-item d-flex justify-content-between"><span>${k}</span><strong>${data[k]}</strong></li>`;
+    });
+    html += '</ul>';
+    if (data.detenidos && data.detenidos.length) {
+      html += '<h6>Detenidos</h6><ul class="list-group">';
+      data.detenidos.forEach(d => {
+        html += `<li class="list-group-item small">${d.DETENIDOS} - ${d.MOTIVO} - ${d.NACIONALIDAD} - ${d.PRESENTA} - ${d.OBSERVACIONES}</li>`;
+      });
+      html += '</ul>';
     }
-    
-    // --- LÓGICA PRINCIPAL ---
-    async function handleDocxUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    html += `<div class="mt-3">
+      <button class="btn btn-success" id="btnConfirmarGuardado">Confirmar y guardar</button>
+      <button class="btn btn-secondary ms-2" id="btnCancelarConfirmacion">Cancelar</button>
+    </div>`;
+    resumenContent.innerHTML = html;
+    resumenModal.style.display = "block";
+    document.getElementById('btnConfirmarGuardado').onclick = onConfirmSave;
+    document.getElementById('btnCancelarConfirmacion').onclick = onCancelRevision;
+  }
 
-        onCancel(); 
-        showSpinner(true);
-        showStatus('Procesando archivo...', 'info');
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.convertToHtml({ arrayBuffer });
-            parsedDataForConfirmation = parseAllSections(result.value);
-
-            if (Object.keys(parsedDataForConfirmation).length <= 2) {
-                throw new Error("No se pudo extraer ninguna sección de grupo. Revisa que el DOCX sigue la plantilla.");
-            }
-
-            showResults(parsedDataForConfirmation);
-            showStatus('Datos extraídos. Por favor, revisa la información y confirma para guardar.', 'info');
-            showConfirmationUI(true);
-
-        } catch (err) {
-            console.error("Error en el procesamiento:", err);
-            showStatus(`Error: ${err.message}`, 'error');
-        } finally {
-            showSpinner(false);
-            inputDocx.value = '';
-        }
+  // --- Confirma y guarda en Firebase (batch atómico) ---
+  async function onConfirmSave() {
+    if (!parsedCECOREXDataForConfirmation) return;
+    showStatus('Guardando datos en Firebase, por favor espera...', 'info');
+    resumenModal.style.display = "none";
+    try {
+      const fecha = getFecha() || isoDate();
+      const ref = db.collection("cecorex_registros").doc(fecha);
+      await ref.set({ ...parsedCECOREXDataForConfirmation, fecha }, { merge: false });
+      setCECOREXData(parsedCECOREXDataForConfirmation);
+      showStatus('¡Éxito! Datos de CECOREX guardados en Firebase.', 'success');
+    } catch (err) {
+      showStatus('Error al guardar: ' + err.message, 'error');
+    } finally {
+      parsedCECOREXDataForConfirmation = null;
     }
-    
-    async function onConfirmSave() {
-        if (!parsedDataForConfirmation) {
-            showStatus('No hay datos para guardar.', 'error');
-            return;
-        }
-        showSpinner(true);
-        showConfirmationUI(false);
-        showStatus('Guardando datos en Firebase, por favor espera...', 'info');
-        resultsContainer.innerHTML = '';
+  }
 
-        try {
-            await saveAllToFirebase(parsedDataForConfirmation);
-            showStatus('¡Éxito! Todos los datos han sido guardados en Firebase.', 'success');
-        } catch (err) {
-            console.error("Error al guardar en Firebase:", err);
-            showStatus(`Error al guardar: ${err.message}`, 'error');
-            showResults(parsedDataForConfirmation);
-            showConfirmationUI(true);
-        } finally {
-            showSpinner(false);
-            parsedDataForConfirmation = null;
-        }
-    }
+  // --- Cancela revisión visual ---
+  function onCancelRevision() {
+    resumenModal.style.display = "none";
+    parsedCECOREXDataForConfirmation = null;
+    showStatus('Importación cancelada. No se han guardado cambios.', 'warning');
+  }
 
-    function onCancel() {
-        resultsContainer.innerHTML = '';
-        statusContainer.innerHTML = '';
-        showConfirmationUI(false);
-        parsedDataForConfirmation = null;
-    }
+  // --- Cierra modal de resumen ---
+  if (modalClose) modalClose.onclick = function () {
+    resumenModal.style.display = "none";
+  };
 
-    // ==================================================================
-    // PARSERS
-    // ==================================================================
-    function normalizeText(str) {
-        if (!str) return '';
-        return str
-            .replace(/&nbsp;/g, ' ')
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-zA-Z0-9\s]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toUpperCase();
-    }
+  // --- Resumen visual desde el propio formulario manual ---
+  if (btnVerResumen) btnVerResumen.addEventListener('click', function () {
+    let data = getCECOREXData();
+    mostrarRevisionVisualCECOREX(data);
+  });
 
-    // --------- BÚSQUEDA ROBUSTA DE TABLAS ---------
-    function findTableAfterTitle(htmlRoot, titleText) {
-        const normalizedSearchText = normalizeText(titleText);
+  // =================================================================================
+  // INICIALIZACIÓN AL ABRIR PÁGINA
+  // =================================================================================
+  setFecha(isoDate());
+  limpiarForm();
+  renderDetenidos();
 
-        // Busca el header como antes
-        const headers = Array.from(htmlRoot.querySelectorAll('h1, h2, h3, h4, p, strong'));
-        const targetHeader = headers.find(h => {
-            const normalizedHeaderText = normalizeText(h.textContent);
-            return normalizedHeaderText.includes(normalizedSearchText);
-        });
-        if (targetHeader) {
-            let nextElement = targetHeader;
-            for (let i = 0; i < 6; i++) {
-                nextElement = nextElement.nextElementSibling;
-                if (!nextElement) break;
-                if (nextElement.tagName === 'TABLE') return nextElement;
-            }
-        }
-
-        // Búsqueda secundaria: busca una tabla con columna típica de la sección
-        const sectionHints = {
-            'CECOREX': ['Remisiones a Subdelegación', 'Alegaciones de Abogados'],
-            'CIE': ['Internos', 'Ingresos'],
-            'GESTIÓN': ['Entrevistas de Asilo realizadas', 'Cartas Concedidas']
-        };
-        const hintList = sectionHints[titleText.toUpperCase()] || [];
-        if (hintList.length > 0) {
-            const tables = Array.from(htmlRoot.querySelectorAll('table'));
-            for (const table of tables) {
-                const cells = Array.from(table.querySelectorAll('td, th'));
-                for (const cell of cells) {
-                    const cellText = normalizeText(cell.textContent);
-                    if (hintList.some(hint => cellText.includes(normalizeText(hint)))) {
-                        return table;
-                    }
-                }
-            }
-        }
-
-        console.warn(`No se encontró la tabla para la sección: ${titleText}`);
-        return null;
-    }
-
-    function mapKeyValueTable(table, keyColumn = 0, valueColumn = 1) {
-        const data = {};
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length > valueColumn) {
-                const key = cells[keyColumn].textContent.trim();
-                const value = cells[valueColumn].textContent.trim();
-                if (key) {
-                    data[key] = !isNaN(parseFloat(value)) && isFinite(value) && value !== '' ? parseFloat(value) : value;
-                }
-            }
-        });
-        return data;
-    }
-
-    function mapArrayTable(table) {
-        const data = [];
-        const headerRow = table.querySelector('tr');
-        if (!headerRow) return data;
-
-        const headers = Array.from(headerRow.children)
-            .map(th => th.textContent.trim().toLowerCase().replace(/ /g, '_').replace(/\//g, '_').replace(/º/g,'').replace(/\./g, ''));
-            
-        const rows = Array.from(table.querySelectorAll('tr')).slice(1);
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            if (cells.length > 0 && Array.from(cells).some(c => c.textContent.trim() !== '')) {
-                const entry = {};
-                cells.forEach((cell, index) => {
-                    const header = headers[index];
-                    if(header) entry[header] = cell.textContent.trim();
-                });
-                data.push(entry);
-            }
-        });
-        return data;
-    }
-
-    function parseAllSections(html) {
-        const htmlRoot = document.createElement('div');
-        htmlRoot.innerHTML = html;
-        const data = {};
-        const metadata = {};
-        const firstTable = htmlRoot.querySelector('table');
-        if (firstTable && firstTable.textContent.includes('Turno')) {
-            const cells = firstTable.querySelectorAll('td');
-            if (cells.length > 1 && cells[1].textContent.trim()) metadata.turno = cells[1].textContent.trim();
-            if (cells.length > 3 && cells[3].textContent.trim()) metadata.responsable = cells[3].textContent.trim();
-        }
-        data.metadata = metadata;
-        
-        // --- Detección universal de la fecha + prompt manual ---
-        const dateRegex = /(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{2,4})/;
-        const tituloTag = Array.from(htmlRoot.querySelectorAll('p, h2')).find(p => p.textContent.includes('PARTE DIARIO DE NOVEDADES'));
-        let dateMatch = null;
-        if (tituloTag) dateMatch = tituloTag.textContent.match(dateRegex);
-        if (!dateMatch) dateMatch = htmlRoot.textContent.match(dateRegex);
-        if (!dateMatch) {
-            const tables = Array.from(htmlRoot.querySelectorAll('table'));
-            if (tables.length) {
-                const tableText = tables[0].textContent;
-                dateMatch = tableText.match(dateRegex);
-            }
-        }
-        if (dateMatch) {
-            const day = dateMatch[1].padStart(2, '0');
-            const month = dateMatch[2].padStart(2, '0');
-            let year = dateMatch[3];
-            if (year.length === 2) {
-                year = (parseInt(year, 10) > 50 ? "19" : "20") + year;
-            }
-            data.fecha = `${year}-${month}-${day}`;
-        } else {
-            // Pregunta la fecha manualmente si no la encuentra
-            const today = new Date();
-            let fechaManual = prompt("No se encontró fecha en el parte. Introduce la fecha (YYYY-MM-DD):", today.toISOString().slice(0,10));
-            data.fecha = fechaManual ? fechaManual : today.toISOString().slice(0, 10);
-            console.warn("No se encontró ninguna fecha en el documento, usando fecha manual o actual.");
-        }
-
-        // --- SECCIONES ---
-        const secciones = {
-            grupo1: { title: "GRUPO 1", type: 'key-value' },
-            investigacion: { title: "GRUPOS 2 y 3", type: 'array' },
-            casas_citas: { title: "CONTROL CASA DE CITAS", type: 'array' },
-            grupo4: { title: "GRUPO 4", type: 'array' },
-            puerto: { title: "PUERTO", type: 'key-value' },
-            cecorex: { title: "CECOREX", type: 'key-value', keyCol: 0, valCol: 1 },
-            cie: { title: "CIE", type: 'key-value' },
-            gestion: { title: "GESTIÓN", type: 'key-value', keyCol: 0, valCol: 1 }
-        };
-        for (const [key, config] of Object.entries(secciones)) {
-            const table = findTableAfterTitle(htmlRoot, config.title);
-            if (table) {
-                if (config.type === 'key-value') data[key] = mapKeyValueTable(table, config.keyCol, config.valCol);
-                else if (config.type === 'array') data[key] = mapArrayTable(table);
-            }
-        }
-
-        // === ADAPTADORES PARA LOS GRUPOS ===
-        // --- CIE ---
-        if (data.cie) {
-            let internosNac = [];
-            let ingresos = [];
-            let salidas = [];
-            let nInternos = 0;
-            let observaciones = "";
-            Object.entries(data.cie).forEach(([key, val]) => {
-                if (key.toLowerCase().includes("internos") && !isNaN(val)) nInternos = val;
-                if (key.toLowerCase().includes("incidente") || key.toLowerCase().includes("observacion")) observaciones = val;
-                if (key.toLowerCase().includes("ingreso")) ingresos.push({ nacionalidad: key.replace(/ingresos?/i, '').trim() || 'Desconocido', numero: val });
-                if (key.toLowerCase().includes("salida")) salidas.push({ destino: key.replace(/salidas?/i, '').trim() || 'Desconocido', numero: val });
-                if (/^[A-ZÁÉÍÓÚÑ ]+$/i.test(key) && !isNaN(val)) internosNac.push({ nacionalidad: key, numero: val });
-            });
-            data.cie = { nInternos, internosNac, ingresos, salidas, observaciones };
-        }
-        // --- CECOREX: si hay campo tipo "detenidos" como array, pásalo como tal (para el futuro)
-        if (data.cecorex && Array.isArray(data.cecorex.detenidos)) {
-            data.cecorex.detenidos = data.cecorex.detenidos.map(e => ({
-                nombre: e.nombre || "",
-                nacionalidad: e.nacionalidad || "",
-                motivo: e.motivo || "",
-                observaciones: e.observaciones || ""
-            }));
-        }
-        // --- GESTIÓN: puedes añadir aquí mapeos especiales si en el futuro tienes listas
-
-        return data;
-    }
-    
-    // ==================================================================
-    // LÓGICA DE GUARDADO Y TRADUCCIÓN
-    // ==================================================================
-    async function saveAllToFirebase(data) {
-        const fecha = data.fecha;
-        if (!fecha) throw new Error("No se pudo determinar la fecha para guardar los registros.");
-        const fechaSinGuiones = fecha.replace(/-/g, "");
-        const batch = db.batch();
-        const firebaseMap = {
-            cecorex: { collection: "cecorex", id: `cecorex_${fecha}` },
-            cie: { collection: "grupo_cie", id: fecha },
-            gestion: { collection: "gestion_avanzada", id: `gestion_${fechaSinGuiones}` },
-            puerto: { collection: "grupoPuerto_registros", id: `puerto_${fecha}` },
-            grupo1: { collection: "grupo1_diario", id: `g1_${fecha}` },
-            grupo4: { collection: "grupo4_operativo", id: `g4_${fecha}` },
-            investigacion: { collection: "investigacion_diario", id: `inv_${fecha}` },
-            casas_citas: { collection: "control_casas_citas", id: `citas_${fecha}` }
-        };
-        for (const [key, fbConfig] of Object.entries(firebaseMap)) {
-            if (data[key] && (Object.keys(data[key]).length > 0 || (Array.isArray(data[key]) && data[key].length > 0))) {
-                let dataToSave = {
-                    fecha: fecha,
-                    ...(data.metadata.turno && { turno: data.metadata.turno }),
-                    ...(data.metadata.responsable && { responsable: data.metadata.responsable }),
-                    ...formatDataForFirebase(key, data[key])
-                };
-                const docRef = db.collection(fbConfig.collection).doc(fbConfig.id);
-                batch.set(docRef, dataToSave, { merge: true });
-            }
-        }
-        await batch.commit();
-    }
-    function formatDataForFirebase(key, parsedData) {
-        const translationMap = {
-            cecorex: {
-                'Remisiones a Subdelegación': 'remisiones',
-                'Alegaciones de Abogados': 'alegaciones',
-                'Decretos expulsión grabados': 'decretos',
-                'Citados en Oficina': 'citados',
-                'Diligencias de informe': 'diligenciasInforme',
-                'Consultas (Equipo)': 'consultasEquipo',
-                'Consultas (Telefónicas)': 'consultasTel',
-                'Prohibiciones de entrada grabadas': 'prohibiciones',
-                'Trámites de audiencia': 'audiencias',
-                'Detenidos ILE': 'detenidosILE',
-                'Notificaciones con Letrado': 'notificaciones',
-                'MENAs': 'menas',
-                'Observaciones': 'observaciones'
-            },
-            gestion: {
-                'Entrevistas de Asilo realizadas': 'entrevistasAsilo',
-                'Fallos en Entrevistas de Asilo': 'entrevistasAsiloFallos',
-                'Cartas Concedidas': 'cartasConcedidas',
-                'Cartas Denegadas': 'cartasDenegadas',
-                'Citas Subdelegación': 'citasSubdelegacion',
-                'Tarjetas recogidas en Subdelegación': 'tarjetasSubdelegacion',
-                'Notificaciones Concedidas': 'notificacionesConcedidas',
-                'Notificaciones Denegadas': 'notificacionesDenegadas',
-                'Citas ofertadas': 'citas',
-                'Citas que faltan': 'citasFaltan',
-                'CUEs (Certificados UE)': 'cues',
-                'Asignaciones de NIE': 'asignaciones',
-                'Modificaciones telem. Favorables': 'modificacionesFavorables',
-                'Modificaciones telem. Desfavorables': 'modificacionesDesfavorables',
-                'Declaración Entrada': 'declaracionEntrada',
-                'Oficios realizados': 'oficios',
-                'Telefonemas Asilo': 'citasTelAsilo',
-                'Telefonemas Cartas': 'citasTelCartas',
-                'Renuncias Ucrania / Asilo': 'renunciasAsilo'
-            },
-        };
-
-        if (!translationMap[key]) {
-            if(Array.isArray(parsedData)) return { datos: parsedData };
-            return { ...parsedData };
-        }
-
-        const translatedData = {};
-        for (const [oldKey, value] of Object.entries(parsedData)) {
-            const newKey = translationMap[key][oldKey];
-            if (newKey) {
-                translatedData[newKey] = value;
-            } else {
-                translatedData[oldKey] = value;
-            }
-        }
-        return translatedData;
-    }
+  // =================================================================================
+  // ESTILOS Y UTILIDAD MODAL (por si usas modal puro, sin librerías)
+  // =================================================================================
+  // Cierre modal clicando fuera (básico, personalizable)
+  window.onclick = function (event) {
+    if (event.target == resumenModal) resumenModal.style.display = "none";
+  };
 });
