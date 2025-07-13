@@ -79,6 +79,40 @@
         </button>
       </div>
     </div>
+ <!-- Detenidos -->
+      <fieldset class="mb-4 p-3 border rounded shadow-sm bg-white">
+        <legend class="w-auto px-2 fw-bold text-primary">Detenidos</legend>
+        <div class="row align-items-end g-2 mb-3">
+          <div class="col-12 col-md">
+            <label class="form-label">Detenidos</label>
+            <input type="text" id="DETENIDOS" class="form-control" autocomplete="off">
+          </div>
+          <div class="col-12 col-md">
+            <label class="form-label">Motivo</label>
+            <input type="text" id="MOTIVO" class="form-control" autocomplete="off">
+          </div>
+          <div class="col-12 col-md">
+            <label class="form-label">Nacionalidad</label>
+            <input type="text" id="NACIONALIDAD" class="form-control" autocomplete="off">
+          </div>
+          <div class="col-12 col-md">
+            <label class="form-label">Presenta</label>
+            <input type="text" id="PRESENTA" class="form-control" autocomplete="off">
+          </div>
+          <div class="col-12 col-md">
+            <label class="form-label">Observaciones</label>
+            <input type="text" id="OBSERVACIONES" class="form-control" autocomplete="off">
+          </div>
+          <div class="col-auto">
+            <button type="button" id="addDetenidoBtn" class="btn btn-outline-success mb-2" title="Añadir detenido">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div id="detenidosVentana" class="list-group"></div>
+      </fieldset>
+    </form>
+  </div>
 
     <!-- Formulario principal CECOREX -->
     <form id="formCecorex" autocomplete="off">
@@ -163,41 +197,7 @@
         </div>
       </fieldset>
 
-      <!-- Detenidos -->
-      <fieldset class="mb-4 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Detenidos</legend>
-        <div class="row align-items-end g-2 mb-3">
-          <div class="col-12 col-md">
-            <label class="form-label">Detenidos</label>
-            <input type="text" id="DETENIDOS" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Motivo</label>
-            <input type="text" id="MOTIVO" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Nacionalidad</label>
-            <input type="text" id="NACIONALIDAD" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Presenta</label>
-            <input type="text" id="PRESENTA" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Observaciones</label>
-            <input type="text" id="OBSERVACIONES" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-auto">
-            <button type="button" id="addDetenidoBtn" class="btn btn-outline-success mb-2" title="Añadir detenido">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-        </div>
-        <div id="detenidosVentana" class="list-group"></div>
-      </fieldset>
-    </form>
-  </div>
-
+     
   <!-- ========================================== -->
 <!--   BLOQUE DE BOTONES PRINCIPALES + RESUMEN  -->
 <!-- ========================================== -->
