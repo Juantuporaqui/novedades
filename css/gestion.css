@@ -1,7 +1,17 @@
-/* SIREX Gestión - Glassmorphism, Responsive y Modo Oscuro */
-/* VERSIÓN CON SOLUCIÓN FINAL Y DEFINITIVA PARA CAMPOS MÓVILES */
+/* ============================= */
+/* SIREX GESTIÓN – DISEÑO FINAL  */
+/* ============================= */
 
 :root {
+  --police-blue: #14224b;
+  --police-blue-light: #29497a;
+  --police-yellow: #ffd94a;
+  --police-green: #3cb371;
+  --police-red: #ee4444;
+  --police-white: #f8fafc;
+  --police-grey: #e4e9f2;
+  --card-shadow: 0 6px 32px 0 #14224b22, 0 2px 8px #14224b0c;
+
   --primary-color: #1976d2;
   --primary-light: #e3f2fd;
   --primary-dark: #1258a7;
@@ -12,161 +22,28 @@
   --border-color: #bdbdbd;
 }
 
-body {
-  font-family: 'Inter', Arial, sans-serif;
-  margin: 0;
-  background: var(--bg-gradient);
+/* ============================= */
+/*  Fondo Corporativo Principal  */
+/* ============================= */
+body.bg-police {
+  background: linear-gradient(135deg, #193768 70%, #38588e 100%) !important;
   min-height: 100vh;
-  color: var(--text-color);
-  box-sizing: border-box;
-  transition: background 0.3s, color 0.3s;
 }
 
-/* Header */
-.header {
-  display: flex;
-  align-items: center;
-  background: rgba(33, 150, 243, 0.85);
-  color: #fff;
-  padding: 18px 25px;
-  border-bottom-left-radius: 26px;
-  border-bottom-right-radius: 26px;
-  box-shadow: 0 4px 24px rgba(33,150,243,0.13);
-  position: sticky;
-  top: 0; z-index: 10;
-}
-.header-icon span { font-size: 2.4rem; margin-right: 18px; }
-.header-title .brand { font-size: 1.6rem; font-weight: 700; letter-spacing: 3px; }
-.header-title .subtitle { margin-left: 10px; font-size: 1.1rem; font-weight: 400; opacity: 0.89; }
-.header-actions { margin-left: auto; display: flex; gap: 9px; }
-.btn-menu {
-  background: rgba(255,255,255,0.18);
+/* ============================= */
+/*        Tarjetas y Cards       */
+/* ============================= */
+.card {
+  border-radius: 22px;
   border: none;
-  color: #fff;
-  font-size: 1.4rem;
-  padding: 7px 12px;
-  border-radius: 10px;
-  transition: background 0.2s, color 0.2s;
-  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  background: #f7fafc;
+  margin-bottom: 2rem;
+  transition: box-shadow .22s;
 }
-.btn-menu:hover, .btn-menu:focus { background: #fff; color: var(--primary-color); outline: none; }
-
-/* Barra de registro */
-.registro-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
-  background: rgba(255,255,255,0.79);
-  box-shadow: 0 2px 24px rgba(33,150,243,0.07);
-  border-radius: 16px;
-  margin: 22px 16px 18px 16px;
-  padding: 16px 12px;
+.card:hover {
+  box-shadow: 0 10px 36px #14224b33, 0 4px 16px #14224b0c;
 }
-.registro-bar label { font-weight: 600; font-size: 1.1rem; margin-right: 4px; }
-.registro-bar input[type="date"] {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 1rem;
-  transition: border 0.2s;
-  background: #f6fafd;
-}
-.registro-bar input[type="date"]:focus { border: 1.5px solid var(--primary-color); outline: none; }
-
-.btn-principal, .btn-secundario, .btn-eliminar {
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 10px;
-  border: none;
-  padding: 9px 18px;
-  margin-left: 0;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.btn-principal { background: var(--primary-color); color: #fff; }
-.btn-principal:hover { background: var(--primary-dark); }
-.btn-secundario { background: #fff; color: var(--primary-color); border: 1px solid var(--primary-color); }
-.btn-secundario:hover { background: var(--primary-light); }
-.btn-eliminar { background: #e53935; color: #fff; }
-.btn-eliminar:hover { background: #b71c1c; }
-
-/* Historial botones */
-#historialFechas { margin: 0 16px 16px 16px; display: flex; flex-wrap: wrap; gap: 7px; }
-.btn-historial {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  border: 1px solid #bbdefb;
-  border-radius: 8px;
-  padding: 5px 14px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.btn-historial:hover { background: var(--primary-color); color: #fff; }
-
-/* Contenedor y Paneles del Formulario */
-.form-container { display: flex; flex-direction: column; gap: 10px; }
-.panel-seccion {
-  background: var(--panel-bg);
-  margin: 0 16px;
-  border-radius: 18px;
-  box-shadow: 0 2px 18px rgba(33,150,243,0.06);
-  padding: 18px 22px;
-  transition: background 0.2s;
-}
-.seccion-titulo {
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 20px;
-  letter-spacing: 0.5px;
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-light);
-  padding-bottom: 8px;
-}
-
-/* Filas y campos del formulario */
-.input-row, .input-row-group {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 15px;
-}
-.input-row-group { align-items: flex-start; }
-.input-row label, .input-row-group > label {
-  width: 220px;
-  font-weight: 600;
-  font-size: 1rem;
-  color: #334;
-  flex-shrink: 0; /* Evita que la etiqueta se encoja */
-}
-.input-row-group > label { padding-top: 7px; }
-
-.input-row input[type="number"], .input-row input[type="text"], .input-row textarea {
-  font-size: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 7px;
-  padding: 8px 12px;
-  min-width: 0;
-  transition: border 0.2s;
-  background: var(--input-bg);
-  flex: 1; 
-}
-.input-row input[type="number"] { flex-grow: 0; flex-basis: 120px; }
-.input-small { flex-basis: 80px !important; }
-.sub-input-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.label-inline { font-weight: 600; font-size: 0.95rem; }
-
-.input-row input:focus, .input-row textarea:focus { border: 1.5px solid var(--primary-color); outline: none; }
-.input-row textarea { resize: vertical; min-height: 40px; }
-.ayuda-btn {
-    display: none;
-}
-
-/* Paneles de resumen */
-#panelResumen { background: var(--primary-light); border: 1.2px solid #90caf9; margin-top: 18px; }
-#resumenRegistro { font-size: 1.1rem; padding: 14px 0; line-height: 1.6; }
 .panel-glass {
   background: var(--panel-bg);
   border-radius: 18px;
@@ -174,8 +51,173 @@ body {
   margin: 18px 16px;
   padding: 18px;
 }
-.mt-4 { margin-top: 32px; }
-.row-cols { display: flex; flex-wrap: wrap; gap: 11px; align-items: center; margin-bottom: 13px; }
+.mt-4 { margin-top: 32px !important; }
+
+/* ============================= */
+/*           Encabezados         */
+/* ============================= */
+.card-header, h2, h3, h4 {
+  color: var(--police-blue);
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+h4 {
+  border-left: 5px solid var(--police-blue);
+  padding-left: .55em;
+  margin-bottom: 0.5em;
+  font-size: 1.23rem;
+}
+
+/* ============================= */
+/*            Navbar             */
+/* ============================= */
+.bg-police-blue { background: var(--police-blue) !important; }
+.bg-police-dark { background: #182b4d !important; }
+.bg-police-light { background: var(--police-grey) !important; }
+.text-police-blue { color: var(--police-blue) !important; }
+
+.navbar-brand { letter-spacing: 1.2px; }
+
+/* ============================= */
+/*        Footer corporativo     */
+/* ============================= */
+.footer.bg-police-blue {
+  background: var(--police-blue);
+  border-top: 3px solid var(--police-yellow);
+  letter-spacing: .04em;
+  font-size: 1.06rem;
+}
+
+/* ============================= */
+/*           Botones             */
+/* ============================= */
+.btn-police-blue {
+  background: linear-gradient(90deg, #275c99, #14224b 80%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px #132a6a18, 0 2px 4px #fff1;
+  font-weight: 600;
+  border-radius: 13px;
+  transition: filter .19s, box-shadow .18s, background .18s, transform .14s;
+  font-size: 1.09rem;
+  padding: .66em 1.7em;
+}
+.btn-police-blue:hover, .btn-police-blue:focus {
+  background: linear-gradient(90deg, #436bac, #254473 80%);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 22px #25447324;
+  color: #fff;
+}
+
+.btn-police-green {
+  background: linear-gradient(90deg, #38b172, #245d4a 80%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px #143e4a18;
+  font-weight: 600;
+  border-radius: 13px;
+  font-size: 1.09rem;
+  padding: .66em 1.7em;
+  transition: filter .19s, box-shadow .18s, background .18s, transform .14s;
+}
+.btn-police-green:hover, .btn-police-green:focus {
+  background: #48cf98;
+  color: #fff;
+  filter: brightness(1.11);
+}
+
+.btn-police-red {
+  background: linear-gradient(90deg, #ee4444, #5c2121 80%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px #ee444422;
+  font-weight: 600;
+  border-radius: 13px;
+  font-size: 1.09rem;
+  padding: .66em 1.7em;
+  transition: filter .19s, box-shadow .18s, background .18s, transform .14s;
+}
+.btn-police-red:hover, .btn-police-red:focus {
+  background: #ee4444ee;
+  color: #fff;
+  filter: brightness(1.13);
+}
+
+.btn-police-yellow {
+  background: linear-gradient(90deg, #ffd94a, #ffe8a1 80%);
+  color: #24385d;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 2px 7px #ffd94a22;
+  border-radius: 13px;
+  font-size: 1.09rem;
+  padding: .66em 1.7em;
+  transition: filter .19s, box-shadow .18s, background .18s, transform .14s;
+}
+.btn-police-yellow:hover, .btn-police-yellow:focus {
+  background: #ffe57a;
+  color: #24385d;
+  filter: brightness(1.06);
+}
+
+.btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px #132a6a19;
+}
+
+/* ============================= */
+/*            Badges             */
+/* ============================= */
+.badge.bg-warning,
+.badge.bg-info {
+  background: var(--police-yellow) !important;
+  color: #24385d !important;
+  font-size: .98rem;
+  font-weight: 700;
+  border-radius: 11px;
+  letter-spacing: .02em;
+  box-shadow: 0 1px 6px #ffe8a122;
+}
+
+/* ============================= */
+/*       Formularios Cards       */
+/* ============================= */
+input[type='text'], input[type='number'], input[type='date'], .form-control, .form-select, textarea {
+  border-radius: 11px !important;
+  border: 1.8px solid #b1bdd9 !important;
+  font-size: 1.08rem;
+  min-height: 48px;
+  padding: .6em 1em;
+  background: #f8fafc !important;
+  transition: border .18s, box-shadow .15s;
+}
+
+input:focus, .form-control:focus, .form-select:focus {
+  border-color: #29497a !important;
+  box-shadow: 0 0 0 3px #29497a2a;
+  outline: none;
+}
+
+label, .form-label {
+  font-size: 1.04rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: #29497a;
+}
+
+/* ============================= */
+/*           Resumen             */
+/* ============================= */
+#panelResumen { background: var(--police-grey); border: 1.2px solid #90caf9; margin-top: 18px; }
+#resumenRegistro { font-size: 1.1rem; padding: 14px 0; line-height: 1.6; }
+
+/* ============================= */
+/*    Botones exportación etc    */
+/* ============================= */
+.export-btns .btn {
+  min-width: 130px;
+  margin-bottom: 4px;
+}
 .input-date {
   min-width: 120px;
   font-size: 1rem;
@@ -186,24 +228,20 @@ body {
   color: var(--text-color);
 }
 
-/* Botones Exportación */
-.btn-pdf {
-  background: #ffd600; color: #333; border: none; font-weight: 700;
-  font-size: 1.05rem; border-radius: 8px; padding: 7px 20px; cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-pdf:hover { background: #fff9c4; }
-.btn-guardar {
-  background: #43a047; color: #fff; border: none; font-weight: 700;
-  font-size: 1.05rem; border-radius: 8px; padding: 7px 20px; cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-guardar:hover { background: #1b5e20; }
-
-
-/* MODO OSCURO */
+/* ============================= */
+/*         Modo Oscuro           */
+/* ============================= */
 body.dark-mode {
-  --primary-color: #ffd600;
+  --police-blue: #ffd94a;
+  --police-blue-light: #3a4b63;
+  --police-yellow: #ffd94a;
+  --police-green: #48cf98;
+  --police-red: #ee4444;
+  --police-white: #212b48;
+  --police-grey: #2b3752;
+  --card-shadow: 0 6px 32px 0 #ffd94a22, 0 2px 8px #ffd94a0c;
+
+  --primary-color: #ffd94a;
   --primary-light: #3a4b63;
   --primary-dark: #fff9c4;
   --text-color: #e3f2fd;
@@ -212,71 +250,113 @@ body.dark-mode {
   --input-bg: #14263b;
   --border-color: #3a4b63;
 }
-body.dark-mode .header { background: rgba(21, 101, 192, 0.90); color: #fff; }
-body.dark-mode .seccion-titulo { color: var(--primary-color); border-bottom-color: var(--primary-light); }
-body.dark-mode .input-row label, body.dark-mode .input-row-group > label, body.dark-mode .label-inline { color: #cddce9; }
-body.dark-mode #panelResumen { background: #263238; color: #fff; border-color: #3a4b63; }
-body.dark-mode .btn-principal { background: var(--primary-color); color: #222; }
-body.dark-mode .btn-principal:hover { background: var(--primary-dark); }
-body.dark-mode .btn-secundario { color: var(--primary-color); border-color: var(--primary-color); background: transparent; }
-body.dark-mode .btn-secundario:hover { background: rgba(255, 214, 0, 0.1); }
-body.dark-mode .btn-eliminar { background: #c62828; }
-body.dark-mode .btn-eliminar:hover { background: #b71c1c; }
-body.dark-mode .btn-menu:hover { background: #ffd600; color: #222; }
-body.dark-mode .btn-pdf { background: #ffd600; color: #0d2540; }
-body.dark-mode .btn-pdf:hover { background: #fff9c4; }
+body.dark-mode,
+body.dark-mode.bg-police {
+  background: #17233a !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .card,
+body.dark-mode .bg-police-light,
+body.dark-mode .panel-glass {
+  background: #222e49 !important;
+  color: #fff !important;
+}
+body.dark-mode .navbar,
+body.dark-mode .footer.bg-police-blue {
+  background: #151e34 !important;
+  color: #fff !important;
+}
+body.dark-mode label,
+body.dark-mode .form-label,
+body.dark-mode .text-police-blue,
+body.dark-mode .navbar-brand {
+  color: #ffd94a !important;
+}
+body.dark-mode .form-control,
+body.dark-mode input,
+body.dark-mode textarea {
+  background: #212b48 !important;
+  color: #fff !important;
+  border-color: #ffd94a !important;
+}
+body.dark-mode .btn,
+body.dark-mode .btn-police-blue,
+body.dark-mode .btn-police-green,
+body.dark-mode .btn-police-yellow,
+body.dark-mode .btn-police-red {
+  filter: brightness(1.1);
+}
+body.dark-mode .badge.bg-info {
+  background: #ffd94a !important;
+  color: #0d2540 !important;
+}
 
+/* ============================= */
+/*     Modo Móvil Avanzado       */
+/* ============================= */
+@media (max-width: 991px) {
+  .card { padding: 1.18em 1em !important; }
+  h2, h4 { font-size: 1.09rem; }
+}
+@media (max-width: 576px) {
+  h4 { font-size: 1.02rem; }
+  .btn { font-size: 1.01rem; padding: .7em 1.2em; }
+  .footer.bg-police-blue { font-size: 0.98rem; }
+}
 
-/* =============================================================== */
-/* ==       SOLUCIÓN FINAL Y DEFINITIVA PARA VISTA MÓVIL        == */
-/* =============================================================== */
-
+/* Adaptación campos en móvil */
 @media (max-width: 800px) {
-  .registro-bar, .panel-seccion, .panel-glass {
-    margin: 10px 8px;
-    padding: 15px 12px;
+  .card, .panel-glass {
+    margin: 10px 8px !important;
+    padding: 15px 12px !important;
   }
-  .header {
-    padding: 12px 15px;
+  .input-row, .input-row-group, .row.g-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
   }
-  .input-row, .input-row-group {
-    flex-direction: column;
-    align-items: stretch; /* Ocupa todo el ancho */
-    gap: 8px;
-  }
-  .input-row label, .input-row-group > label {
-    width: 100%;
+  label, .form-label {
+    width: 100% !important;
     margin-bottom: 0;
   }
-  
-  /* 1. Resetear el comportamiento flex de todos los inputs dentro de una fila en móvil */
+  .row.g-3 > div,
   .input-row > input, 
   .input-row > textarea {
-    flex: none !important; /* ¡IMPORTANTE! Anula el 'flex: 1' del escritorio */
-  }
-
-  /* 2. Los campos de texto y textarea ocupan el ancho completo */
-  .input-row input[type="text"],
-  .input-row textarea {
-    width: 100%;
+    flex: none !important;
+    width: 100% !important;
     box-sizing: border-box;
   }
+  input[type="number"], input[type="text"] {
+    max-width: 150px !important;
+    min-width: 0 !important;
+    height: 45px !important;
+    margin-bottom: 8px;
+  }
+  textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
 
-  /* 3. SOLUCIÓN: Los campos numéricos tienen un ANCHO y ALTO fijos y controlados */
-  .input-row input[type="number"] {
-    width: 100% !important;     /* Ocupa el ancho disponible */
-    max-width: 150px !important; /* PERO con un máximo razonable */
-    height: 45px !important;     /* Altura fija para que no se deforme */
-    box-sizing: border-box;
-  }
-  
-  /* 4. Para filas con varios inputs pequeños (ej. Citas Telefónicas) */
-  .sub-input-row {
-    width: 100%;
-    justify-content: flex-start;
-  }
-  .sub-input-row .input-small {
-      flex: 1 !important; /* Permite que los campos pequeños compartan espacio */
-      height: 45px !important;
-  }
+/* Microdetalles UX */
+input:disabled, .form-control:disabled {
+  background: #f3f5fa !important;
+  color: #bcc2ce;
+}
+::-webkit-input-placeholder { color: #91a2c1; opacity: 1; }
+::-moz-placeholder { color: #91a2c1; opacity: 1; }
+:-ms-input-placeholder { color: #91a2c1; opacity: 1; }
+::placeholder { color: #91a2c1; opacity: 1; }
+
+.modo-oscuro-btn {
+  border: none;
+  background: transparent;
+  color: #ffd94a;
+  font-size: 1.5em;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.modo-oscuro-btn:hover {
+  filter: brightness(1.6);
 }
