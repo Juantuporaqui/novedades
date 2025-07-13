@@ -1,225 +1,165 @@
+:root {
+  --cecorex-azul: #1876d1;
+  --cecorex-azul-suave: #f2f7fd;
+  --cecorex-yellow: #ffd94a;
+  --cecorex-shadow: 0 4px 24px #1876d110, 0 2px 8px #1876d114;
+}
+
 body {
   font-family: 'Inter', Arial, sans-serif;
-  background: linear-gradient(135deg, #e6f3fa 60%, #f6fbff 100%);
+  background: linear-gradient(120deg,#e8eaf6 0%, #fff 100%);
+  color: #222;
+  min-height: 100vh;
   margin: 0;
-  padding-bottom: 80px; /* Espacio para el footer fijo */
-  color: #193559;
+  transition: background .3s, color .3s;
 }
 
-.cecorex-header {
+/* HEADER */
+.puerto-header {
   display: flex;
   align-items: center;
+  background: rgba(24, 118, 209, 0.95);
+  color: #fff;
+  padding: 18px 26px;
+  border-bottom-left-radius: 26px;
+  border-bottom-right-radius: 26px;
+  box-shadow: var(--cecorex-shadow);
   justify-content: space-between;
-  background: #172747;
-  padding: 1rem 1.3rem;
-  color: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  gap: 14px;
+}
+.puerto-header img { filter: drop-shadow(0 2px 8px #1876d160); }
+
+.puerto-header .btn {
+  font-size: 1.05em;
+  font-weight: 500;
+  border-radius: 1.5em;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px 18px;
+  box-shadow: 0 2px 10px #fff2;
 }
 
-.logo-cnp {
-  width: 46px;
-  margin-right: 1.2rem;
-  border-radius: 8px;
-}
-
-.titulo-header {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.titulo-main {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #53cdf5;
-  letter-spacing: .03em;
-}
-
-.titulo-desc {
-  font-size: 1rem;
-  color: #e0f4ff;
-}
-
-.btn-menu {
-  background: #2d95d6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
+/* TITULOS */
+legend {
+  font-size: 1.09em;
   font-weight: 700;
-  padding: 9px 19px;
-  cursor: pointer;
-  transition: background .14s;
-}
-.btn-menu:hover { background: #145899; }
-
-main {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.panel-glass {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  box-shadow: 0 4px 22px #0b4a8022;
-  padding: 1.6em 1.1em;
-  margin-top: 1.5rem;
-}
-
-.botonera {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 1.3em;
-  flex-wrap: wrap;
-}
-
-.form-control {
-  font-size: 1rem;
+  color: var(--cecorex-azul);
+  letter-spacing: 0.7px;
+  margin-bottom: 2px;
+  background: #f7fbff;
   border-radius: 9px;
-  border: 1.2px solid #b7e7fd;
-  background: #f8fdff;
-  padding: 8px 13px;
-  color: #172747;
-  transition: border .14s;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 3px 15px;
 }
-.botonera .form-control { flex: 1; min-width: 120px; }
-.botonera button { flex-shrink: 0; }
 
-.btn-azul, .btn-verde, .btn-gris, .btn-add {
+/* FIELDSET */
+fieldset {
+  margin-bottom: 18px;
+  background: #fff;
+  border: 2px solid #e6eefb;
+  border-radius: 18px;
+  box-shadow: 0 4px 20px #1876d108;
+  padding: 20px 22px 12px 22px !important;
+}
+
+/* INPUTS */
+input.form-control, select.form-control {
+  border-radius: 1.1em;
+  font-size: 1.07em;
+  padding: 9px 14px;
+  margin-bottom: 0;
+  border: 1.6px solid #c2d9fa;
+  background: #fafdff;
+  transition: border-color .15s;
+}
+
+input.form-control:focus {
+  border-color: var(--cecorex-azul);
+  box-shadow: 0 0 0 1.5px var(--cecorex-azul);
+  background: #f2f8ff;
+}
+
+/* BOTONES PRINCIPALES */
+button, .btn {
+  border-radius: 1.6em !important;
+  font-weight: 600;
+  transition: box-shadow .16s, background .14s;
+  box-shadow: 0 2px 12px #1876d120;
+}
+.btn-outline-primary, .btn-outline-success, .btn-outline-secondary, .btn-danger, .btn-success {
+  border-width: 2px;
+}
+
+/* LISTA DE DETENIDOS */
+#detenidosVentana {
+  background: #f8fafb;
+  border-radius: 13px;
+  min-height: 48px;
+  margin-top: 3px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 8px #1876d112;
+  font-size: 1.05em;
+}
+.list-group-item {
   border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  padding: 9px 18px;
-  cursor: pointer;
-  transition: all .14s;
-  display: inline-flex;
+  border-radius: 11px;
+  background: #eaf3ff;
+  margin-bottom: 3px;
+  padding: 8px 10px 8px 16px;
+  box-shadow: 0 1px 5px #b0d6fc19;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  font-size: 1.03em;
 }
-.btn-azul { background: linear-gradient(90deg, #0096c7 70%, #5bd7f8 100%); color: #fff; }
-.btn-verde { background: linear-gradient(90deg, #13ca78 70%, #b3f7cd 100%); color: #fff; }
-.btn-gris { background: #4c5463; color: #fff; }
-.btn-add { background: #007bff; color: #fff; padding: 8px 15px; }
-
-.btn-azul:hover { background: #2267a9; }
-.btn-verde:hover { background: #18925f; }
-.btn-gris:hover { background: #1a1a1e; }
-.btn-add:hover { background: #0056b3; }
-
-.sub-panel {
-    background-color: #f8fdff;
-    border: 1px solid #e0f4ff;
-    border-radius: 16px;
-    padding: 1rem;
-    margin-top: 1.5rem;
+.list-btn-delete {
+  background: #e54343 !important;
+  color: #fff !important;
+  border: none;
+  border-radius: 1em;
+  padding: 1px 15px 1px 13px;
+  font-size: 1.27em;
+  font-weight: 600;
+  margin-left: 16px;
+  box-shadow: 0 2px 10px #e5434321;
+  transition: background .12s;
 }
-.sub-panel-titulo {
-    margin-top: 0;
-    font-size: 1.2rem;
-    color: #007bff;
-    border-bottom: 2px solid #e0f4ff;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
+.list-btn-delete:hover { background: #b22020 !important; }
+
+.list-group-item small {
+  color: #555;
 }
 
-.grid-counters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+.alert {
+  font-size: 1.1em;
+  border-radius: 1em;
+  margin-bottom: 13px;
+  padding: 12px 17px;
 }
 
-.input-group {
-    display: flex;
-    flex-direction: column;
+/* MODAL DE RESUMEN */
+#resumenModal {
+  /* Los estilos ya están en el HTML, aquí puedes sobreescribir si quieres */
 }
-.input-group label {
-    font-weight: 600;
-    color: #197bbd;
-    margin-bottom: 5px;
-    font-size: 0.9rem;
+#resumenContent h5, #resumenContent h6 {
+  color: var(--cecorex-azul);
+  margin-bottom: 13px;
+  margin-top: 7px;
 }
-.input-group .form-control {
-    margin-bottom: 0;
+#resumenContent ul {
+  padding-left: 0;
+  margin-bottom: 0;
 }
-
-/* Estilos para el formulario de añadir detenidos */
-.adder-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: #e9f8ff;
-    border-radius: 12px;
+#resumenContent li.list-group-item {
+  background: #f8fbff;
+  border-left: 3.5px solid var(--cecorex-azul-suave);
+  font-size: 1em;
+  font-weight: 500;
 }
-.adder-form .form-control { margin-bottom: 0; }
-.adder-form .btn-add { grid-column: 1 / -1; justify-self: end; }
-
-/* Estilos para la lista dinámica */
-.dynamic-list { display: flex; flex-direction: column; gap: 8px; }
-.list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 1px solid #d4ebf7;
-    font-size: 0.95rem;
-    flex-wrap: wrap;
-}
-.list-item span { flex: 1; min-width: 200px; }
-.delete-btn {
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-left: 15px;
-}
-.delete-btn:hover { background: #cc0000; }
-
-.submit-wrapper { text-align: right; margin-top: 1.5rem; }
-#panelResumen { margin-top: 1.5rem; display: none; }
-#resumen {
-  background: #f4fbff;
-  border-radius: 1rem;
-  padding: 1.1rem 1.3rem;
-  color: #16466a;
-  font-size: 1.04rem;
-  line-height: 1.6;
-}
-#resumen b { color: #007bff; }
-
-.footer {
-  background: #172747;
-  color: #fff;
-  text-align: right;
-  font-size: 1rem;
-  padding: 12px 19px;
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 99;
-  border-top-left-radius: 1.5rem;
+#resumenContent button.btn {
+  margin-bottom: 6px;
 }
 
-@media (max-width: 768px) {
-    .adder-form { grid-template-columns: 1fr 1fr; }
-    .adder-form .btn-add { margin-top: 10px; }
-    .grid-counters { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 500px) {
-    .grid-counters, .adder-form { grid-template-columns: 1fr; }
+@media (max-width: 700px) {
+  .puerto-header { flex-direction: column; gap: 5px; text-align: center; padding: 10px 4vw; }
+  fieldset { padding: 14px 7px 7px 7px !important; }
+  .btn, button { padding: 7px 15px !important; }
 }
