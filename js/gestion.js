@@ -1,10 +1,10 @@
 /****************************************************************************************
-* SIREX · Gestión Avanzada - VERSIÓN MEJORADA (SIN DATOS GENERALES)
-* Formulario reestructurado y con todos los campos de los partes diarios.
-* Funcionalidad de guardado, carga, resumen y exportación 100% compatible.
+* SIREX · Gestión Avanzada - VERSIÓN DEFINITIVA 2025
+* Para formulario reestructurado, 100% compatible con importación automática de novedades.js,
+* validación avanzada, historial, resumen, exportación PDF/CSV/WhatsApp y Firebase.
 ****************************************************************************************/
 
-// ---- Configuración Firebase ----
+// ===================== CONFIGURACIÓN FIREBASE ===========================
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
   authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -14,35 +14,36 @@ const FIREBASE_CONFIG = {
   appId: "1:241698436443:web:1f333b3ae3f813b755167e"
 };
 const NOMBRE_COLECCION = "gestion_avanzada";
-
 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
-// ---- IDs de todos los campos del formulario ----
-// Eliminados: "tipoTramite", "datosGestionado", "descripcionTramite"
+// ======================= CAMPOS DEL FORMULARIO ==========================
 const formFields = [
-    "observaciones",
-    "entrevistasAsilo", "entrevistasAsiloFallos", "citas", "citasFaltan", "renunciasAsilo",
-    "citasTelAsilo", "citasTelCartas", "renunciasUcrania", "correosUcrania",
-    "cartasConcedidas", "cartasDenegadas", "cartasFallan", "devolucionesTasas",
-    "citasSubdelegacion", "tarjetasSubdelegacion", "cues", "certificadosBailen",
-    "asignaciones", "prorrogasEstancia", "declaracionEntrada", "protecciones",
-    "menas", "presentados", "atencionPublico", "cajaOAR", "notificacionesConcedidas",
-    "notificacionesDenegadas", "modificacionesFavorables", "modificacionesDesfavorables",
-    "oficios", "correosProtcInternacional", "telefonemas", "correoSubdelegacion", "anulacion"
+  "entrevistasAsilo", "entrevistasAsiloFallos", "citas", "citasFaltan", "renunciasAsilo",
+  "citasTelAsilo", "citasTelCartas", "renunciasUcrania", "correosUcrania",
+  "cartasConcedidas", "cartasDenegadas", "cartasFallan", "devolucionesTasas",
+  "citasSubdelegacion", "tarjetasSubdelegacion", "cues", "certificadosBailen",
+  "asignaciones", "prorrogasEstancia", "declaracionEntrada", "protecciones",
+  "menas", "presentados", "atencionPublico", "cajaOAR",
+  "notificacionesConcedidas", "notificacionesDenegadas",
+  "modificacionesFavorables", "modificacionesDesfavorables",
+  "oficios", "correosProtcInternacional", "telefonemas", "correoSubdelegacion",
+  "anulacion", "observaciones"
 ];
 
-// ---- Limpieza y lectura de formulario ----
-function limpiarForm() {
+// ===================== LIMPIAR Y LEER FORMULARIO ========================
+function limpiarForm(dataAuto = null) {
   $("formGestion")?.reset();
   formFields.forEach(id => {
     if ($(id)) {
-        const isTextInput = $(id).type === 'text' || $(id).tagName === 'TEXTAREA';
-        $(id).value = isTextInput ? "" : 0;
+      const isTextInput = $(id).type === 'text' || $(id).tagName === 'TEXTAREA';
+      $(id).value = (dataAuto && typeof dataAuto[id] !== "undefined")
+        ? dataAuto[id]
+        : (isTextInput ? "" : 0);
     }
   });
-  if ($("fechaRegistro")) $("fechaRegistro").value = new Date().toISOString().slice(0, 10);
+  if ($("fechaRegistro")) $("fechaRegistro").value = dataAuto?.fecha || new Date().toISOString().slice(0, 10);
   mostrarResumen();
 }
 
@@ -50,8 +51,8 @@ function leerForm() {
   const data = {};
   formFields.forEach(id => {
     if ($(id)) {
-        const isTextInput = $(id).type === 'text' || $(id).tagName === 'TEXTAREA';
-        data[id] = isTextInput ? $(id).value.trim() : (parseInt($(id).value) || 0);
+      const isTextInput = $(id).type === 'text' || $(id).tagName === 'TEXTAREA';
+      data[id] = isTextInput ? $(id).value.trim() : (parseInt($(id).value) || 0);
     }
   });
   return data;
@@ -60,11 +61,11 @@ function leerForm() {
 function formatoFechaCorta(fecha) {
   if (!fecha) return "";
   const f = new Date(fecha);
-  f.setMinutes(f.getMinutes() + f.getTimezoneOffset()); // Ajuste a UTC
+  f.setMinutes(f.getMinutes() + f.getTimezoneOffset());
   return `${f.getDate().toString().padStart(2,"0")}/${(f.getMonth()+1).toString().padStart(2,"0")}/${f.getFullYear().toString().slice(-2)}`;
 }
 
-// ---- Guardar, cargar y eliminar registros ----
+// ================= GUARDAR, CARGAR Y ELIMINAR REGISTROS ================
 async function guardarRegistro() {
   const fecha = $("fechaRegistro").value;
   if (!fecha) return alert("Selecciona la fecha");
@@ -85,9 +86,9 @@ async function cargarRegistro() {
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const d = doc.data();
   formFields.forEach(id => {
-      if ($(id) && typeof d[id] !== "undefined" && d[id] !== null) {
-          $(id).value = d[id];
-      }
+    if ($(id) && typeof d[id] !== "undefined" && d[id] !== null) {
+      $(id).value = d[id];
+    }
   });
   mostrarResumen();
 }
@@ -107,7 +108,7 @@ async function eliminarRegistro() {
   cargarHistorial();
 }
 
-// ---- Historial ----
+// ========================= HISTORIAL DE FECHAS ===========================
 async function cargarHistorial() {
   const snap = await db.collection(NOMBRE_COLECCION).orderBy("fecha", "desc").limit(10).get();
   if ($("historialFechas")) {
@@ -122,10 +123,10 @@ window.cargarPorFecha = async function(fecha) {
   cargarRegistro();
 };
 
-// ---- Resumen del registro ----
+// ====================== RESUMEN DEL REGISTRO ACTUAL ======================
 function mostrarResumen() {
   const d = leerForm();
-  if (!validateBeforeSave(false)) { // No mostrar alerta, solo chequear
+  if (!validateBeforeSave(false)) {
     $("panelResumen").style.display = "none";
     return;
   }
@@ -139,7 +140,7 @@ function mostrarResumen() {
   $("panelResumen").style.display = "block";
 }
 
-// ---- Resumen por fechas, PDF, CSV, WhatsApp ----
+// ============= RESUMEN POR RANGO DE FECHAS, PDF, CSV, WHATSAPP ===========
 window._resumenesFiltrados = [];
 
 $("btnResumenFechas").onclick = async function() {
@@ -158,24 +159,18 @@ $("btnResumenFechas").onclick = async function() {
     window._resumenesFiltrados = [];
     return;
   }
-
-  const numericFields = formFields.filter(id => {
-      const el = $(id);
-      return el && el.type === 'number';
-  });
+  const numericFields = formFields.filter(id => $(id) && $(id).type === 'number');
   const agg = numericFields.reduce((acc, field) => ({ ...acc, [field]: 0 }), {});
-
   let detalle = "";
   resumenes.forEach(r => {
     numericFields.forEach(k => agg[k] += +r[k] || 0);
-    detalle += `<li><b>${formatoFechaCorta(r.fecha)}</b>: 
-      Entrevistas: ${r.entrevistasAsilo||0} (fallos ${r.entrevistasAsiloFallos||0}), 
-      Citas: ${r.citas||0} (faltan ${r.citasFaltan||0}), 
-      Cartas: C:${r.cartasConcedidas||0} D:${r.cartasDenegadas||0} F:${r.cartasFallan||0}, 
+    detalle += `<li><b>${formatoFechaCorta(r.fecha)}</b>:
+      Entrevistas: ${r.entrevistasAsilo||0} (fallos ${r.entrevistasAsiloFallos||0}),
+      Citas: ${r.citas||0} (faltan ${r.citasFaltan||0}),
+      Cartas: C:${r.cartasConcedidas||0} D:${r.cartasDenegadas||0} F:${r.cartasFallan||0},
       CUEs: ${r.cues||0}, Asig. NIE: ${r.asignaciones||0}
       </li>`;
   });
-  
   $("divResumenFechas").innerHTML = `
     <b>Resumen total del ${formatoFechaCorta(desde)} al ${formatoFechaCorta(hasta)}:</b><br>
     <ul>
@@ -193,18 +188,18 @@ $("btnResumenFechas").onclick = async function() {
 };
 
 function generateHTMLReport(resumenes) {
-    let html = `<h2>Resumen de Gestión</h2>
-    <h4>Del ${formatoFechaCorta($("resumenDesde").value)} al ${formatoFechaCorta($("resumenHasta").value)}</h4>`;
-    resumenes.forEach(r => {
-        html += `<hr><b>${formatoFechaCorta(r.fecha)}</b><ul>`;
-        const numericFieldsToShow = formFields.filter(f => $(f) && $(f).type === 'number' && r[f]);
-        numericFieldsToShow.forEach(field => {
-            html += `<li><b>${$(field).labels[0].innerText}:</b> ${r[field]}</li>`;
-        });
-        if (r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
-        html += `</ul>`;
+  let html = `<h2>Resumen de Gestión</h2>
+  <h4>Del ${formatoFechaCorta($("resumenDesde").value)} al ${formatoFechaCorta($("resumenHasta").value)}</h4>`;
+  resumenes.forEach(r => {
+    html += `<hr><b>${formatoFechaCorta(r.fecha)}</b><ul>`;
+    const numericFieldsToShow = formFields.filter(f => $(f) && $(f).type === 'number' && r[f]);
+    numericFieldsToShow.forEach(field => {
+      html += `<li><b>${$(field).labels[0].innerText}:</b> ${r[field]}</li>`;
     });
-    return html;
+    if (r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
+    html += `</ul>`;
+  });
+  return html;
 }
 
 $("btnExportarPDF").onclick = function() {
@@ -242,8 +237,8 @@ $("btnExportarCSV").onclick = function() {
   let csv = headers.join(",") + "\n";
   window._resumenesFiltrados.forEach(r => {
     const row = [r.fecha, ...formFields.map(field => {
-        const value = r[field] || "";
-        return `"${String(value).replace(/"/g, '""')}"`;
+      const value = r[field] || "";
+      return `"${String(value).replace(/"/g, '""')}"`;
     })];
     csv += row.join(",") + "\n";
   });
@@ -257,7 +252,7 @@ $("btnExportarCSV").onclick = function() {
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 };
 
-// ---- Buscador y Modo oscuro ----
+// ====================== BUSCADOR Y MODO OSCURO ===========================
 $("btnBuscar").onclick = async function() {
   let q = prompt("¿Qué palabra quieres buscar en las observaciones?");
   if (!q) return;
@@ -272,7 +267,7 @@ $("btnBuscar").onclick = async function() {
   if (!resultados.length) return alert("No se encontraron resultados.");
   $("divResumenFechas").innerHTML = resultados.map(r =>
     `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-      <b>${r.fecha}</b> · ${(r.observaciones||"").slice(0,70)}...
+      <b>${formatoFechaCorta(r.fecha)}</b> · ${(r.observaciones||"").slice(0,70)}...
       <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
     </div>`
   ).join("");
@@ -284,14 +279,13 @@ $("btnDarkMode").onclick = function() {
 };
 if (localStorage.getItem("sirex_darkmode") === "1") document.body.classList.add('dark-mode');
 
-
-// ---- Validación y Carga Inicial ----
+// ============== VALIDACIÓN Y CARGA INICIAL ===============================
 function validateBeforeSave(showAlert = true) {
   const data = leerForm();
   const hasData = formFields.some(field => {
-      if (typeof data[field] === 'string') return data[field].length > 0;
-      if (typeof data[field] === 'number') return data[field] > 0;
-      return false;
+    if (typeof data[field] === 'string') return data[field].length > 0;
+    if (typeof data[field] === 'number') return data[field] > 0;
+    return false;
   });
   if (!hasData && showAlert) {
     alert("El registro está vacío, añade al menos un dato o una observación.");
@@ -300,12 +294,20 @@ function validateBeforeSave(showAlert = true) {
   return hasData;
 }
 
+// ==================== AUTO-IMPORT DESDE novedades.js =====================
+window.autoImportGestion = function(data) {
+  // Esta función será llamada por novedades.js si detecta datos compatibles para gestion_avanzada
+  limpiarForm(data);
+  alert("Parte diario gestionado auto-importado. Revisa y guarda si es correcto.");
+  mostrarResumen();
+};
+
+// ===================== INICIALIZACIÓN DE EVENTOS =========================
 window.onload = function() {
   $("btnGuardar").onclick = guardarRegistro;
   $("btnCargar").onclick = cargarRegistro;
   $("btnNuevo").onclick = nuevoRegistro;
   $("btnEliminar").onclick = eliminarRegistro;
-  
   cargarHistorial();
   limpiarForm();
 };
