@@ -1,8 +1,7 @@
-/* --------------------------------------------------------------------------- */
-/*  SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto y CECOREX)
-    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en
-    Firebase.                                                                 */
-/* --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX)
+   Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
+--------------------------------------------------------------------------- */
 let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -39,23 +38,26 @@ const fechaManualInput     = $('fechaManualInput');
 const fechaDetectadaBadge  = $('fechaDetectadaBadge');
 const spinnerArea          = $('spinner-area');
 
-fechaManualInput.addEventListener('input', () => {
-  const fechaFinal = obtenerFechaFormateada();
-  // Vuelve a validar todos los datos usando la fecha elegida
-  if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
-    const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
-    if (!errores.length) {
-      btnConfirmarGuardado.disabled = false;
-      showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
-    } else {
-      btnConfirmarGuardado.disabled = true;
-      showStatus('<ul>'+errores.map(e=>`<li>${e}</li>`).join(''),'danger');
+/* ==============================  EVENTOS  ================================= */
+if (fechaManualInput) {
+  fechaManualInput.addEventListener('input', () => {
+    const fechaFinal = obtenerFechaFormateada();
+    // Vuelve a validar todos los datos usando la fecha elegida
+    if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
+      const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+      if (!errores.length) {
+        btnConfirmarGuardado.disabled = false;
+        showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
+      } else {
+        btnConfirmarGuardado.disabled = true;
+        showStatus('<ul>'+errores.map(e=>`<li>${e}</li>`).join(''),'danger');
+      }
     }
-  }
-});
-
-/* ===============================  STATE  ================================== */
-let erroresValidacion = [];
+  });
+}
+if (inputDocx)             inputDocx           .addEventListener('change', handleDocxUpload);
+if (btnConfirmarGuardado)  btnConfirmarGuardado.addEventListener('click',   onConfirmSave);
+if (btnCancelar)           btnCancelar         .addEventListener('click',   onCancel);
 
 /* ============================  UI HELPERS  ================================ */
 const showStatus = (msg, type='info')=>{
@@ -100,11 +102,6 @@ const showFechaEditable = iso=>{
 };
 const obtenerFechaFormateada = ()=> fechaManualInput.value || "";
 
-/* ==============================  EVENTOS  ================================= */
-inputDocx            .addEventListener('change', handleDocxUpload);
-btnConfirmarGuardado .addEventListener('click',   onConfirmSave);
-btnCancelar          .addEventListener('click',   onCancel);
-
 /* ==========================  SUBIR Y PARSEAR  ============================= */
 async function handleDocxUpload(e){
   const file = e.target.files[0];
@@ -123,18 +120,20 @@ async function handleDocxUpload(e){
     const arrayBuffer   = await file.arrayBuffer();
     const { value:html} = await mammoth.convertToHtml({arrayBuffer});
 
-    // Detectar y parsear todos los grupos posibles
+    // === Parseo de todos los grupos reconocidos ===
     const r1 = parseGrupo1(html);
     const r4 = parseGrupo4(html);
     const rp = parseGrupoPuerto(html);
     const rc = parseGrupoCECOREX(html);
 
+    // === Recopilación de resultados ===
     const resultados = {};
     if (Object.keys(r1.datos).length) resultados[GROUP1] = r1.datos;
     if (Object.keys(r4.datos).length) resultados[GROUP4] = r4.datos;
     if (Object.keys(rp.datos).length) resultados[GROUPPUERTO] = rp.datos;
     if (Object.keys(rc.datos).length) resultados[GROUPCECOREX] = rc.datos;
 
+    // Extrae la fecha más significativa
     const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || "";
 
     if (!Object.keys(resultados).length) {
