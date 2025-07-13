@@ -198,6 +198,53 @@
     </form>
   </div>
 
+  <!-- ========================================== -->
+<!--   BLOQUE DE BOTONES PRINCIPALES + RESUMEN  -->
+<!-- ========================================== -->
+<div class="container mb-5 mt-4">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <button class="btn btn-outline-success" id="btnGrabar" type="button">
+      <i class="bi bi-save"></i> Guardar
+    </button>
+    <button class="btn btn-outline-secondary" id="btnCargar" type="button">
+      <i class="bi bi-folder2-open"></i> Cargar
+    </button>
+    <button class="btn btn-outline-warning" id="btnNuevo" type="button">
+      <i class="bi bi-file-earmark-plus"></i> Nuevo
+    </button>
+    <button class="btn btn-outline-danger" id="btnBorrar" type="button">
+      <i class="bi bi-trash"></i> Borrar
+    </button>
+    <button class="btn btn-outline-primary" id="btnResumen" type="button">
+      <i class="bi bi-clipboard-data"></i> Resumen
+    </button>
+    <!-- IMPORTACIÓN DOCX (opcional) -->
+    <label class="btn btn-outline-info mb-0" for="inputDocx" style="cursor:pointer;">
+      <i class="bi bi-file-earmark-arrow-up"></i> Importar DOCX
+      <input type="file" id="inputDocx" accept=".docx" style="display:none;">
+    </label>
+  </div>
+</div>
+
+<!-- ================================ -->
+<!--    MODAL DE RESUMEN AVANZADO     -->
+<!-- ================================ -->
+<div id="resumenModal" class="modal" tabindex="-1" style="display:none; background:rgba(33,53,80,0.13); position:fixed; z-index:2222; top:0; left:0; width:100vw; height:100vh; overflow:auto;">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 660px;">
+    <div class="modal-content shadow p-2" style="border-radius:20px;">
+      <div class="modal-header pb-1" style="border:none; background:#f7fbff;">
+        <h5 class="modal-title mb-0">
+          <i class="bi bi-clipboard-data"></i> Resumen Avanzado CECOREX
+        </h5>
+        <button type="button" id="modalClose" class="btn-close" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="resumenContent" style="max-height:66vh; overflow:auto;">
+        <!-- Aquí se inserta dinámicamente el resumen -->
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- MODAL RESUMEN -->
   <div id="resumenModal">
     <div id="resumenContent">
