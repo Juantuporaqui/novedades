@@ -4,163 +4,303 @@
   <meta charset="UTF-8">
   <title>SIREX · CECOREX · Coordinación</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/cecorex.css">
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="../css/grupo1.css">
+  <link rel="icon" type="image/png" href="../img/logo_cnp.png">
+  <style>
+    /* Personalización local para CECOREX */
+    .ventana-datos { background: #f4fbff; border-radius: 1rem; padding: 1rem 1.3rem; color: #16466a; font-size: 1.04rem; margin-top: 1em; min-height: 32px; box-shadow: 0 2px 7px #0096c732; }
+    fieldset { border: 2px solid #b7e7fd; border-radius: 12px; margin-bottom: 1.5em; padding: 1.2em 1em; background: #e9f8ff; }
+    legend { font-weight: 800; color: #007bff; padding: 0 8px; font-size: 1.15em; letter-spacing: 0.01em; }
+    .btn-primary, .btn-success {
+      border-radius: 8px;
+      font-weight: bold;
+      padding: 10px 18px;
+      background: linear-gradient(90deg, #0096c7 70%, #5bd7f8 100%);
+      color: #fff;
+      border: none;
+      margin-top: 6px;
+    }
+    .btn-primary:hover, .btn-success:hover { background: #2267a9; }
+    .submit-wrapper { text-align: right; margin-top: 1.6em; }
+    .row.g-2 { display: flex; flex-wrap: wrap; gap: 14px; }
+    .col-md-2, .col-md-3, .col-md-4 { flex: 1 1 160px; min-width: 120px; }
+    textarea.form-control { min-height: 70px; }
+    .list-btn-delete { background: #ff4d4d; color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; margin-left: 13px; }
+    .list-btn-delete:hover { background: #cc0000; }
+  </style>
 </head>
-<body>
-  <header class="cecorex-header">
-    <img src="../img/logo_cnp.png" alt="CNP" class="logo-cnp">
-    <div class="titulo-header">
-      <span class="titulo-main">SIREX · CECOREX</span>
-      <span class="titulo-desc">Coordinación y Estadística</span>
+<body class="bg-police">
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
+    <div class="container">
+      <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
+      <span class="navbar-brand fs-3 fw-bold">SIREX · CECOREX</span>
+      <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
-    <button class="btn-menu" onclick="window.location.href='../index.html'">&larr; Menú</button>
-  </header>
+  </nav>
+  <!-- PARA MÓVIL -->
+  <div class="text-center mb-2 d-md-none">
+    <a href="../index.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-house-door"></i> Menú principal</a>
+  </div>
 
-  <main>
-    <section class="panel panel-glass">
-      <div class="botonera">
-        <select id="registroSelect" class="form-control" title="Seleccionar un registro existente"></select>
-        <input type="date" id="fechaRegistro" required class="form-control" title="Fecha del registro a cargar o guardar">
-        <button type="button" class="btn-azul" id="btnBuscar" title="Cargar registro de la fecha seleccionada"><i class="bi bi-search"></i> Cargar</button>
-        <button type="button" class="btn-gris" id="btnNuevo" title="Limpiar formulario para un nuevo registro"><i class="bi bi-plus-circle"></i> Nuevo</button>
-      </div>
-
-      <form id="cecorexForm" autocomplete="off">
-        
-        <section class="sub-panel">
-          <h2 class="sub-panel-titulo">Contadores Principales</h2>
-          <div class="grid-counters">
-            <div class="input-group">
-              <label for="turno">Turno</label>
-              <select id="turno" class="form-control" required>
-                <option value="">--Seleccione--</option>
-                <option>Mañana</option>
-                <option>Tarde</option>
-                <option>Noche</option>
-              </select>
+  <!-- FECHA Y BOTONES PRINCIPALES -->
+  <div class="container mb-3">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow p-3 bg-police-dark text-white border-0">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-4 mb-2 mb-sm-0">
+              <label for="fechaDia" class="form-label fw-bold mb-1">Fecha de trabajo</label>
+              <input type="date" id="fechaDia" class="form-control form-control-lg" autocomplete="off" required>
             </div>
-            <div class="input-group">
-              <label for="citados">Citados</label>
-              <input type="number" id="citados" class="form-control" value="0">
+            <div class="col-6 col-sm-2">
+              <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-upload"></i> Cargar</button>
             </div>
-            <div class="input-group">
-                <label for="notificaciones">Notificaciones</label>
-                <input type="number" id="notificaciones" class="form-control" value="0">
+            <div class="col-6 col-sm-2">
+              <button id="btnGrabar" class="btn btn-success w-100 btn-lg" type="button"><i class="bi bi-save"></i> Grabar</button>
             </div>
-            <div class="input-group">
-                <label for="remisiones">Remisiones Subdelegación</label>
-                <input type="number" id="remisiones" class="form-control" value="0">
+            <div class="col-6 col-sm-2">
+              <button id="btnBorrar" class="btn btn-danger w-100 btn-lg" type="button"><i class="bi bi-trash"></i> Borrar</button>
             </div>
-            <div class="input-group">
-                <label for="alegaciones">Alegaciones Abogados</label>
-                <input type="number" id="alegaciones" class="form-control" value="0">
-            </div>
-            <div class="input-group">
-                <label for="decretos">Decretos Expulsión</label>
-                <input type="number" id="decretos" class="form-control" value="0">
-            </div>
-             <div class="input-group">
-                <label for="prohibiciones">Prohibiciones Entrada</label>
-                <input type="number" id="prohibiciones" class="form-control" value="0">
-            </div>
-            <div class="input-group">
-                <label for="audiencias">Trámites Audiencia</label>
-                <input type="number" id="audiencias" class="form-control" value="0">
-            </div>
-            <div class="input-group">
-                <label for="oficios">Oficios Juzgado</label>
-                <input type="number" id="oficios" class="form-control" value="0">
+            <div class="col-6 col-sm-2">
+              <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
             </div>
           </div>
-        </section>
-
-        <section class="sub-panel">
-            <h2 class="sub-panel-titulo">Detenidos e Incoaciones</h2>
-            <div id="detenido-adder" class="adder-form">
-                <input type="text" id="detenidoNacionalidad" placeholder="Nacionalidad" class="form-control">
-                <input type="text" id="detenidoMotivo" placeholder="Motivo (ILE, Hurto...)" class="form-control">
-                <input type="text" id="detenidoGrupo" placeholder="Grupo/Lugar (K-Centro...)" class="form-control">
-                <input type="text" id="detenidoResultado" placeholder="Resultado (Libertad, CIE...)" class="form-control">
-                <button type="button" id="btnAddDetenido" class="btn-add">➕ Añadir</button>
+          <div class="row mt-2">
+            <div class="col-12 text-end">
+              <span class="badge bg-info text-dark py-2 px-2 w-100">Guardado online automático</span>
             </div>
-            <div id="listaDetenidos" class="dynamic-list"></div>
-        </section>
-
-        <section class="sub-panel">
-          <h2 class="sub-panel-titulo">Consultas y Diligencias</h2>
-          <div class="grid-counters">
-              <div class="input-group">
-                  <label for="consultasTel">Consultas Telefónicas</label>
-                  <input type="number" id="consultasTel" class="form-control" value="0">
-              </div>
-              <div class="input-group">
-                  <label for="consultasEquipo">Consultas por Equipo</label>
-                  <input type="number" id="consultasEquipo" class="form-control" value="0">
-              </div>
-              <div class="input-group">
-                  <label for="diligenciasInforme">Diligencias de Informe</label>
-                  <input type="number" id="diligenciasInforme" class="form-control" value="0">
-              </div>
           </div>
-        </section>
-
-        <section class="sub-panel">
-          <h2 class="sub-panel-titulo">CIEs y MENAs</h2>
-           <div class="grid-counters">
-                <div class="input-group">
-                    <label for="ciesConcedidos">Solicitudes CIE Concedidas</label>
-                    <input type="number" id="ciesConcedidos" class="form-control" value="0">
-                </div>
-                <div class="input-group">
-                    <label for="ciesDenegados">Solicitudes CIE Denegadas</label>
-                    <input type="number" id="ciesDenegados" class="form-control" value="0">
-                </div>
-                <div class="input-group">
-                    <label for="menas">MENAs gestionados</label>
-                    <input type="number" id="menas" class="form-control" value="0">
-                </div>
-           </div>
-        </section>
-
-        <section class="sub-panel">
-          <h2 class="sub-panel-titulo">Observaciones y Tareas</h2>
-          <div class="input-group">
-            <label for="observaciones">Observaciones / Incidencias</label>
-            <textarea id="observaciones" class="form-control"></textarea>
-          </div>
-          <div class="input-group">
-            <label for="adjuntos">Documentos/Imágenes</label>
-            <input type="file" id="adjuntos" class="form-control" multiple>
-          </div>
-          <div class="input-group">
-            <label for="tareaPendiente"><b>¿Queda alguna tarea pendiente?</b></label>
-            <select id="tareaPendiente" class="form-control">
-              <option>No</option>
-              <option>Sí</option>
-            </select>
-          </div>
-        </section>
-
-        <div class="submit-wrapper">
-          <button type="submit" class="btn-verde"><i class="bi bi-save2"></i> Guardar Registro Completo</button>
         </div>
-      </form>
-    </section>
+      </div>
+    </div>
+  </div>
 
-    <section class="panel panel-glass" id="panelResumen" style="display:none;">
-      <h3>Resumen del Día</h3>
-      <div id="resumen"></div>
-    </section>
+  <!-- FORMULARIO PRINCIPAL -->
+  <div class="container mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-lg p-4">
+          <h2 class="mb-4 text-police-blue">
+            <i class="bi bi-person-badge"></i> Coordinación y Estadística CECOREX
+          </h2>
 
-  </main>
-  <footer class="footer">
-    SIREX · CECOREX &copy; 2025
-  </footer>
+          <!-- SECCIÓN DETENIDOS -->
+          <fieldset>
+            <legend>Detenidos</legend>
+            <form id="detenidoForm" class="row g-2 align-items-end mb-2" onsubmit="return false;">
+              <div class="col-md-2">
+                <input type="text" id="DETENIDOS" class="form-control" placeholder="Detenido" maxlength="60">
+              </div>
+              <div class="col-md-2">
+                <input type="text" id="MOTIVO" class="form-control" placeholder="Motivo" maxlength="60">
+              </div>
+              <div class="col-md-2">
+                <input type="text" id="NACIONALIDAD" class="form-control" placeholder="Nacionalidad" maxlength="30">
+              </div>
+              <div class="col-md-2">
+                <input type="text" id="PRESENTA" class="form-control" placeholder="Presenta" maxlength="30">
+              </div>
+              <div class="col-md-3">
+                <input type="text" id="OBSERVACIONES" class="form-control" placeholder="Observaciones" maxlength="90">
+              </div>
+              <div class="col-md-1 d-grid">
+                <button id="addDetenidoBtn" class="btn btn-primary" type="button"><i class="bi bi-plus"></i></button>
+              </div>
+            </form>
+            <div id="detenidosVentana" class="ventana-datos"></div>
+          </fieldset>
 
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
-  <script src="../js/cecorex.js"></script>
+          <!-- SECCIÓN CONSULTAS Y DILIGENCIAS -->
+          <fieldset>
+            <legend>Consultas y Diligencias</legend>
+            <div class="row g-2">
+              <div class="col-md-2">
+                <label for="CONS.TFNO" class="form-label">CONS.TFNO</label>
+                <input type="number" id="CONS.TFNO" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="CONS.PRESC" class="form-label">CONS.PRESC</label>
+                <input type="number" id="CONS.PRESC" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="CONS. EQUIP" class="form-label">CONS. EQUIP</label>
+                <input type="number" id="CONS. EQUIP" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="CITADOS" class="form-label">CITADOS</label>
+                <input type="number" id="CITADOS" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="NOTIFICACIONES" class="form-label">NOTIFICACIONES</label>
+                <input type="number" id="NOTIFICACIONES" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="AL. ABOGADOS" class="form-label">AL. ABOGADOS</label>
+                <input type="number" id="AL. ABOGADOS" class="form-control" min="0" value="0">
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- SECCIÓN RESOLUCIONES Y TRÁMITES -->
+          <fieldset>
+            <legend>Resoluciones y Trámites</legend>
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label for="REM. SUBDELEGACIÓN" class="form-label">REM. SUBDELEGACIÓN</label>
+                <input type="number" id="REM. SUBDELEGACIÓN" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-4">
+                <label for="DECRETOS EXP." class="form-label">DECRETOS EXP.</label>
+                <input type="number" id="DECRETOS EXP." class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-4">
+                <label for="TRAMITES AUDIENCIA" class="form-label">TRAMITES AUDIENCIA</label>
+                <input type="number" id="TRAMITES AUDIENCIA" class="form-control" min="0" value="0">
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- SECCIÓN CIE/MENAS/INFORME -->
+          <fieldset>
+            <legend>CIE / MENAS / Informe</legend>
+            <div class="row g-2">
+              <div class="col-md-2">
+                <label for="CIE CONCEDIDO" class="form-label">CIE CONCEDIDO</label>
+                <input type="number" id="CIE CONCEDIDO" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="CIES DENEGADO" class="form-label">CIES DENEGADO</label>
+                <input type="number" id="CIES DENEGADO" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="PROH. ENTRADA" class="form-label">PROH. ENTRADA</label>
+                <input type="number" id="PROH. ENTRADA" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label for="MENAS" class="form-label">MENAS</label>
+                <input type="number" id="MENAS" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-4">
+                <label for="Dil. INFORME" class="form-label">Dil. INFORME</label>
+                <input type="number" id="Dil. INFORME" class="form-control" min="0" value="0">
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- SECCIÓN GESTIONES VARIAS -->
+          <fieldset>
+            <legend>Gestiones varias</legend>
+            <textarea id="GESTIONES VARIAS" class="form-control" rows="2" maxlength="400"></textarea>
+          </fieldset>
+
+          <div class="submit-wrapper">
+            <!-- Botón de guardado: usa btnGrabar de la cabecera para la acción -->
+            <button type="button" id="btnGuardarOculto" class="btn btn-success d-none"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS PRINCIPALES -->
+  <script src="https://cdn.jsdelivr.net/npm/@firebase/app@0.9.11/dist/index.cjs.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@firebase/firestore@3.4.17/dist/index.cjs.js"></script>
+  <script src="../js/novedades.js"></script>
+  <script>
+    // === Gestión dinámica de detenidos ===
+    const detenidosVentana = document.getElementById('detenidosVentana');
+    const addBtn = document.getElementById('addDetenidoBtn');
+    const inputIds = ['DETENIDOS','MOTIVO','NACIONALIDAD','PRESENTA','OBSERVACIONES'];
+    let detenidos = [];
+
+    function renderDetenidos() {
+      detenidosVentana.innerHTML = '';
+      if (!detenidos.length) {
+        detenidosVentana.innerHTML = '<span class="text-muted">Sin detenidos.</span>';
+        return;
+      }
+      detenidos.forEach((d, i) => {
+        const div = document.createElement('div');
+        div.className = 'list-group-item d-flex align-items-center justify-content-between mb-2';
+        div.innerHTML = `
+          <span>
+            <strong>${d.DETENIDOS||''}</strong> - ${d.MOTIVO||''} - ${d.NACIONALIDAD||''} - ${d.PRESENTA||''} - ${d.OBSERVACIONES||''}
+          </span>
+          <button class="list-btn-delete" type="button" title="Eliminar" onclick="eliminarDetenido(${i})">&times;</button>
+        `;
+        detenidosVentana.appendChild(div);
+      });
+    }
+
+    addBtn.addEventListener('click', () => {
+      const values = {};
+      let empty = true;
+      inputIds.forEach(id => {
+        values[id] = document.getElementById(id).value.trim();
+        if (values[id]) empty = false;
+      });
+      if (empty) return;
+      detenidos.push({ ...values });
+      renderDetenidos();
+      inputIds.forEach(id => document.getElementById(id).value = '');
+    });
+
+    window.eliminarDetenido = function(idx) {
+      detenidos.splice(idx, 1);
+      renderDetenidos();
+    };
+
+    // Al cargar, inicializar ventana
+    renderDetenidos();
+
+    // ==== SINCRONIZACIÓN CON novedades.js ====
+    // El resto de la gestión Firebase, carga y grabación se gestiona 100% con novedades.js, 
+    // compatible con el sistema de carga automática y el backend actual.
+    // Para guardar, el botón Grabar llama al handler centralizado en novedades.js
+
+    // Ejemplo de inyección de datos al form desde novedades.js:
+    window.setCECOREXData = function(data) {
+      // Detenidos (array)
+      detenidos = Array.isArray(data.detenidos) ? data.detenidos : [];
+      renderDetenidos();
+      // Resto campos
+      [
+        "CONS.TFNO", "CONS.PRESC", "CONS. EQUIP", "CITADOS", "NOTIFICACIONES", "AL. ABOGADOS",
+        "REM. SUBDELEGACIÓN", "DECRETOS EXP.", "TRAMITES AUDIENCIA",
+        "CIE CONCEDIDO", "CIES DENEGADO", "PROH. ENTRADA", "MENAS", "Dil. INFORME"
+      ].forEach(k => { if(data[k]!==undefined) document.getElementById(k).value = data[k]; });
+      if(data["GESTIONES VARIAS"]!==undefined) document.getElementById("GESTIONES VARIAS").value = data["GESTIONES VARIAS"];
+    };
+
+    // Para recoger datos del formulario para guardar (lo llamará novedades.js)
+    window.getCECOREXData = function() {
+      const data = {
+        detenidos: [...detenidos],
+        "CONS.TFNO": Number(document.getElementById("CONS.TFNO").value)||0,
+        "CONS.PRESC": Number(document.getElementById("CONS.PRESC").value)||0,
+        "CONS. EQUIP": Number(document.getElementById("CONS. EQUIP").value)||0,
+        "CITADOS": Number(document.getElementById("CITADOS").value)||0,
+        "NOTIFICACIONES": Number(document.getElementById("NOTIFICACIONES").value)||0,
+        "AL. ABOGADOS": Number(document.getElementById("AL. ABOGADOS").value)||0,
+        "REM. SUBDELEGACIÓN": Number(document.getElementById("REM. SUBDELEGACIÓN").value)||0,
+        "DECRETOS EXP.": Number(document.getElementById("DECRETOS EXP.").value)||0,
+        "TRAMITES AUDIENCIA": Number(document.getElementById("TRAMITES AUDIENCIA").value)||0,
+        "CIE CONCEDIDO": Number(document.getElementById("CIE CONCEDIDO").value)||0,
+        "CIES DENEGADO": Number(document.getElementById("CIES DENEGADO").value)||0,
+        "PROH. ENTRADA": Number(document.getElementById("PROH. ENTRADA").value)||0,
+        "MENAS": Number(document.getElementById("MENAS").value)||0,
+        "Dil. INFORME": Number(document.getElementById("Dil. INFORME").value)||0,
+        "GESTIONES VARIAS": document.getElementById("GESTIONES VARIAS").value
+      };
+      return data;
+    };
+  </script>
 </body>
 </html>
