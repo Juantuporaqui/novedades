@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Guarda en buffer y muestra para revisión visual
       parsedCECOREXDataForConfirmation = cecorexData;
-      mostrarRevisionVisualCECOREX(cecorexData);
+      mostrarRevisionVisualCECOREX(cecorexData, true); // true = resumen avanzado
       showStatus('Datos extraídos. Revisa visualmente y confirma para guardar.', 'info');
 
     } catch (err) {
@@ -287,30 +287,93 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // === GENERADOR DE RESUMEN AVANZADO PARA CECOREX ===
+  function resumenAvanzadoCECOREX(data) {
+    let out = `<h5 class="mb-2"><i class="bi bi-clipboard-data"></i> Resumen Avanzado CECOREX</h5>`;
+    out += `<div class="mb-2 text-muted" style="font-size:1em;">Fecha: <strong>${getFecha() || '—'}</strong></div>`;
+
+    out += `<div class="mb-2"><strong>Consultas y Trámites:</strong>
+      <ul class="list-group list-group-flush">`;
+    out += `<li class="list-group-item">CONS. TFNO: <b>${data["CONS.TFNO"]||0}</b></li>`;
+    out += `<li class="list-group-item">CONS. PRESC: <b>${data["CONS.PRESC"]||0}</b></li>`;
+    out += `<li class="list-group-item">CONS. EQUIP: <b>${data["CONS. EQUIP"]||0}</b></li>`;
+    out += `<li class="list-group-item">TRÁMITES AUDIENCIA: <b>${data["TRAMITES AUDIENCIA"]||0}</b></li>`;
+    out += `</ul></div>`;
+
+    out += `<div class="mb-2"><strong>Resoluciones y Citaciones:</strong>
+      <ul class="list-group list-group-flush">`;
+    out += `<li class="list-group-item">CITADOS: <b>${data["CITADOS"]||0}</b></li>`;
+    out += `<li class="list-group-item">NOTIFICACIONES: <b>${data["NOTIFICACIONES"]||0}</b></li>`;
+    out += `<li class="list-group-item">AL. ABOGADOS: <b>${data["AL. ABOGADOS"]||0}</b></li>`;
+    out += `<li class="list-group-item">REM. SUBDELEGACIÓN: <b>${data["REM. SUBDELEGACIÓN"]||0}</b></li>`;
+    out += `</ul></div>`;
+
+    out += `<div class="mb-2"><strong>Expulsiones y Medidas:</strong>
+      <ul class="list-group list-group-flush">`;
+    out += `<li class="list-group-item">DECRETOS EXP.: <b>${data["DECRETOS EXP."]||0}</b></li>`;
+    out += `<li class="list-group-item">CIE CONCEDIDO: <b>${data["CIE CONCEDIDO"]||0}</b></li>`;
+    out += `<li class="list-group-item">CIES DENEGADO: <b>${data["CIES DENEGADO"]||0}</b></li>`;
+    out += `<li class="list-group-item">PROH. ENTRADA: <b>${data["PROH. ENTRADA"]||0}</b></li>`;
+    out += `</ul></div>`;
+
+    out += `<div class="mb-2"><strong>Otros:</strong>
+      <ul class="list-group list-group-flush">`;
+    out += `<li class="list-group-item">MENAS: <b>${data["MENAS"]||0}</b></li>`;
+    out += `<li class="list-group-item">Dil. INFORME: <b>${data["Dil. INFORME"]||0}</b></li>`;
+    out += `<li class="list-group-item">Gestiones Varias: <span>${(data["GESTIONES VARIAS"]||'').replace(/\n/g,'<br>')}</span></li>`;
+    out += `</ul></div>`;
+
+    // Detenidos (tabla avanzada)
+    const detenidos = data.detenidos || [];
+    out += `<div class="mb-2"><strong>Detenidos:</strong> <span class="text-muted ms-2">${detenidos.length}</span>`;
+    if (detenidos.length) {
+      out += `<div class="table-responsive"><table class="table table-bordered table-sm mt-2">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Detenido</th>
+            <th>Motivo</th>
+            <th>Nacionalidad</th>
+            <th>Presenta</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      detenidos.forEach((d, i) => {
+        out += `<tr>
+          <td>${i+1}</td>
+          <td>${d.DETENIDOS||''}</td>
+          <td>${d.MOTIVO||''}</td>
+          <td>${d.NACIONALIDAD||''}</td>
+          <td>${d.PRESENTA||''}</td>
+          <td>${d.OBSERVACIONES||''}</td>
+        </tr>`;
+      });
+      out += `</tbody></table></div>`;
+    } else {
+      out += `<div class="text-muted ms-2">Sin detenidos registrados.</div>`;
+    }
+    out += `</div>`;
+
+    return out;
+  }
+
   // --- Muestra UI de revisión visual para CECOREX ---
   function mostrarRevisionVisualCECOREX(data) {
-    // Aquí puedes personalizar el modal/resumen visual a tu gusto (puedes hacerlo tipo card, tabla, etc.)
-    let html = '<h5>Datos extraídos de CECOREX</h5><ul class="list-group mb-3">';
-    Object.keys(data).forEach(k => {
-      if (k === 'detenidos') return;
-      html += `<li class="list-group-item d-flex justify-content-between"><span>${k}</span><strong>${data[k]}</strong></li>`;
-    });
-    html += '</ul>';
-    if (data.detenidos && data.detenidos.length) {
-      html += '<h6>Detenidos</h6><ul class="list-group">';
-      data.detenidos.forEach(d => {
-        html += `<li class="list-group-item small">${d.DETENIDOS} - ${d.MOTIVO} - ${d.NACIONALIDAD} - ${d.PRESENTA} - ${d.OBSERVACIONES}</li>`;
-      });
-      html += '</ul>';
+    resumenContent.innerHTML = resumenAvanzadoCECOREX(data);
+    if (!document.getElementById('btnConfirmarGuardado')) {
+      // Botones para importación (solo al importar DOCX, no en revisión manual)
+      const btnRow = document.createElement('div');
+      btnRow.className = "mt-3 mb-2";
+      btnRow.innerHTML = `
+        <button class="btn btn-success" id="btnConfirmarGuardado">Confirmar y guardar</button>
+        <button class="btn btn-secondary ms-2" id="btnCancelarConfirmacion">Cancelar</button>
+      `;
+      resumenContent.appendChild(btnRow);
+      document.getElementById('btnConfirmarGuardado').onclick = onConfirmSave;
+      document.getElementById('btnCancelarConfirmacion').onclick = onCancelRevision;
     }
-    html += `<div class="mt-3">
-      <button class="btn btn-success" id="btnConfirmarGuardado">Confirmar y guardar</button>
-      <button class="btn btn-secondary ms-2" id="btnCancelarConfirmacion">Cancelar</button>
-    </div>`;
-    resumenContent.innerHTML = html;
     resumenModal.style.display = "block";
-    document.getElementById('btnConfirmarGuardado').onclick = onConfirmSave;
-    document.getElementById('btnCancelarConfirmacion').onclick = onCancelRevision;
   }
 
   // --- Confirma y guarda en Firebase (batch atómico) ---
@@ -346,7 +409,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // --- Resumen visual desde el propio formulario manual ---
   if (btnVerResumen) btnVerResumen.addEventListener('click', function () {
     let data = getCECOREXData();
-    mostrarRevisionVisualCECOREX(data);
+    resumenContent.innerHTML = resumenAvanzadoCECOREX(data);
+    resumenModal.style.display = "block";
   });
 
   // =================================================================================
@@ -359,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // =================================================================================
   // ESTILOS Y UTILIDAD MODAL (por si usas modal puro, sin librerías)
   // =================================================================================
-  // Cierre modal clicando fuera (básico, personalizable)
   window.onclick = function (event) {
     if (event.target == resumenModal) resumenModal.style.display = "none";
   };
