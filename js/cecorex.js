@@ -444,6 +444,78 @@ document.addEventListener('DOMContentLoaded', function () {
       parsedCECOREXDataForConfirmation = null;
     }
   }
+  // ===================== RESUMEN AVANZADO CECOREX POR RANGO DE FECHAS =====================
+// (Añade esto al final de tu cecorex.js)
+
+const btnResumenAvanzado = document.getElementById('generarResumenBtn');
+const resumenVentana     = document.getElementById('resumenVentana');
+
+if (btnResumenAvanzado && resumenVentana) {
+  btnResumenAvanzado.onclick = async function () {
+    const desde = document.getElementById('desdeResumen').value;
+    const hasta = document.getElementById('hastaResumen').value;
+
+    if (!desde || !hasta) {
+      resumenVentana.innerHTML = "<div class='alert alert-warning'>Selecciona ambas fechas.</div>";
+      return;
+    }
+    resumenVentana.innerHTML = "<div class='alert alert-info'>Generando resumen…</div>";
+
+    try {
+      // Consulta documentos CECOREX por rango de fechas (inclusive)
+      const snap = await db.collection("cecorex_registros")
+        .where("fecha", ">=", desde)
+        .where("fecha", "<=", hasta)
+        .orderBy("fecha", "asc").get();
+
+      if (snap.empty) {
+        resumenVentana.innerHTML = "<div class='alert alert-warning'>No hay partes CECOREX en ese rango.</div>";
+        return;
+      }
+
+      // Totales y tabla
+      let totalDetenidos = 0, totalCitados = 0, totalNotificaciones = 0, totalMenores = 0;
+      let html = `<div class="mb-2"><b>Rango:</b> ${desde} a ${hasta}</div>`;
+      html += `<div class="table-responsive"><table class="table table-bordered table-striped align-middle">`;
+      html += "<thead class='table-light'><tr><th>Fecha</th><th>Detenidos</th><th>Citados</th><th>Notificaciones</th><th>MENAS</th></tr></thead><tbody>";
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const nDetenidos = Array.isArray(d.detenidos) ? d.detenidos.length : 0;
+        const nCitados = Number(d['CITADOS'] || 0);
+        const nNotif   = Number(d['NOTIFICACIONES'] || 0);
+        const nMenores = Number(d['MENAS'] || 0);
+
+        html += `<tr>
+          <td>${d.fecha || doc.id}</td>
+          <td>${nDetenidos}</td>
+          <td>${nCitados}</td>
+          <td>${nNotif}</td>
+          <td>${nMenores}</td>
+        </tr>`;
+
+        totalDetenidos += nDetenidos;
+        totalCitados += nCitados;
+        totalNotificaciones += nNotif;
+        totalMenores += nMenores;
+      });
+
+      html += "</tbody></table></div>";
+      html += `<div class="mt-3">
+        <span class="badge bg-info text-dark me-2">Total detenidos: ${totalDetenidos}</span>
+        <span class="badge bg-primary me-2">Total citados: ${totalCitados}</span>
+        <span class="badge bg-secondary me-2">Total notificaciones: ${totalNotificaciones}</span>
+        <span class="badge bg-warning text-dark">Total MENAS: ${totalMenores}</span>
+      </div>`;
+
+      resumenVentana.innerHTML = html;
+
+    } catch (e) {
+      resumenVentana.innerHTML = `<div class='alert alert-danger'>Error generando resumen: ${e.message}</div>`;
+    }
+  }
+}
+
 
   // --- Cancela revisión visual ---
   function onCancelRevision() {
