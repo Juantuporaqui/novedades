@@ -74,20 +74,49 @@ const showStatus = (msg, type='info')=>{
 const showSpinner        = v => spinnerArea.style.display = v ? 'flex' : 'none';
 const showConfirmationUI = v => confirmationButtons.style.display = v ? 'block' : 'none';
 
-const showResults = obj =>{
-    resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
-    Object.entries(obj).forEach(([k,datos])=>{
-      if(k==='fecha') return;
-      if(Array.isArray(datos) && !datos.length) return;
-      if(!Array.isArray(datos) && !Object.keys(datos).length) return;
-      const card = document.createElement('div');
-      card.className = 'card mb-3 shadow-sm';
-      card.innerHTML =
-        `<div class="card-header bg-light"><strong>${k.toUpperCase()}</strong></div>
-         <div class="card-body"><pre class="results-card">${JSON.stringify(datos,null,2)}</pre></div>`;
-      resultsContainer.appendChild(card);
-    });
+const showResults = obj => {
+  resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
+  Object.entries(obj).forEach(([k, datos]) => {
+    if (k === 'fecha') return;
+    if (Array.isArray(datos) && !datos.length) return;
+    if (!Array.isArray(datos) && !Object.keys(datos).length) return;
+    const card = document.createElement('div');
+    card.className = 'card mb-3 shadow-sm';
+    card.innerHTML = `<div class="card-header bg-light"><strong>${k.toUpperCase()}</strong></div>`;
+    let body = '';
+    // Si es un array de objetos
+    if (Array.isArray(datos) && datos.length && typeof datos[0] === 'object') {
+      body += '<table class="table table-sm table-bordered mb-0"><thead><tr>';
+      Object.keys(datos[0]).forEach(col => body += `<th>${col}</th>`);
+      body += '</tr></thead><tbody>';
+      datos.forEach(row => {
+        body += '<tr>';
+        Object.values(row).forEach(val => body += `<td>${val}</td>`);
+        body += '</tr>';
+      });
+      body += '</tbody></table>';
+    }
+    // Si es un array plano
+    else if (Array.isArray(datos)) {
+      body += `<ul class="mb-0">${datos.map(val => `<li>${val}</li>`).join('')}</ul>`;
+    }
+    // Si es un objeto plano (como gestión)
+    else if (typeof datos === 'object') {
+      body += '<table class="table table-sm table-bordered mb-0"><tbody>';
+      Object.entries(datos).forEach(([key, val]) => {
+        body += `<tr><th>${key}</th><td>${val}</td></tr>`;
+      });
+      body += '</tbody></table>';
+    }
+    // Otro tipo de datos (string, number...)
+    else {
+      body += `<pre class="results-card">${JSON.stringify(datos, null, 2)}</pre>`;
+    }
+    card.innerHTML += `<div class="card-body">${body}</div>`;
+    resultsContainer.appendChild(card);
+  });
 };
+
 
 const showFechaEditable = iso=>{
     fechaEdicionDiv.style.display = "flex";
