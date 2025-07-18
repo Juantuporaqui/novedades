@@ -142,6 +142,20 @@ async function cargarDia(fecha) {
     }
     const datos = docSnap.data();
     datosEnPantalla = {
+        detenidos: normalizarDetenidos(datos.detenidos_g1 || datos.detenidos || []),
+        expulsados: normalizarExpulsados(datos.expulsados_g1 || datos.expulsados || []),
+        frustradas: normalizarFrustradas(datos.exp_frustradas_g1 || datos.frustradas || []),
+        fletados: normalizarFletados(datos.fletados_g1 || datos.fletados || []),
+        fletadosFuturos: normalizarFletados(datos.fletadosFuturos_g1 || datos.fletadosFuturos || []),
+        conduccionesPositivas: normalizarConducciones(datos.conduccionesPositivas_g1 || datos.conduccionesPositivas || []),
+        conduccionesNegativas: normalizarConducciones(datos.conduccionesNegativas_g1 || datos.conduccionesNegativas || []),
+        pendientes: normalizarPendientes(datos.pendientes_g1 || datos.pendientes || [])
+    };
+    refrescarTodo();
+}
+
+    const datos = docSnap.data();
+    datosEnPantalla = {
         detenidos: datos.detenidos_g1 || datos.detenidos || [],
         expulsados: datos.expulsados_g1 || datos.expulsados || [],
         frustradas: datos.exp_frustradas_g1 || datos.frustradas || [],
@@ -153,6 +167,72 @@ async function cargarDia(fecha) {
     };
     refrescarTodo();
 }
+
+function normalizarDetenidos(arr) {
+    if (!Array.isArray(arr)) return [];
+    // Parser DOCX: con sufijos _g1
+    if (arr.length && arr[0].detenidos_g1 !== undefined) {
+        return arr.map(x => ({
+            numero: x.detenidos_g1,
+            motivo: x.motivo_g1,
+            nacionalidad: x.nacionalidad_g1,
+            diligencias: x.diligencias_g1,
+            observaciones: x.observaciones_g1
+        }));
+    }
+    return arr;
+}
+
+function normalizarExpulsados(arr) {
+    if (!Array.isArray(arr)) return [];
+    if (arr.length && arr[0].expulsados_g1 !== undefined) {
+        return arr.map(x => ({
+            nombre: x.expulsados_g1,
+            nacionalidad: x.nacionalidad_eg1,
+            diligencias: x.diligencias_eg1,
+            nConduccionesPos: x.conduc_pos_eg1,
+            nConduccionesNeg: x.conduc_neg_eg1,
+            observaciones: x.observaciones_eg1
+        }));
+    }
+    return arr;
+}
+
+function normalizarFrustradas(arr) {
+    if (!Array.isArray(arr)) return [];
+    if (arr.length && arr[0].exp_frustradas_g1 !== undefined) {
+        return arr.map(x => ({
+            nombre: x.exp_frustradas_g1,
+            nacionalidad: x.nacionalidad_fg1,
+            motivo: x.motivo_fg1,
+            diligencias: x.diligencias_fg1
+        }));
+    }
+    return arr;
+}
+
+function normalizarFletados(arr) {
+    if (!Array.isArray(arr)) return [];
+    if (arr.length && arr[0].fletados_g1 !== undefined) {
+        return arr.map(x => ({
+            destino: x.destino_flg1,
+            pax: x.pax_flg1,
+            observaciones: x.observaciones_flg1
+        }));
+    }
+    return arr;
+}
+
+function normalizarConducciones(arr) {
+    if (!Array.isArray(arr)) return [];
+    // Puedes ampliarlo si guardas campos diferentes
+    return arr;
+}
+function normalizarPendientes(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr;
+}
+
 
 function limpiarTodo() {
     datosEnPantalla = {
