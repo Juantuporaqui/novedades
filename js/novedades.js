@@ -442,55 +442,66 @@ function parseGrupo4(html) {
   return { datos, fecha };
 }
 
-/* ----------- PUERTO ----------- */
 function parseGrupoPuerto(html) {
   const root = document.createElement('div'); root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
   let datos = {};
-  const cabPuerto = [
-    "CTRL.MARINOS","MARINOS ARGOS","CRUCEROS","CRUCERISTAS",
-    "VISAS. CG","VISAS VAL.","VISAS. EXP",
-    "VEH. CHEQUEADOS","PERS. CHEQUEADAS",
-    "DETENIDOS","DENEGACIONES","ENTR. EXCEP","EIXICS","PTOS. DEPORTIVOS"
-  ];
+
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (rows.length < 2) continue;
-    const cabecera = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    // Si la tabla contiene la mayoría de campos de Puerto (tolerante a campos vacíos)
-    if (cabPuerto.filter(c => cabecera.includes(c)).length > 4) {
-      for (let i=0; i<cabPuerto.length; i++) {
-        const idx = cabecera.indexOf(cabPuerto[i]);
-        if (idx !== -1 && rows[1].children[idx])
-          datos[cabPuerto[i].toLowerCase().replace(/[ .]/g,'_')] = rows[1].children[idx].textContent.trim();
-      }
+    if (!rows.length) continue;
+    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+    // Tabla principal de Puerto
+    if (header.includes("CTRL.MARINOS") && header.includes("CRUCERISTAS")) {
+      const campos = [
+        "CTRL.MARINOS", "MARINOS ARGOS", "CRUCEROS", "CRUCERISTAS",
+        "VISAS. CG", "VISAS VAL.", "VISAS. EXP", "VEH. CHEQUEADOS",
+        "PERS. CHEQUEADAS", "DETENIDOS", "DENEGACIONES", "ENTR. EXCEP",
+        "EIXICS", "PTOS. DEPORTIVOS"
+      ];
+      const values = Array.from(rows[1]?.querySelectorAll('td')).map(td => td.textContent.trim());
+      campos.forEach((campo, idx) => {
+        const key = campo.toLowerCase().replace(/[\.\s]/g,'_').replace('visas_cg', 'visadosCgef').replace('visas_val', 'visadosValencia').replace('visas_exp', 'visadosExp')
+                        .replace('veh_chequeados','vehChequeados').replace('pers_chequeadas','paxChequeadas')
+                        .replace('detenidos','detenidos').replace('denegaciones','denegaciones')
+                        .replace('entr_excep','entrExcep').replace('eixics','eixics').replace('ptos_deportivos','ptosDeportivos')
+                        .replace('ctrl_marinos','ctrlMarinos').replace('marinos_argos','marinosArgos')
+                        .replace('cruceros','cruceros').replace('cruceristas','cruceristas');
+        datos[key] = values[idx] || '';
+      });
     }
-    // FERRYS (tabla o subtabla propia)
-    if (/FERRYS/i.test(cabecera.join(' '))) {
+
+    // Tabla FERRYS
+    if (/FERRYS?/i.test(header[0])) {
       datos.ferrys = [];
-      for (let i=1; i<rows.length; i++) {
+      for(let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length) continue;
+        if (tds.length<6) continue;
         datos.ferrys.push({
-          destino:        tds[0]?.textContent.trim()||'',
-          hora:           tds[1]?.textContent.trim()||'',
-          pasajeros:      tds[2]?.textContent.trim()||'',
-          vehiculos:      tds[3]?.textContent.trim()||'',
-          incidencias:    tds[4]?.textContent.trim()||''
+          destino:     tds[0].textContent.trim(),
+          hora:        tds[1].textContent.trim(),
+          pasajeros:   tds[2].textContent.trim(),
+          vehiculos:   tds[3].textContent.trim(),
+          incidencias: tds[4].textContent.trim()
         });
       }
     }
-    // GESTIONES PUERTO (simple)
-    if (/GESTIONES PUERTO/i.test(cabecera.join(' '))) {
+
+    // Tabla GESTIONES PUERTO
+    if (/GESTIONES PUERTO/i.test(header[0])) {
       datos.gestiones_puerto = [];
-      for (let i=1; i<rows.length; i++) {
+      for(let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
-        datos.gestiones_puerto.push({ gestion: tds[0].textContent.trim() });
+        datos.gestiones_puerto.push({
+          gestion: tds[0].textContent.trim()
+        });
       }
     }
-    // Busca fecha en tabla
+
+    // Busca fecha: DD-MM-AAAA (en tabla)
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
