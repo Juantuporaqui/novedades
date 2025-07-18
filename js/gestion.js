@@ -272,7 +272,7 @@ $("btnBuscar").onclick = async function() {
   ).join("");
 };
 
-$("btnDarkMode").onclick = function() {
+if ($("darkModeBtn")) $("darkModeBtn").onclick = function() { ... }
   document.body.classList.toggle('dark-mode');
   localStorage.setItem("sirex_darkmode", document.body.classList.contains('dark-mode') ? "1" : "0");
 };
