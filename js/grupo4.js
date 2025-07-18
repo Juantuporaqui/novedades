@@ -117,10 +117,11 @@ async function cargarRegistro() {
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const data = doc.data();
 
-  // Arrays y campos compatibles tanto _g4 como antiguos
-  state.detenidos = data.detenidos_g4 || data.detenidos || [];
-  state.colaboraciones = data.colaboraciones_g4 || data.colaboraciones || [];
-  state.gestiones = data.gestiones_varias_g4 || data.gestiones || [];
+  // Usa los normalizadores para arrays
+  state.detenidos = normalizarDetenidosG4(data.detenidos_g4 || data.detenidos || []);
+  state.colaboraciones = normalizarColaboracionesG4(data.colaboraciones_g4 || data.colaboraciones || []);
+  state.gestiones = normalizarGestionesG4(data.gestiones_varias_g4 || data.gestiones || []);
+  // El resto igual
   state.identificados = data.identificados_g4 ?? data.identificados ?? 0;
   state.citadosCecorex = data.citadosCecorex_g4 ?? data.citadosCecorex ?? 0;
   state.citadosUcrif = data.citadosUcrif_g4 ?? data.citadosUcrif ?? 0;
@@ -135,6 +136,32 @@ async function cargarRegistro() {
 
   renderListas();
   mostrarResumen();
+}
+
+// --- Normalizadores para arrays y campos individuales G4 (compatibilidad DOCX y manual) ---
+
+function normalizarDetenidosG4(arr) {
+    return (arr||[]).map(obj => ({
+        numDetenidos: obj.detenidos_g4 ?? obj.numDetenidos ?? "",
+        motivo: obj.motivo_g4 ?? obj.motivo ?? "",
+        nacionalidad: obj.nacionalidad_g4 ?? obj.nacionalidad ?? "",
+        diligencias: obj.diligencias_g4 ?? obj.diligencias ?? "",
+        observaciones: obj.observaciones_dg4 ?? obj.observaciones ?? ""
+    }));
+}
+
+function normalizarColaboracionesG4(arr) {
+    return (arr||[]).map(obj => ({
+        colaboracionDesc: obj.colaboracionDesc ?? obj.colaboracion_desc ?? "",
+        colaboracionUnidad: obj.colaboracionUnidad ?? obj.colaboracion_unidad ?? "",
+        colaboracionResultado: obj.colaboracionResultado ?? obj.colaboracion_resultado ?? ""
+    }));
+}
+
+function normalizarGestionesG4(arr) {
+    return (arr||[]).map(obj => ({
+        gestionDesc: obj.gestionDesc ?? obj.gestiones_varias_g4 ?? obj.gestion ?? ""
+    }));
 }
 
 function nuevoRegistro() {
