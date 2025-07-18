@@ -1,7 +1,7 @@
 /****************************************************************************************
 * SIREX · Gestión Avanzada - VERSIÓN DEFINITIVA 2025
-* Para formulario reestructurado, 100% compatible con importación automática de novedades.js,
-* validación avanzada, historial, resumen, exportación PDF/CSV/WhatsApp y Firebase.
+* Compatible con importación automática de novedades.js, validación avanzada, historial,
+* resumen, exportación PDF/CSV/WhatsApp y Firebase. TODOS LOS CAMPOS Y FUNCIONES.
 ****************************************************************************************/
 
 // ===================== CONFIGURACIÓN FIREBASE ===========================
@@ -20,16 +20,11 @@ const $ = id => document.getElementById(id);
 
 // ======================= CAMPOS DEL FORMULARIO ==========================
 const formFields = [
-  "entrevistasAsilo", "entrevistasAsiloFallos", "citas", "citasFaltan", "renunciasAsilo",
-  "citasTelAsilo", "citasTelCartas", "renunciasUcrania", "correosUcrania",
-  "cartasConcedidas", "cartasDenegadas", "cartasFallan", "devolucionesTasas",
-  "citasSubdelegacion", "tarjetasSubdelegacion", "cues", "certificadosBailen",
-  "asignaciones", "prorrogasEstancia", "declaracionEntrada", "protecciones",
-  "menas", "presentados", "atencionPublico", "cajaOAR",
-  "notificacionesConcedidas", "notificacionesDenegadas",
-  "modificacionesFavorables", "modificacionesDesfavorables",
-  "oficios", "correosProtcInternacional", "telefonemas", "correoSubdelegacion",
-  "anulacion", "observaciones"
+  "CITAS-AS", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
+  "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
+  "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
+  "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
+  "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS", "OBSERVACIONES"
 ];
 
 // ===================== LIMPIAR Y LEER FORMULARIO ========================
@@ -72,7 +67,15 @@ async function guardarRegistro() {
   if (!validateBeforeSave()) return;
   const docId = "gestion_" + fecha.replace(/-/g, "");
   const datos = { fecha, ...leerForm() };
-  await db.collection(NOMBRE_COLECCION).doc(docId).set(datos);
+  const ref = db.collection(NOMBRE_COLECCION).doc(docId);
+
+  // Si existe, avisar antes de sobrescribir
+  const doc = await ref.get();
+  if (doc.exists) {
+    if (!confirm("Ya existe un registro para esta fecha. ¿Quieres sobrescribirlo?")) return;
+  }
+
+  await ref.set(datos);
   alert("¡Registro guardado!");
   cargarHistorial();
   mostrarResumen();
@@ -131,11 +134,13 @@ function mostrarResumen() {
     return;
   }
   $("resumenRegistro").innerHTML = `
-    <b>Asilo y Citas:</b> Entrevistas: ${d.entrevistasAsilo} (fallan ${d.entrevistasAsiloFallos}) | Citas: ${d.citas} (faltan ${d.citasFaltan}) | Renuncias Asilo: ${d.renunciasAsilo}<br>
-    <b>Cartas Invitación:</b> Concedidas: ${d.cartasConcedidas}, Denegadas: ${d.cartasDenegadas}, Fallan: ${d.cartasFallan}<br>
-    <b>Subdelegación/Bailén:</b> Citas Sub.: ${d.citasSubdelegacion}, Tarjetas: ${d.tarjetasSubdelegacion}, CUEs: ${d.cues}, Certificados: ${d.certificadosBailen}<br>
-    <b>Comunicaciones:</b> Oficios: ${d.oficios}, Correos Prot. Int: ${d.correosProtcInternacional}, Telefonemas: ${d.telefonemas}<br>
-    <b>Observaciones:</b> ${d.observaciones || "—"}
+    <b>Citas Asilo:</b> ${d["CITAS-AS"]} (fallos: ${d["FALLOS"]})<br>
+    <b>Entrevistas Asilo:</b> ${d["ENTRV. ASILO"]} (fallos: ${d["FALLOS ASILO"]})<br>
+    <b>Cartas Invitación:</b> Concedidas: ${d["CARTAS CONCEDIDAS"]}, Denegadas: ${d["CARTAS DENEGADAS"]}<br>
+    <b>Asilos:</b> Concedidos: ${d["ASILOS CONCEDIDOS"]}, Denegados: ${d["ASILOS DENEGADOS"]}<br>
+    <b>Subdelegación:</b> Citas: ${d["CITAS SUBDELEG"]}, Tarjetas: ${d["TARJET. SUBDELEG"]}<br>
+    <b>Presentados:</b> ${d["PRESENTADOS"]} | <b>Oficios:</b> ${d["OFICIOS"]}<br>
+    <b>Observaciones:</b> ${d["OBSERVACIONES"] || "—"}
   `;
   $("panelResumen").style.display = "block";
 }
@@ -165,22 +170,17 @@ $("btnResumenFechas").onclick = async function() {
   resumenes.forEach(r => {
     numericFields.forEach(k => agg[k] += +r[k] || 0);
     detalle += `<li><b>${formatoFechaCorta(r.fecha)}</b>:
-      Entrevistas: ${r.entrevistasAsilo||0} (fallos ${r.entrevistasAsiloFallos||0}),
-      Citas: ${r.citas||0} (faltan ${r.citasFaltan||0}),
-      Cartas: C:${r.cartasConcedidas||0} D:${r.cartasDenegadas||0} F:${r.cartasFallan||0},
-      CUEs: ${r.cues||0}, Asig. NIE: ${r.asignaciones||0}
+      Citas: ${r["CITAS-AS"]||0}, Fallos: ${r["FALLOS"]||0},
+      Entrevistas: ${r["ENTRV. ASILO"]||0}, Fallos Entrevista: ${r["FALLOS ASILO"]||0},
+      Cartas: C:${r["CARTAS CONCEDIDAS"]||0} D:${r["CARTAS DENEGADAS"]||0}
       </li>`;
   });
   $("divResumenFechas").innerHTML = `
     <b>Resumen total del ${formatoFechaCorta(desde)} al ${formatoFechaCorta(hasta)}:</b><br>
     <ul>
-      <li><b>Entrevistas asilo</b>: ${agg.entrevistasAsilo} (Fallos: ${agg.entrevistasAsiloFallos})</li>
-      <li><b>Citas ofertadas</b>: ${agg.citas} (Faltan: ${agg.citasFaltan})</li>
-      <li><b>Cartas de invitación</b>: Concedidas: ${agg.cartasConcedidas}, Denegadas: ${agg.cartasDenegadas}, Fallan: ${agg.cartasFallan}</li>
-      <li><b>CUEs</b>: ${agg.cues} | <b>Certificados (Bailén)</b>: ${agg.certificadosBailen} | <b>Asignaciones NIE</b>: ${agg.asignaciones}</li>
-      <li><b>Notificaciones</b>: Concedidas: ${agg.notificacionesConcedidas}, Denegadas: ${agg.notificacionesDenegadas}</li>
-      <li><b>Modif. Telemáticas</b>: Favorables: ${agg.modificacionesFavorables}, Desfavorables: ${agg.modificacionesDesfavorables}</li>
-      <li><b>Presentados</b>: ${agg.presentados} | <b>MENAs</b>: ${agg.menas}</li>
+      <li><b>Citas asilo</b>: ${agg["CITAS-AS"]} (Fallos: ${agg["FALLOS"]})</li>
+      <li><b>Entrevistas asilo</b>: ${agg["ENTRV. ASILO"]} (Fallos: ${agg["FALLOS ASILO"]})</li>
+      <li><b>Cartas de invitación</b>: Concedidas: ${agg["CARTAS CONCEDIDAS"]}, Denegadas: ${agg["CARTAS DENEGADAS"]}</li>
     </ul>
     <details><summary>Ver detalle diario</summary><ul>${detalle}</ul></details>
   `;
@@ -192,11 +192,9 @@ function generateHTMLReport(resumenes) {
   <h4>Del ${formatoFechaCorta($("resumenDesde").value)} al ${formatoFechaCorta($("resumenHasta").value)}</h4>`;
   resumenes.forEach(r => {
     html += `<hr><b>${formatoFechaCorta(r.fecha)}</b><ul>`;
-    const numericFieldsToShow = formFields.filter(f => $(f) && $(f).type === 'number' && r[f]);
-    numericFieldsToShow.forEach(field => {
-      html += `<li><b>${$(field).labels[0].innerText}:</b> ${r[field]}</li>`;
+    formFields.forEach(field => {
+      if (r[field]) html += `<li><b>${field}:</b> ${r[field]}</li>`;
     });
-    if (r.observaciones) html += `<li><b>Observaciones:</b> ${r.observaciones}</li>`;
     html += `</ul>`;
   });
   return html;
@@ -219,10 +217,10 @@ $("btnWhatsapp").onclick = function() {
   let resumen = `*Resumen Gestión SIREX*\n*${formatoFechaCorta($("resumenDesde").value)} al ${formatoFechaCorta($("resumenHasta").value)}:*\n\n`;
   window._resumenesFiltrados.forEach(r => {
     resumen += `*${formatoFechaCorta(r.fecha)}*:\n`;
-    resumen += `Citas: ${r.citas||0} (fallos ${r.citasFaltan||0})\n`;
-    resumen += `Asilo: ${r.entrevistasAsilo||0} (fallos ${r.entrevistasAsiloFallos||0})\n`;
-    resumen += `Cartas: C:${r.cartasConcedidas||0}, D:${r.cartasDenegadas||0}, F:${r.cartasFallan||0}\n`;
-    resumen += `CUEs: ${r.cues||0}, Asig.NIE: ${r.asignaciones||0}\n\n`;
+    formFields.forEach(field => {
+      if (r[field]) resumen += `${field}: ${r[field]}\n`;
+    });
+    resumen += `\n`;
   });
   navigator.clipboard.writeText(resumen)
     .then(() => alert("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
@@ -261,13 +259,13 @@ $("btnBuscar").onclick = async function() {
   let resultados = [];
   snap.forEach(docSnap => {
     let d = docSnap.data();
-    let str = (d.observaciones || "").toLowerCase();
+    let str = (d["OBSERVACIONES"] || "").toLowerCase();
     if (str.includes(q.toLowerCase())) resultados.push(d);
   });
   if (!resultados.length) return alert("No se encontraron resultados.");
   $("divResumenFechas").innerHTML = resultados.map(r =>
     `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-      <b>${formatoFechaCorta(r.fecha)}</b> · ${(r.observaciones||"").slice(0,70)}...
+      <b>${formatoFechaCorta(r.fecha)}</b> · ${(r["OBSERVACIONES"]||"").slice(0,70)}...
       <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
     </div>`
   ).join("");
@@ -296,7 +294,7 @@ function validateBeforeSave(showAlert = true) {
 
 // ==================== AUTO-IMPORT DESDE novedades.js =====================
 window.autoImportGestion = function(data) {
-  // Esta función será llamada por novedades.js si detecta datos compatibles para gestion_avanzada
+  // Esta función será llamada por novedades.js si detecta datos compatibles para gestion_registros
   limpiarForm(data);
   alert("Parte diario gestionado auto-importado. Revisa y guarda si es correcto.");
   mostrarResumen();
