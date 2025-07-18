@@ -154,20 +154,6 @@ async function cargarDia(fecha) {
     refrescarTodo();
 }
 
-    const datos = docSnap.data();
-    datosEnPantalla = {
-        detenidos: datos.detenidos_g1 || datos.detenidos || [],
-        expulsados: datos.expulsados_g1 || datos.expulsados || [],
-        frustradas: datos.exp_frustradas_g1 || datos.frustradas || [],
-        fletados: datos.fletados_g1 || datos.fletados || [],
-        fletadosFuturos: datos.fletadosFuturos_g1 || datos.fletadosFuturos || [],
-        conduccionesPositivas: datos.conduccionesPositivas_g1 || datos.conduccionesPositivas || [],
-        conduccionesNegativas: datos.conduccionesNegativas_g1 || datos.conduccionesNegativas || [],
-        pendientes: datos.pendientes_g1 || datos.pendientes || []
-    };
-    refrescarTodo();
-}
-
 function normalizarDetenidos(arr) {
     if (!Array.isArray(arr)) return [];
     // Parser DOCX: con sufijos _g1
