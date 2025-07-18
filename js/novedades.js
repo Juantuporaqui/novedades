@@ -1,9 +1,8 @@
 /* ---------------------------------------------------------------------------
-   SIREX – Procesamiento de novedades DOCX (Grupos 1, 4, Puerto, CECOREX)
-   Procesa literalmente los partes oficiales y guarda en Firebase.
-   100% literal: solo reconoce cabeceras exactas, sin heurística.
+   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX)
+   Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
 --------------------------------------------------------------------------- */
-let parsedDataForConfirmation = null;
+let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -240,7 +239,8 @@ function onCancel(){
   parsedDataForConfirmation   = null;
   fechaEdicionDiv.style.display = "none";
 }
-/* ========================= PARSERS POR GRUPO (100% LITERAL) ========================= */
+
+/* ========================= 📋 PARSERS POR GRUPO ========================= */
 
 /* ----------- GRUPO 1 ----------- */
 function parseGrupo1(html) {
@@ -249,7 +249,6 @@ function parseGrupo1(html) {
   let fecha = '';
   let datos = {};
 
-  // Busca tabla exacta por cabecera
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
@@ -341,8 +340,6 @@ function parseGrupo1(html) {
       }
     }
 
-    // GESTIONES (No tiene cabeceras, es bloque libre: opcionalmente puedes parsearlo aquí según estructura real)
-
     // Busca fecha: DD-MM-AAAA (en cabecera de parte)
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
@@ -350,7 +347,6 @@ function parseGrupo1(html) {
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
-
   return { datos, fecha };
 }
 
@@ -391,7 +387,6 @@ function parseGrupo4(html) {
     // IDENTIFICADOS
     if (
       header[0] === "IDENTIFICADOS"
-      // Puedes añadir más cabeceras si se requiere parser literal de más bloques (pide los detalles si los necesitas aquí)
     ) {
       datos["identificados_g4"] = [];
       for (let i=1; i<rows.length; i++) {
@@ -511,73 +506,7 @@ function parseGrupoCECOREX(html) {
       }
     }
 
-    // Busca fecha: DD-MM-AAAA (en tabla)
-    if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-   }
-     return { datos, fecha };
-}
-
-  // Buscar detenidos CECOREX (tabla exacta)
-  for (const tabla of tablas) {
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-
-    // DETENIDOS-CC (literal)
-    if (
-      header[0] === "DETENIDOS-CC" &&
-      header[1] === "MOTIVO-CC" &&
-      header[2] === "NACIONALIDAD-CC" &&
-      header[3] === "PRESENTA" &&
-      header[4] === "OBSERVACIONES-CC"
-    ) {
-      datos["detenidos_c"] = [];
-      for (let i=1; i<rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 5) continue;
-        datos["detenidos_c"].push({
-          detenidos_c:     tds[0].textContent.trim(),
-          motivo_c:        tds[1].textContent.trim(),
-          nacionalidad_c:  tds[2].textContent.trim(),
-          presenta_c:      tds[3].textContent.trim(),
-          observaciones_c: tds[4].textContent.trim()
-        });
-      }
-    }
-
-    // CECOREX numéricos y campos de gestión (ej: CONS.TFNO, CITADOS, etc)
-    const cabecerasNumericas = [
-      "CONS.TFNO", "CONS.PRESC", "CONS. EQUIP", "CITADOS", "NOTIFICACIONES", "AL. ABOGADOS",
-      "REM. SUBDELEGACIÓN", "DECRETOS EXP.", "TRAMITES AUDIENCIA", "CIE CONCEDIDO", "CIES DENEGADO",
-      "PROH. ENTRADA", "MENAS", "DIL. INFORME"
-    ];
-
-    // Busca fila única de estos campos (típica tabla de totales o resumen)
-    if (cabecerasNumericas.every(c => header.includes(c))) {
-      // Extrae todos los valores de la primera fila de datos
-      const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      cabecerasNumericas.forEach((cab, idx) => {
-        datos[cab.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
-          tds && tds[idx] ? tds[idx].textContent.trim() : '';
-      });
-    }
-
-    // GESTIONES CECOREX (gestiones de cecorex, tabla literal)
-    if (header[0] && header[0].startsWith("GESTIONES CECOREX")) {
-      datos["gestiones_cecorex"] = [];
-      for (let i=1; i<rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length) continue;
-        datos["gestiones_cecorex"].push({
-          gestiones_cecorex: tds[0].textContent.trim()
-        });
-      }
-    }
-
-    // GESTION (sección literal con CITAS-G, FALLOS, etc)
+    // GESTION (literal con CITAS-G, FALLOS, etc)
     const cabGestion = [
       "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
       "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
@@ -586,7 +515,6 @@ function parseGrupoCECOREX(html) {
       "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS"
     ];
     if (cabGestion.every(c => header.includes(c))) {
-      // Extrae todos los valores de la primera fila de datos
       const tds = Array.from(rows[1]?.querySelectorAll('td'));
       cabGestion.forEach((cab, idx) => {
         datos[cab.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
@@ -603,6 +531,7 @@ function parseGrupoCECOREX(html) {
   }
   return { datos, fecha };
 }
+
 /* ===========================  VALIDACIÓN  ================================ */
 function validarDatos(data, grupo, fecha) {
   if (!data || typeof data !== 'object') {
@@ -612,7 +541,6 @@ function validarDatos(data, grupo, fecha) {
   if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
     errores.push('La fecha es obligatoria y debe ser válida.');
   }
-  // Valida presencia de algún dato principal para cada grupo
   if (grupo === GROUP1 && !Object.keys(data).length) errores.push('No hay datos de Grupo 1.');
   if (grupo === GROUP4 && !Object.keys(data).length) errores.push('No hay datos de Grupo 4.');
   if (grupo === GROUPPUERTO && !Object.keys(data).length) errores.push('No hay datos de Puerto.');
@@ -627,4 +555,5 @@ function validarDatosPorTodos(allData, fecha) {
   });
   return errs;
 }
+
 }); // DOMContentLoaded
