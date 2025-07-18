@@ -171,18 +171,18 @@ async function handleDocxUpload(e){
 /* ==========================  CONFIRMAR GUARDADO  ========================= */
 async function onConfirmSave() {
   if (!parsedDataForConfirmation || !parsedDataForConfirmation.datos) {
-    showStatus('No hay datos para guardar.','danger');
+    showStatus('No hay datos para guardar.', 'danger');
     return;
   }
   const fechaFinal = obtenerFechaFormateada();
   if (!fechaFinal) {
-    showStatus('Selecciona una fecha válida.','danger');
+    showStatus('Selecciona una fecha válida.', 'danger');
     fechaManualInput.focus();
     return;
   }
   const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
   if (erroresFinal.length) {
-    showStatus('<ul>'+erroresFinal.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
+    showStatus('<ul>' + erroresFinal.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
     showConfirmationUI(true);
     return;
   }
@@ -201,50 +201,78 @@ async function onConfirmSave() {
     [GROUPCIE]:    "cie_registros"
   };
   const errores = [];
-  const exitos  = [];
+  const exitos = [];
 
- // ---- Pega esto en el sitio del guardado, reemplazando el bloque actual ----
+  // --- Función para transformar gestión ---
+  function transformarDatosGestion(datosOriginales) {
+    return {
+      "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
+      "FALLOS":            datosOriginales["FALLOS"]            || 0,
+      "CITAS":             datosOriginales["CITAS"]             || 0,
+      "ENTRV. ASILO":      datosOriginales["ENTRV. ASILO"]      || 0,
+      "FALLOS ASILO":      datosOriginales["FALLOS ASILO"]      || 0,
+      "ASILOS CONCEDIDOS": datosOriginales["ASILOS CONCEDIDOS"] || 0,
+      "ASILOS DENEGADOS":  datosOriginales["ASILOS DENEGADOS"]  || 0,
+      "CARTAS CONCEDIDAS": datosOriginales["CARTAS CONCEDIDAS"] || 0,
+      "CARTAS DENEGADAS":  datosOriginales["CARTAS DENEGADAS"]  || 0,
+      "PROT. INTERNACIONAL": datosOriginales["PROT. INTERNACIONAL"] || 0,
+      "CITAS SUBDELEG":    datosOriginales["CITAS SUBDELEG"]    || 0,
+      "TARJET. SUBDELEG":  datosOriginales["TARJET. SUBDELEG"]  || 0,
+      "NOTIFICACIONES CONCEDIDAS": datosOriginales["NOTIFICACIONES CONCEDIDAS"] || 0,
+      "NOTIFICACIONES DENEGADAS":  datosOriginales["NOTIFICACIONES DENEGADAS"]  || 0,
+      "PRESENTADOS":       datosOriginales["PRESENTADOS"]       || 0,
+      "CORREOS UCRANIA":   datosOriginales["CORREOS UCRANIA"]   || 0,
+      "TELE. FAVO":        datosOriginales["TELE. FAVO"]        || 0,
+      "TELE. DESFAV":      datosOriginales["TELE. DESFAV"]      || 0,
+      "CITAS TLFN ASILO":  datosOriginales["CITAS TLFN ASILO"]  || 0,
+      "CITAS TLFN CARTAS": datosOriginales["CITAS TLFN CARTAS"] || 0,
+      "OFICIOS":           datosOriginales["OFICIOS"]           || 0,
+      "OBSERVACIONES":     datosOriginales["OBSERVACIONES"]     || "",
+      "fecha":             datosOriginales["fecha"]
+    };
+  }
 
-
-// --- Guardado por grupos ---
-for (const grupo in datosParaGuardar) {
+  // --- Guardado por grupos ---
+  for (const grupo in datosParaGuardar) {
     if (!collectionMap[grupo]) continue;
     const collectionName = collectionMap[grupo];
-    let datosDelGrupo  = { ...datosParaGuardar[grupo], fecha: fechaFinal };
+    let datosDelGrupo = { ...datosParaGuardar[grupo], fecha: fechaFinal };
 
     // SOLO para el grupo de gestión: transformar claves para compatibilidad total
     if (grupo === GROUPGESTION || collectionName === "gestion_registros") {
-        datosDelGrupo = transformarDatosGestion(datosDelGrupo);
+      datosDelGrupo = transformarDatosGestion(datosDelGrupo);
     }
 
     try {
-        const ref = db.collection(collectionName).doc(fechaFinal);
-        const snapshot = await ref.get();
-        if (snapshot.exists) {
-            exitos.push(`Ya existía un parte para el día ${fechaFinal} en <b>${grupo.toUpperCase()}</b>. Se ha sobrescrito.`);
-        }
-        await ref.set(datosDelGrupo, { merge: false }); // siempre sobrescribe
-        exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
-    } catch(err) {
-        errores.push(`Error al guardar ${grupo}: ${err.message}`);
+      const ref = db.collection(collectionName).doc(fechaFinal);
+      const snapshot = await ref.get();
+      if (snapshot.exists) {
+        exitos.push(`Ya existía un parte para el día ${fechaFinal} en <b>${grupo.toUpperCase()}</b>. Se ha sobrescrito.`);
+      }
+      await ref.set(datosDelGrupo, { merge: false }); // siempre sobrescribe
+      exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
+    } catch (err) {
+      errores.push(`Error al guardar ${grupo}: ${err.message}`);
     }
-}
+  }
 
-showSpinner(false);
+  showSpinner(false);
 
-if (exitos.length && exitos.length === Object.keys(datosParaGuardar).length) {
+  if (exitos.length && exitos.length === Object.keys(datosParaGuardar).length) {
     showStatus('Todos los grupos han sido guardados correctamente.', 'success');
-} else {
+  } else {
     if (exitos.length) showStatus(exitos.join('<br>'), 'success');
     if (errores.length) showStatus(errores.join('<br>'), 'danger');
-}
+  }
 
-if (errores.length) {
+  if (errores.length) {
     showConfirmationUI(true);
-} else {
+  } else {
     parsedDataForConfirmation = null;
     fechaEdicionDiv.style.display = "none";
+  }
 }
+
 
 /* ========================= 📋 PARSERS POR GRUPO ========================= */
 
