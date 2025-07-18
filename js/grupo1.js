@@ -142,14 +142,14 @@ async function cargarDia(fecha) {
     }
     const datos = docSnap.data();
     datosEnPantalla = {
-        detenidos: datos.detenidos || [],
-        expulsados: datos.expulsados || [],
-        frustradas: datos.frustradas || [],
-        fletados: datos.fletados || [],
-        fletadosFuturos: datos.fletadosFuturos || [],
-        conduccionesPositivas: datos.conduccionesPositivas || [],
-        conduccionesNegativas: datos.conduccionesNegativas || [],
-        pendientes: datos.pendientes || []
+        detenidos: datos.detenidos_g1 || datos.detenidos || [],
+        expulsados: datos.expulsados_g1 || datos.expulsados || [],
+        frustradas: datos.exp_frustradas_g1 || datos.frustradas || [],
+        fletados: datos.fletados_g1 || datos.fletados || [],
+        fletadosFuturos: datos.fletadosFuturos_g1 || datos.fletadosFuturos || [],
+        conduccionesPositivas: datos.conduccionesPositivas_g1 || datos.conduccionesPositivas || [],
+        conduccionesNegativas: datos.conduccionesNegativas_g1 || datos.conduccionesNegativas || [],
+        pendientes: datos.pendientes_g1 || datos.pendientes || []
     };
     refrescarTodo();
 }
@@ -369,7 +369,21 @@ btnGrabar.addEventListener('click', async () => {
     if (!fechaDiaInput.value) { showToast("Introduce la fecha a grabar."); return; }
     fechaActual = fechaDiaInput.value;
     const ref = getDocRefDia(fechaActual);
-    await ref.set(datosEnPantalla, { merge: false });
+
+    // Estructura estándar compatible con novedades.js
+    const datosGuardar = {
+        detenidos_g1: datosEnPantalla.detenidos,
+        expulsados_g1: datosEnPantalla.expulsados,
+        exp_frustradas_g1: datosEnPantalla.frustradas,
+        fletados_g1: datosEnPantalla.fletados,
+        fletadosFuturos_g1: datosEnPantalla.fletadosFuturos,
+        conduccionesPositivas_g1: datosEnPantalla.conduccionesPositivas,
+        conduccionesNegativas_g1: datosEnPantalla.conduccionesNegativas,
+        pendientes_g1: datosEnPantalla.pendientes,
+        fecha: fechaActual
+    };
+
+    await ref.set(datosGuardar, { merge: false });
     showToast("Registro guardado correctamente.");
     cargarDia(fechaActual);
 });
@@ -425,14 +439,14 @@ function mostrarResumen(resumen) {
     resumen.forEach(item => {
         html += `<tr>
           <td>${formatoFecha(item.fecha)}</td>
-          <td>${(item.detenidos||[]).length}</td>
-          <td>${(item.expulsados||[]).length}</td>
-          <td>${(item.frustradas||[]).length}</td>
-          <td>${(item.fletados||[]).length}</td>
-          <td>${(item.fletadosFuturos||[]).length}</td>
-          <td>${(item.conduccionesPositivas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0)}</td>
-          <td>${(item.conduccionesNegativas||[]).map(c=>c.numero).reduce((a,b)=>a+b,0)}</td>
-          <td>${(item.pendientes||[]).length}</td>
+          <td>${(item.detenidos_g1 || item.detenidos || []).length}</td>
+          <td>${(item.expulsados_g1 || item.expulsados || []).length}</td>
+          <td>${(item.exp_frustradas_g1 || item.frustradas || []).length}</td>
+          <td>${(item.fletados_g1 || item.fletados || []).length}</td>
+          <td>${(item.fletadosFuturos_g1 || item.fletadosFuturos || []).length}</td>
+          <td>${(item.conduccionesPositivas_g1 || item.conduccionesPositivas || []).map(c=>c.numero).reduce((a,b)=>a+b,0)}</td>
+          <td>${(item.conduccionesNegativas_g1 || item.conduccionesNegativas || []).map(c=>c.numero).reduce((a,b)=>a+b,0)}</td>
+          <td>${(item.pendientes_g1 || item.pendientes || []).length}</td>
         </tr>`;
     });
     html += "</tbody></table></div>";
