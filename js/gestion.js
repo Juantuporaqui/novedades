@@ -252,31 +252,7 @@ $("btnExportarCSV").onclick = function() {
 };
 
 // ====================== BUSCADOR Y MODO OSCURO ===========================
-$("btnBuscar").onclick = async function() {
-  let q = prompt("¿Qué palabra quieres buscar en las observaciones?");
-  if (!q) return;
-  const col = db.collection(NOMBRE_COLECCION);
-  const snap = await col.get();
-  let resultados = [];
-  snap.forEach(docSnap => {
-    let d = docSnap.data();
-    let str = (d["OBSERVACIONES"] || "").toLowerCase();
-    if (str.includes(q.toLowerCase())) resultados.push(d);
-  });
-  if (!resultados.length) return alert("No se encontraron resultados.");
-  $("divResumenFechas").innerHTML = resultados.map(r =>
-    `<div style="padding:6px;margin-bottom:7px;background:#e1f7ff;border-radius:9px;">
-      <b>${formatoFechaCorta(r.fecha)}</b> · ${(r["OBSERVACIONES"]||"").slice(0,70)}...
-      <button onclick="cargarPorFecha('${r.fecha}')">Ver</button>
-    </div>`
-  ).join("");
-};
-
-if ($("darkModeBtn")) $("darkModeBtn").onclick = function() { ... }
-  document.body.classList.toggle('dark-mode');
-  localStorage.setItem("sirex_darkmode", document.body.classList.contains('dark-mode') ? "1" : "0");
-};
-if (localStorage.getItem("sirex_darkmode") === "1") document.body.classList.add('dark-mode');
+/* Puedes añadir un botón y funcionalidad de búsqueda avanzada aquí si lo necesitas. */
 
 // ============== VALIDACIÓN Y CARGA INICIAL ===============================
 function validateBeforeSave(showAlert = true) {
