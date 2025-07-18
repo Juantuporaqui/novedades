@@ -251,6 +251,32 @@
       <!-- Aquí el resumen visual se inyecta desde JS -->
     </div>
   </div>
+<!-- RESUMEN PDF Y EXPORTACIÓN AVANZADA -->
+<div class="bg-police-light rounded-3 p-4 mt-5">
+  <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen avanzado</h4>
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-md-5">
+      <label for="desdeResumen" class="form-label">Desde</label>
+      <input type="date" id="desdeResumen" class="form-control">
+    </div>
+    <div class="col-12 col-md-5">
+      <label for="hastaResumen" class="form-label">Hasta</label>
+      <input type="date" id="hastaResumen" class="form-control">
+    </div>
+    <div class="col-12 col-md-2 d-grid">
+      <button id="generarResumenBtn" class="btn btn-police-blue w-100" type="button">
+        <i class="bi bi-file-earmark-bar-graph"></i> Resumen
+      </button>
+    </div>
+  </div>
+  <div class="export-btns d-flex flex-wrap gap-2 mt-3">
+    <button id="btnExportarPDF" class="btn btn-police-yellow" type="button"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+    <button id="btnExportarCSV" class="btn btn-police-green" type="button"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+    <button id="btnWhatsapp" class="btn btn-police-blue" type="button"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+  </div>
+  <div id="resumenVentana" class="ventana-datos mt-4"></div>
+</div>
+
 
   <!-- FOOTER -->
   <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
