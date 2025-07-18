@@ -630,39 +630,78 @@ function parseGrupoCECOREX(html) {
   return { datos, fecha };
 }
 
-// ----------- GESTIÓN -----------
 function parseGestion(html) {
-  const root = document.createElement('div'); root.innerHTML = html;
+  const root = document.createElement('div');
+  root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
   let datos = {};
+
+  // Mapeo entre cabecera tabla DOCX y los campos del formulario
+  const parserMap = {
+    "CITAS-G": "citas",
+    "FALLOS": "citasFaltan",
+    "CITAS": "citas",
+    "ENTRV. ASILO": "entrevistasAsilo",
+    "FALLOS ASILO": "entrevistasAsiloFallos",
+    "ASILOS CONCEDIDOS": "asilosConcedidos",
+    "ASILOS DENEGADOS": "asilosDenegados",
+    "CARTAS CONCEDIDAS": "cartasConcedidas",
+    "CARTAS DENEGADAS": "cartasDenegadas",
+    "CARTAS FALLAN": "cartasFallan",
+    "RENUNCIAS ASILO": "renunciasAsilo",
+    "CITAS TLFN ASILO": "citasTelAsilo",
+    "CITAS TLFN CARTAS": "citasTelCartas",
+    "RENUNCIAS UCRANIA": "renunciasUcrania",
+    "CORREOS UCRANIA": "correosUcrania",
+    "DEVOLUCIONES TASAS": "devolucionesTasas",
+    "CITAS SUBDELEGACION": "citasSubdelegacion",
+    "TARJETAS SUBDELEGACION": "tarjetasSubdelegacion",
+    "CUES": "cues",
+    "CERTIFICADOS BAILEN": "certificadosBailen",
+    "ASIGNACIONES": "asignaciones",
+    "PRORROGAS ESTANCIA": "prorrogasEstancia",
+    "DECLARACION ENTRADA": "declaracionEntrada",
+    "PROTECCIONES": "protecciones",
+    "MENAS": "menas",
+    "PRESENTADOS": "presentados",
+    "ATENCION PUBLICO": "atencionPublico",
+    "CAJA OAR": "cajaOAR",
+    "NOTIFICACIONES CONCEDIDAS": "notificacionesConcedidas",
+    "NOTIFICACIONES DENEGADAS": "notificacionesDenegadas",
+    "MODIFICACIONES FAVORABLES": "modificacionesFavorables",
+    "MODIFICACIONES DESFAVORABLES": "modificacionesDesfavorables",
+    "OFICIOS": "oficios",
+    "CORREOS PROTC INTERNACIONAL": "correosProtcInternacional",
+    "TELEFONEMAS": "telefonemas",
+    "CORREO SUBDELEGACION": "correoSubdelegacion",
+    "ANULACION": "anulacion",
+    "OBSERVACIONES": "observaciones"
+  };
+
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    if (header[0] === "CITAS-G" && header.length >= 5) {
-      const campos = [
-        "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
-        "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
-        "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
-        "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
-        "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS"
-      ];
+    // Si es la tabla principal con todos los campos
+    if (header.length >= 5 && Object.keys(parserMap).some(campo => header.includes(campo))) {
       const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      campos.forEach((campo, idx) => {
-        datos[campo.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
-          tds && tds[idx] ? tds[idx].textContent.trim() : '';
+      header.forEach((col, idx) => {
+        const field = parserMap[col] || col.replace(/\./g, '').replace(/\s+/g, '_').toLowerCase();
+        datos[field] = tds && tds[idx] ? tds[idx].textContent.trim() : '';
       });
+      // Si hay un campo de fecha en la tabla, intenta extraerlo
       if (!fecha) {
         let plain = tabla.innerText || tabla.textContent || "";
         let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
         if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
       }
-      break;
+      break; // Solo una tabla relevante para gestión
     }
   }
   return { datos, fecha };
 }
+
 
 
 /* ----------- CIE ----------- */
