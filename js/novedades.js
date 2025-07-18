@@ -642,66 +642,57 @@ function parseGestion(html) {
   let fecha = '';
   let datos = {};
 
-  // Mapeo entre cabecera tabla DOCX y los campos del formulario
-  const parserMap = {
-    "CITAS-G": "citas",
-    "FALLOS": "citasFaltan",
-    "CITAS": "citas",
-    "ENTRV. ASILO": "entrevistasAsilo",
-    "FALLOS ASILO": "entrevistasAsiloFallos",
-    "ASILOS CONCEDIDOS": "asilosConcedidos",
-    "ASILOS DENEGADOS": "asilosDenegados",
-    "CARTAS CONCEDIDAS": "cartasConcedidas",
-    "CARTAS DENEGADAS": "cartasDenegadas",
-    "CARTAS FALLAN": "cartasFallan",
-    "RENUNCIAS ASILO": "renunciasAsilo",
-    "CITAS TLFN ASILO": "citasTelAsilo",
-    "CITAS TLFN CARTAS": "citasTelCartas",
-    "RENUNCIAS UCRANIA": "renunciasUcrania",
-    "CORREOS UCRANIA": "correosUcrania",
-    "DEVOLUCIONES TASAS": "devolucionesTasas",
-    "CITAS SUBDELEGACION": "citasSubdelegacion",
-    "TARJETAS SUBDELEGACION": "tarjetasSubdelegacion",
-    "CUES": "cues",
-    "CERTIFICADOS BAILEN": "certificadosBailen",
-    "ASIGNACIONES": "asignaciones",
-    "PRORROGAS ESTANCIA": "prorrogasEstancia",
-    "DECLARACION ENTRADA": "declaracionEntrada",
-    "PROTECCIONES": "protecciones",
-    "MENAS": "menas",
-    "PRESENTADOS": "presentados",
-    "ATENCION PUBLICO": "atencionPublico",
-    "CAJA OAR": "cajaOAR",
-    "NOTIFICACIONES CONCEDIDAS": "notificacionesConcedidas",
-    "NOTIFICACIONES DENEGADAS": "notificacionesDenegadas",
-    "MODIFICACIONES FAVORABLES": "modificacionesFavorables",
-    "MODIFICACIONES DESFAVORABLES": "modificacionesDesfavorables",
-    "OFICIOS": "oficios",
-    "CORREOS PROTC INTERNACIONAL": "correosProtcInternacional",
-    "TELEFONEMAS": "telefonemas",
-    "CORREO SUBDELEGACION": "correoSubdelegacion",
-    "ANULACION": "anulacion",
-    "OBSERVACIONES": "observaciones"
-  };
-
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    // Si es la tabla principal con todos los campos
-    if (header.length >= 5 && Object.keys(parserMap).some(campo => header.includes(campo))) {
+
+    // La cabecera debe coincidir exactamente con el DOCX (respetando mayúsculas/minúsculas)
+    if (
+      header[0] === "CITAS-AS" &&
+      header[1] === "FALLOS" &&
+      header[2] === "ENTRV. ASILO" &&
+      header[3] === "FALLOS ASILO" &&
+      header[4] === "ASILOS CONCEDIDOS" &&
+      header[5] === "ASILOS DENEGADOS" &&
+      header[6] === "CARTAS CONCEDIDAS" &&
+      header[7] === "CARTAS DENEGADAS" &&
+      header[8] === "PROT. INTERNACIONAL" &&
+      header[9] === "CITAS SUBDELEG" &&
+      header[10] === "TARJET. SUBDELEG" &&
+      header[11] === "NOTIFICACIONES CONCEDIDAS" &&
+      header[12] === "NOTIFICACIONES DENEGADAS" &&
+      header[13] === "PRESENTADOS" &&
+      header[14] === "CORREOS UCRANIA" &&
+      header[15] === "OFICIOS"
+    ) {
+      // Solo hay una fila de datos después de la cabecera
       const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      header.forEach((col, idx) => {
-        const field = parserMap[col] || col.replace(/\./g, '').replace(/\s+/g, '_').toLowerCase();
-        datos[field] = tds && tds[idx] ? tds[idx].textContent.trim() : '';
-      });
-      // Si hay un campo de fecha en la tabla, intenta extraerlo
-      if (!fecha) {
-        let plain = tabla.innerText || tabla.textContent || "";
-        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-      }
-      break; // Solo una tabla relevante para gestión
+      datos = {
+        "CITAS-AS": tds[0]?.textContent.trim() || '',
+        "FALLOS": tds[1]?.textContent.trim() || '',
+        "ENTRV. ASILO": tds[2]?.textContent.trim() || '',
+        "FALLOS ASILO": tds[3]?.textContent.trim() || '',
+        "ASILOS CONCEDIDOS": tds[4]?.textContent.trim() || '',
+        "ASILOS DENEGADOS": tds[5]?.textContent.trim() || '',
+        "CARTAS CONCEDIDAS": tds[6]?.textContent.trim() || '',
+        "CARTAS DENEGADAS": tds[7]?.textContent.trim() || '',
+        "PROT. INTERNACIONAL": tds[8]?.textContent.trim() || '',
+        "CITAS SUBDELEG": tds[9]?.textContent.trim() || '',
+        "TARJET. SUBDELEG": tds[10]?.textContent.trim() || '',
+        "NOTIFICACIONES CONCEDIDAS": tds[11]?.textContent.trim() || '',
+        "NOTIFICACIONES DENEGADAS": tds[12]?.textContent.trim() || '',
+        "PRESENTADOS": tds[13]?.textContent.trim() || '',
+        "CORREOS UCRANIA": tds[14]?.textContent.trim() || '',
+        "OFICIOS": tds[15]?.textContent.trim() || ''
+      };
+    }
+
+    // Busca fecha en la tabla
+    if (!fecha) {
+      let plain = tabla.innerText || tabla.textContent || "";
+      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
   return { datos, fecha };
