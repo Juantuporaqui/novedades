@@ -3,247 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <title>SIREX · CECOREX</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <!-- Bootstrap 5 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/cecorex.css">
+  <!-- Estilo propio global police -->
+  <link rel="stylesheet" href="../css/grupo1.css">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
   <style>
-    /* Estilos para el modal resumen (puedes moverlos a tu .css si prefieres) */
+    /* Extensión para modal propio CECOREX */
     #resumenModal {
       display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
-      overflow: auto; background-color: rgba(0,0,0,0.3);
+      overflow: auto; background-color: rgba(20,34,75,0.11);
       align-items: center; justify-content: center;
     }
     #resumenContent {
-      background: #fff; margin: 7vh auto; padding: 26px 26px 12px 26px; border-radius: 18px; max-width: 440px;
-      box-shadow: 0 10px 30px #2222; min-width: 310px; position: relative;
-      animation: pop 0.22s;
+      background: #fff;
+      margin: 7vh auto;
+      padding: 26px 26px 12px 26px;
+      border-radius: 18px;
+      max-width: 480px;
+      box-shadow: 0 10px 36px #14224b33, 0 4px 16px #14224b0c;
+      min-width: 320px; position: relative;
+      animation: pop 0.20s;
     }
     #modalClose {
-      position: absolute; right: 12px; top: 12px; font-size: 1.9rem; background: none; border: none; color: #666; cursor: pointer;
+      position: absolute; right: 12px; top: 10px; font-size: 1.9rem; background: none; border: none; color: #29497a; cursor: pointer;
       opacity: 0.7; transition: opacity 0.16s;
     }
-    #modalClose:hover { opacity: 1; color: #000; }
-    @keyframes pop { from {transform: scale(0.8);} to {transform: scale(1);} }
+    #modalClose:hover { opacity: 1; color: #14224b; }
+    @keyframes pop { from {transform: scale(0.84);} to {transform: scale(1);} }
     @media (max-width: 500px) {
-      #resumenContent { max-width: 97vw; min-width: 0; padding: 14px 5vw 10px 5vw; }
+      #resumenContent { max-width: 97vw; min-width: 0; padding: 14px 3vw 10px 3vw; }
     }
+    /* Botón ayuda pequeño */
+    .ayuda-btn {
+      border: none; background: #ffd94a; color: #24385d;
+      border-radius: 50%; width: 1.8em; height: 1.8em; font-weight: bold; margin-left: 7px; cursor: pointer;
+      font-size: 1em; box-shadow: 0 2px 6px #ffd94a13;
+      transition: filter .14s;
+    }
+    .ayuda-btn:hover { filter: brightness(1.13);}
+    /* Fondo claro en tarjetas */
+    .card.cecorex {
+      background: #f8fafc;
+      border-radius: 22px;
+      box-shadow: 0 6px 32px 0 #14224b22, 0 2px 8px #14224b0c;
+      border: none;
+    }
+    /* Modo oscuro */
+    body.dark-mode {
+      background: #17233a !important; color: #f8fafc !important;
+    }
+    body.dark-mode .card,
+    body.dark-mode .bg-police-light { background: #222e49 !important; color: #fff !important; }
+    body.dark-mode .navbar,
+    body.dark-mode .footer.bg-police-blue { background: #151e34 !important; color: #fff !important; }
+    body.dark-mode label, body.dark-mode .form-label, body.dark-mode .navbar-brand { color: #ffd94a !important; }
+    body.dark-mode .form-control, body.dark-mode input, body.dark-mode textarea { background: #212b48 !important; color: #fff !important; border-color: #ffd94a !important; }
+    body.dark-mode .btn, body.dark-mode .btn-police-blue, body.dark-mode .btn-police-green, body.dark-mode .btn-police-yellow, body.dark-mode .btn-police-red { filter: brightness(1.1); }
   </style>
 </head>
-<body class="bg-light">
-  <div class="container mb-5 mt-3">
-    <!-- STATUS -->
-    <div id="statusCECOREX"></div>
-    
-    <!-- Cabecera -->
-    <div class="puerto-header d-flex align-items-center mb-3" style="border-radius:18px;">
-      <img src="../img/logo_cnp.png" style="height:34px;margin-right:12px;">
-      <div>
-        <span class="h4 mb-0">CECOREX</span>
-        <small class="d-block text-muted" style="font-size:1.1em;">Parte diario SIREX</small>
-      </div>
-      <div class="ms-auto" style="display:flex;gap:10px;">
-        <!-- Importar DOCX -->
-        <label class="btn btn-outline-secondary mb-0" title="Importar DOCX">
-          <i class="bi bi-file-earmark-arrow-up"></i>
-          <input id="inputDocx" type="file" accept=".docx" style="display:none;">
-        </label>
-        <!-- Ver resumen -->
-        <button id="btnResumen" class="btn btn-outline-primary mb-0" title="Ver resumen del parte">
-          <i class="bi bi-clipboard-data"></i> Resumen
-        </button>
-      </div>
+<body class="bg-police">
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
+    <div class="container">
+      <img src="../img/logo_cnp.png" alt="CNP" width="40" height="40" class="me-2 d-none d-md-block">
+      <span class="navbar-brand fs-3 fw-bold">SIREX · CECOREX</span>
+      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
+      <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
-
-    <!-- Datos generales -->
-    <div class="row mb-3">
-      <div class="col-6 col-md-4">
-        <label class="form-label">Fecha</label>
-        <input type="date" id="fechaDia" class="form-control" autocomplete="off">
-      </div>
-      <div class="col-6 col-md-8 d-flex align-items-end justify-content-end gap-2">
-        <button id="btnCargar" class="btn btn-outline-secondary" title="Cargar registro">
-          <i class="bi bi-cloud-arrow-down"></i> Cargar
-        </button>
-        <button id="btnGrabar" class="btn btn-success" title="Guardar registro">
-          <i class="bi bi-cloud-arrow-up"></i> Guardar
-        </button>
-        <button id="btnBorrar" class="btn btn-danger" title="Borrar registro">
-          <i class="bi bi-trash"></i> Borrar
-        </button>
-        <button id="btnNuevo" class="btn btn-outline-primary" title="Nuevo">
-          <i class="bi bi-plus-circle"></i> Nuevo
-        </button>
-      </div>
-    </div>
- <!-- Detenidos -->
-      <fieldset class="mb-4 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Detenidos</legend>
-        <div class="row align-items-end g-2 mb-3">
-          <div class="col-12 col-md">
-            <label class="form-label">Detenidos</label>
-            <input type="text" id="DETENIDOS" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Motivo</label>
-            <input type="text" id="MOTIVO" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Nacionalidad</label>
-            <input type="text" id="NACIONALIDAD" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Presenta</label>
-            <input type="text" id="PRESENTA" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md">
-            <label class="form-label">Observaciones</label>
-            <input type="text" id="OBSERVACIONES" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-auto">
-            <button type="button" id="addDetenidoBtn" class="btn btn-outline-success mb-2" title="Añadir detenido">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-        </div>
-        <div id="detenidosVentana" class="list-group"></div>
-      </fieldset>
-    </form>
+  </nav>
+  <!-- ACCESO MÓVIL -->
+  <div class="text-center mb-2 d-md-none">
+    <a href="../index.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-house-door"></i> Menú principal</a>
   </div>
 
-    <!-- Formulario principal CECOREX -->
-    <form id="formCecorex" autocomplete="off">
-      <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Consultas y Trámites</legend>
-        <div class="row g-3">
-          <div class="col-6 col-md-3">
-            <label class="form-label">CONS.TFNO</label>
-            <input type="number" id="CONS.TFNO" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">CONS.PRESC</label>
-            <input type="number" id="CONS.PRESC" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">CONS. EQUIP</label>
-            <input type="number" id="CONS. EQUIP" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">TRAMITES AUDIENCIA</label>
-            <input type="number" id="TRAMITES AUDIENCIA" min="0" class="form-control" autocomplete="off">
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Resoluciones y Citaciones</legend>
-        <div class="row g-3">
-          <div class="col-6 col-md-3">
-            <label class="form-label">CITADOS</label>
-            <input type="number" id="CITADOS" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">NOTIFICACIONES</label>
-            <input type="number" id="NOTIFICACIONES" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">AL. ABOGADOS</label>
-            <input type="number" id="AL. ABOGADOS" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">REM. SUBDELEGACIÓN</label>
-            <input type="number" id="REM. SUBDELEGACIÓN" min="0" class="form-control" autocomplete="off">
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Expulsiones y Medidas</legend>
-        <div class="row g-3">
-          <div class="col-6 col-md-3">
-            <label class="form-label">DECRETOS EXP.</label>
-            <input type="number" id="DECRETOS EXP." min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">CIE CONCEDIDO</label>
-            <input type="number" id="CIE CONCEDIDO" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">CIES DENEGADO</label>
-            <input type="number" id="CIES DENEGADO" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">PROH. ENTRADA</label>
-            <input type="number" id="PROH. ENTRADA" min="0" class="form-control" autocomplete="off">
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
-        <legend class="w-auto px-2 fw-bold text-primary">Otros</legend>
-        <div class="row g-3">
-          <div class="col-6 col-md-3">
-            <label class="form-label">MENAS</label>
-            <input type="number" id="MENAS" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">Dil. INFORME</label>
-            <input type="number" id="Dil. INFORME" min="0" class="form-control" autocomplete="off">
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">GESTIONES VARIAS</label>
-            <input type="text" id="GESTIONES VARIAS" class="form-control" autocomplete="off">
-          </div>
-        </div>
-      </fieldset>
+  <!-- STATUS -->
+  <div id="statusCECOREX" class="container mb-2"></div>
 
-     
-  <!-- ========================================== -->
-<!--   BLOQUE DE BOTONES PRINCIPALES + RESUMEN  -->
-<!-- ========================================== -->
-<div class="container mb-5 mt-4">
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    <button class="btn btn-outline-success" id="btnGrabar" type="button">
-      <i class="bi bi-save"></i> Guardar
-    </button>
-    <button class="btn btn-outline-secondary" id="btnCargar" type="button">
-      <i class="bi bi-folder2-open"></i> Cargar
-    </button>
-    <button class="btn btn-outline-warning" id="btnNuevo" type="button">
-      <i class="bi bi-file-earmark-plus"></i> Nuevo
-    </button>
-    <button class="btn btn-outline-danger" id="btnBorrar" type="button">
-      <i class="bi bi-trash"></i> Borrar
-    </button>
-    <button class="btn btn-outline-primary" id="btnResumen" type="button">
-      <i class="bi bi-clipboard-data"></i> Resumen
-    </button>
-    <!-- IMPORTACIÓN DOCX (opcional) -->
-    <label class="btn btn-outline-info mb-0" for="inputDocx" style="cursor:pointer;">
-      <i class="bi bi-file-earmark-arrow-up"></i> Importar DOCX
-      <input type="file" id="inputDocx" accept=".docx" style="display:none;">
-    </label>
-  </div>
-</div>
+  <!-- BLOQUE PRINCIPAL -->
+  <div class="container mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="card cecorex shadow p-4">
+          <h2 class="mb-4 text-police-blue">
+            <i class="bi bi-clipboard-data"></i> Registro diario de CECOREX
+          </h2>
 
-<!-- ================================ -->
-<!--    MODAL DE RESUMEN AVANZADO     -->
-<!-- ================================ -->
-<div id="resumenModal" class="modal" tabindex="-1" style="display:none; background:rgba(33,53,80,0.13); position:fixed; z-index:2222; top:0; left:0; width:100vw; height:100vh; overflow:auto;">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 660px;">
-    <div class="modal-content shadow p-2" style="border-radius:20px;">
-      <div class="modal-header pb-1" style="border:none; background:#f7fbff;">
-        <h5 class="modal-title mb-0">
-          <i class="bi bi-clipboard-data"></i> Resumen Avanzado CECOREX
-        </h5>
-        <button type="button" id="modalClose" class="btn-close" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body" id="resumenContent" style="max-height:66vh; overflow:auto;">
-        <!-- Aquí se inserta dinámicamente el resumen -->
+          <!-- FECHA + BOTONES -->
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-12 col-sm-4">
+              <label for="fechaDia" class="form-label fw-bold mb-1">Fecha de trabajo</label>
+              <input type="date" id="fechaDia" class="form-control form-control-lg" autocomplete="off" required>
+            </div>
+            <div class="col-6 col-sm-2 d-grid">
+              <button id="btnCargar" class="btn btn-primary btn-lg" type="button"><i class="bi bi-upload"></i> Cargar</button>
+            </div>
+            <div class="col-6 col-sm-2 d-grid">
+              <button id="btnGrabar" class="btn btn-success btn-lg" type="button"><i class="bi bi-save"></i> Guardar</button>
+            </div>
+            <div class="col-6 col-sm-2 d-grid">
+              <button id="btnBorrar" class="btn btn-danger btn-lg" type="button"><i class="bi bi-trash"></i> Borrar</button>
+            </div>
+            <div class="col-6 col-sm-2 d-grid">
+              <button id="btnNuevo" class="btn btn-secondary btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+            </div>
+            <div class="col-12 col-sm-2 d-grid">
+              <button id="btnResumen" class="btn btn-police-yellow btn-lg" type="button"><i class="bi bi-clipboard-data"></i> Resumen</button>
+            </div>
+            <div class="col-12 col-sm-2 d-grid mt-2 mt-sm-0">
+              <label class="btn btn-outline-info mb-0" for="inputDocx" style="cursor:pointer;">
+                <i class="bi bi-file-earmark-arrow-up"></i> Importar DOCX
+                <input type="file" id="inputDocx" accept=".docx" style="display:none;">
+              </label>
+            </div>
+          </div>
+
+          <!-- DETENIDOS -->
+          <fieldset class="mb-4 p-3 border rounded shadow-sm bg-white">
+            <legend class="w-auto px-2 fw-bold text-primary">Detenidos
+              <button class="ayuda-btn" title="¿Qué es esto?" onclick="alert('Añade aquí cada detenido con su motivo, nacionalidad, quién lo presenta y observaciones.')">?</button>
+            </legend>
+            <div class="row align-items-end g-2 mb-3">
+              <div class="col-12 col-md">
+                <label class="form-label">Detenidos</label>
+                <input type="text" id="DETENIDOS" class="form-control" autocomplete="off">
+              </div>
+              <div class="col-12 col-md">
+                <label class="form-label">Motivo</label>
+                <input type="text" id="MOTIVO" class="form-control" autocomplete="off">
+              </div>
+              <div class="col-12 col-md">
+                <label class="form-label">Nacionalidad</label>
+                <input type="text" id="NACIONALIDAD" class="form-control" autocomplete="off">
+              </div>
+              <div class="col-12 col-md">
+                <label class="form-label">Presenta</label>
+                <input type="text" id="PRESENTA" class="form-control" autocomplete="off">
+              </div>
+              <div class="col-12 col-md">
+                <label class="form-label">Observaciones</label>
+                <input type="text" id="OBSERVACIONES" class="form-control" autocomplete="off">
+              </div>
+              <div class="col-auto">
+                <button type="button" id="addDetenidoBtn" class="btn btn-police-blue mb-2" title="Añadir detenido">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+            <div id="detenidosVentana" class="ventana-datos"></div>
+          </fieldset>
+
+          <!-- RESTO DE CAMPOS CECOREX -->
+          <form id="formCecorex" autocomplete="off">
+            <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
+              <legend class="w-auto px-2 fw-bold text-primary">Consultas y Trámites</legend>
+              <div class="row g-3">
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CONS.TFNO</label>
+                  <input type="number" id="CONS.TFNO" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CONS.PRESC</label>
+                  <input type="number" id="CONS.PRESC" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CONS. EQUIP</label>
+                  <input type="number" id="CONS. EQUIP" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">TRAMITES AUDIENCIA</label>
+                  <input type="number" id="TRAMITES AUDIENCIA" min="0" class="form-control" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
+              <legend class="w-auto px-2 fw-bold text-primary">Resoluciones y Citaciones</legend>
+              <div class="row g-3">
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CITADOS</label>
+                  <input type="number" id="CITADOS" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">NOTIFICACIONES</label>
+                  <input type="number" id="NOTIFICACIONES" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">AL. ABOGADOS</label>
+                  <input type="number" id="AL. ABOGADOS" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">REM. SUBDELEGACIÓN</label>
+                  <input type="number" id="REM. SUBDELEGACIÓN" min="0" class="form-control" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
+              <legend class="w-auto px-2 fw-bold text-primary">Expulsiones y Medidas</legend>
+              <div class="row g-3">
+                <div class="col-6 col-md-3">
+                  <label class="form-label">DECRETOS EXP.</label>
+                  <input type="number" id="DECRETOS EXP." min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CIE CONCEDIDO</label>
+                  <input type="number" id="CIE CONCEDIDO" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">CIES DENEGADO</label>
+                  <input type="number" id="CIES DENEGADO" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">PROH. ENTRADA</label>
+                  <input type="number" id="PROH. ENTRADA" min="0" class="form-control" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="mb-3 p-3 border rounded shadow-sm bg-white">
+              <legend class="w-auto px-2 fw-bold text-primary">Otros</legend>
+              <div class="row g-3">
+                <div class="col-6 col-md-3">
+                  <label class="form-label">MENAS</label>
+                  <input type="number" id="MENAS" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label">Dil. INFORME</label>
+                  <input type="number" id="Dil. INFORME" min="0" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">GESTIONES VARIAS</label>
+                  <input type="text" id="GESTIONES VARIAS" class="form-control" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <!-- MODAL RESUMEN -->
   <div id="resumenModal">
@@ -253,9 +252,34 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-app-compat.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/firebase@9.22.2/firebase-firestore-compat.min.js"></script>
+  <!-- FOOTER -->
+  <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
+    <small>
+      &copy; 2025 UCRIF · Benito · CECOREX | Plataforma policial
+    </small>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
+  <!-- Mammoth -->
   <script src="https://unpkg.com/mammoth@1.7.0/mammoth.browser.min.js"></script>
+  <!-- JS principal -->
   <script src="../js/cecorex.js"></script>
+  <script>
+    // =========== MODO OSCURO ===========  
+    const darkBtn = document.getElementById("darkModeBtn");
+    if (darkBtn) {
+      darkBtn.onclick = function() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+      };
+      if (localStorage.getItem("sirex_darkmode") === "1") {
+        document.body.classList.add("dark-mode");
+      }
+    }
+  </script>
 </body>
 </html>
