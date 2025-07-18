@@ -203,23 +203,28 @@ async function onConfirmSave() {
   const errores = [];
   const exitos  = [];
 
-  for (const grupo in datosParaGuardar) {
-    if (!collectionMap[grupo]) continue;
-    const collectionName = collectionMap[grupo];
-    const datosDelGrupo  = { ...datosParaGuardar[grupo], fecha: fechaFinal };
-    try {
-      const ref = db.collection(collectionName).doc(fechaFinal);
-      const snapshot = await ref.get();
-      if (snapshot.exists) {
-        errores.push(`Ya existen datos para el día ${fechaFinal} en ${grupo}.`);
-        continue;
-      }
-      await ref.set(datosDelGrupo, { merge: false });
-      exitos.push(`¡Guardado con éxito para ${grupo}!`);
-    } catch(err) {
-      errores.push(`Error al guardar ${grupo}: ${err.message}`);
+ for (const grupo in datosParaGuardar) {
+  if (!collectionMap[grupo]) continue;
+  const collectionName = collectionMap[grupo];
+  const datosDelGrupo  = { ...datosParaGuardar[grupo], fecha: fechaFinal };
+  const ref = db.collection(collectionName).doc(fechaFinal);
+  const snapshot = await ref.get();
+
+  if (snapshot.exists) {
+    // Si existe, PIDE CONFIRMACIÓN al usuario
+    const overwrite = confirm(`Ya existen datos para el día ${fechaFinal} en ${grupo}.\n¿Quieres sobrescribirlos?`);
+    if (!overwrite) {
+      errores.push(`No se ha sobrescrito el registro de ${grupo}.`);
+      continue;
     }
   }
+  try {
+    await ref.set(datosDelGrupo, { merge: false }); // Sobrescribe SIEMPRE, pero solo si ha confirmado
+    exitos.push(`¡Guardado con éxito para ${grupo}!`);
+  } catch (err) {
+    errores.push(`Error al guardar ${grupo}: ${err.message}`);
+  }
+}
 
   showSpinner(false);
 
