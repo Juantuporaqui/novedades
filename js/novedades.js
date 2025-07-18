@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------
-   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX)
+   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, CIE)
    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
 --------------------------------------------------------------------------- */
 let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
@@ -23,6 +23,7 @@ const GROUP1       = "grupo1_expulsiones";
 const GROUP4       = "grupo4_operativo";
 const GROUPPUERTO  = "grupoPuerto";
 const GROUPCECOREX = "cecorex";
+const GROUPCIE     = "grupoCIE";
 
 /* ============================  ELEMENTOS DOM  ============================= */
 const $ = id => document.getElementById(id);
@@ -120,20 +121,22 @@ async function handleDocxUpload(e){
     const { value:html} = await mammoth.convertToHtml({arrayBuffer});
 
     // === Parseo de todos los grupos reconocidos ===
-    const r1 = parseGrupo1(html);
-    const r4 = parseGrupo4(html);
-    const rp = parseGrupoPuerto(html);
-    const rc = parseGrupoCECOREX(html);
+    const r1   = parseGrupo1(html);
+    const r4   = parseGrupo4(html);
+    const rp   = parseGrupoPuerto(html);
+    const rc   = parseGrupoCECOREX(html);
+    const rcie = parseGrupoCIE(html);
 
     // === Recopilación de resultados ===
     const resultados = {};
-    if (Object.keys(r1.datos).length) resultados[GROUP1] = r1.datos;
-    if (Object.keys(r4.datos).length) resultados[GROUP4] = r4.datos;
-    if (Object.keys(rp.datos).length) resultados[GROUPPUERTO] = rp.datos;
-    if (Object.keys(rc.datos).length) resultados[GROUPCECOREX] = rc.datos;
+    if (Object.keys(r1.datos).length)   resultados[GROUP1]      = r1.datos;
+    if (Object.keys(r4.datos).length)   resultados[GROUP4]      = r4.datos;
+    if (Object.keys(rp.datos).length)   resultados[GROUPPUERTO] = rp.datos;
+    if (Object.keys(rc.datos).length)   resultados[GROUPCECOREX]= rc.datos;
+    if (Object.keys(rcie.datos).length) resultados[GROUPCIE]    = rcie.datos;
 
     // Extrae la fecha más significativa
-    const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || "";
+    const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || rcie.fecha || "";
 
     if (!Object.keys(resultados).length) {
       throw new Error("No se reconoció el formato del parte DOCX.");
@@ -192,7 +195,8 @@ async function onConfirmSave() {
     [GROUP1]:      "grupo1_expulsiones",
     [GROUP4]:      "grupo4_operativo",
     [GROUPPUERTO]: "grupoPuerto_registros",
-    [GROUPCECOREX]: "cecorex_registros"
+    [GROUPCECOREX]: "cecorex_registros",
+    [GROUPCIE]:    "cie_registros"
   };
   const errores = [];
   const exitos  = [];
@@ -412,6 +416,24 @@ function parseGrupo4(html) {
       }
     }
 
+    // TRASLADOS-G4
+    if (
+      header[0] === "TRASLADOS-G4" &&
+      header[1] === "DESTINO" &&
+      header[2] === "OBSERVACIONES-TRASLADO"
+    ) {
+      datos["traslados_g4"] = [];
+      for (let i=1; i<rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 3) continue;
+        datos["traslados_g4"].push({
+          traslados_g4:        tds[0].textContent.trim(),
+          destino_traslado:    tds[1].textContent.trim(),
+          observaciones_traslado: tds[2].textContent.trim()
+        });
+      }
+    }
+
     // Busca fecha: DD-MM-AAAA (en tabla)
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
@@ -434,64 +456,19 @@ function parseGrupoPuerto(html) {
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // Tabla principal de PUERTO con todos los campos
+    // DETENIDOS
     if (
-      header.includes("CTRL.MARINOS") &&
-      header.includes("MARINOS ARGOS") &&
-      header.includes("CRUCEROS") &&
-      header.includes("CRUCERISTAS")
+      header[0] === "DETENIDOS"
     ) {
-      // Asigna cada campo por el índice de la cabecera
-      for (let i = 1; i < rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length) continue;
-        // Guarda solo la primera fila de totales, normalmente solo hay una
-        datos.ctrl_marinos      = tds[header.indexOf("CTRL.MARINOS")]?.textContent.trim()     || '';
-        datos.marinos_argos     = tds[header.indexOf("MARINOS ARGOS")]?.textContent.trim()    || '';
-        datos.cruceros          = tds[header.indexOf("CRUCEROS")]?.textContent.trim()         || '';
-        datos.cruceristas       = tds[header.indexOf("CRUCERISTAS")]?.textContent.trim()      || '';
-        datos.visas_cg          = tds[header.indexOf("VISAS. CG")]?.textContent.trim()        || '';
-        datos.visas_val         = tds[header.indexOf("VISAS VAL.")]?.textContent.trim()       || '';
-        datos.visas_exp         = tds[header.indexOf("VISAS. EXP")]?.textContent.trim()       || '';
-        datos.veh_chequeados    = tds[header.indexOf("VEH. CHEQUEADOS")]?.textContent.trim()  || '';
-        datos.pers_chequeadas   = tds[header.indexOf("PERS. CHEQUEADAS")]?.textContent.trim() || '';
-        datos.detenidos         = tds[header.indexOf("DETENIDOS")]?.textContent.trim()        || '';
-        datos.denegaciones      = tds[header.indexOf("DENEGACIONES")]?.textContent.trim()     || '';
-        datos.entr_excep        = tds[header.indexOf("ENTR. EXCEP")]?.textContent.trim()      || '';
-        datos.eixics            = tds[header.indexOf("EIXICS")]?.textContent.trim()           || '';
-        datos.ptos_deportivos   = tds[header.indexOf("PTOS. DEPORTIVOS")]?.textContent.trim() || '';
-        break; // solo la primera fila
-      }
-    }
-
-    // Tabla de FERRYS
-    if (
-      header[0] && header[0].includes("FERRYS")
-    ) {
-      datos.ferrys = [];
+      datos["detenidos_p"] = [];
       for (let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
-        datos.ferrys.push({
-          destino:      tds[header.indexOf("DESTINO")]?.textContent.trim() || '',
-          hora:         tds[header.indexOf("HORA")]?.textContent.trim()    || '',
-          pasajeros:    tds[header.indexOf("PASAJEROS")]?.textContent.trim() || '',
-          vehiculos:    tds[header.indexOf("VEHICULOS")]?.textContent.trim() || '',
-          incidencias:  tds[header.indexOf("INCIDENCIAS")]?.textContent.trim() || ''
+        datos["detenidos_p"].push({
+          detenidos_p: tds[0].textContent.trim()
         });
       }
     }
-  }
-
-  // Busca fecha: DD-MM-YYYY
-  if (!fecha) {
-    let plain = root.innerText || root.textContent || "";
-    let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-    if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-  }
-  return { datos, fecha };
-}
-
 
     // GESTIONES
     if (
@@ -577,6 +554,39 @@ function parseGrupoCECOREX(html) {
   return { datos, fecha };
 }
 
+/* ----------- CIE ----------- */
+function parseGrupoCIE(html) {
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  let fecha = '';
+  let datos = {};
+  for (const tabla of tablas) {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    if (!rows.length) continue;
+    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+    if (
+      header[0] === "N. INTERNOS" &&
+      header[1] === "SALIDAS" &&
+      header[2] === "ENTRADAS" &&
+      header[3] === "OBSERVACIONES-CIE"
+    ) {
+      datos = {
+        n_internos:         rows[1]?.children[0]?.textContent.trim() || '',
+        salidas:            rows[1]?.children[1]?.textContent.trim() || '',
+        entradas:           rows[1]?.children[2]?.textContent.trim() || '',
+        observaciones_cie:  rows[1]?.children[3]?.textContent.trim() || ''
+      };
+    }
+    // Busca fecha: DD-MM-AAAA (en tabla)
+    if (!fecha) {
+      let plain = tabla.innerText || tabla.textContent || "";
+      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+    }
+  }
+  return { datos, fecha };
+}
+
 /* ===========================  VALIDACIÓN  ================================ */
 function validarDatos(data, grupo, fecha) {
   if (!data || typeof data !== 'object') {
@@ -590,6 +600,7 @@ function validarDatos(data, grupo, fecha) {
   if (grupo === GROUP4 && !Object.keys(data).length) errores.push('No hay datos de Grupo 4.');
   if (grupo === GROUPPUERTO && !Object.keys(data).length) errores.push('No hay datos de Puerto.');
   if (grupo === GROUPCECOREX && !Object.keys(data).length) errores.push('No hay datos de CECOREX.');
+  if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
   return errores.length ? errores : [];
 }
 
