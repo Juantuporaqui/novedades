@@ -515,7 +515,8 @@ function parseGrupoCECOREX(html) {
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-      if (m) fecha = `${m[3]}-${m[2]}-${m[1]
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+
 // Ampliación del parser de CECOREX literal (campos numéricos y gestión)
 function parseGrupoCECOREX(html) {
   const root = document.createElement('div'); root.innerHTML = html;
