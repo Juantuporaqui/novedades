@@ -19,8 +19,9 @@ const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
 // ======================= CAMPOS DEL FORMULARIO ==========================
+// ¡IMPORTANTE! Deben ser EXACTAMENTE los que parsea y guarda novedades.js
 const formFields = [
-  "CITAS-AS", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
+  "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
   "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
   "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
   "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
@@ -65,7 +66,7 @@ async function guardarRegistro() {
   const fecha = $("fechaRegistro").value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!validateBeforeSave()) return;
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const docId = fecha; // SOLO FECHA, igual que novedades.js
   const datos = { fecha, ...leerForm() };
   const ref = db.collection(NOMBRE_COLECCION).doc(docId);
 
@@ -84,7 +85,7 @@ async function guardarRegistro() {
 async function cargarRegistro() {
   const fecha = $("fechaRegistro").value;
   if (!fecha) return alert("Selecciona la fecha");
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const docId = fecha; // SOLO FECHA, igual que novedades.js
   const doc = await db.collection(NOMBRE_COLECCION).doc(docId).get();
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const d = doc.data();
@@ -104,7 +105,7 @@ async function eliminarRegistro() {
   const fecha = $("fechaRegistro").value;
   if (!fecha) return alert("Selecciona la fecha");
   if (!confirm("¿Eliminar el registro de esta fecha?")) return;
-  const docId = "gestion_" + fecha.replace(/-/g, "");
+  const docId = fecha; // SOLO FECHA, igual que novedades.js
   await db.collection(NOMBRE_COLECCION).doc(docId).delete();
   limpiarForm();
   alert("Registro eliminado.");
@@ -134,7 +135,7 @@ function mostrarResumen() {
     return;
   }
   $("resumenRegistro").innerHTML = `
-    <b>Citas Asilo:</b> ${d["CITAS-AS"]} (fallos: ${d["FALLOS"]})<br>
+    <b>Citas Asilo:</b> ${d["CITAS-G"]} (fallos: ${d["FALLOS"]})<br>
     <b>Entrevistas Asilo:</b> ${d["ENTRV. ASILO"]} (fallos: ${d["FALLOS ASILO"]})<br>
     <b>Cartas Invitación:</b> Concedidas: ${d["CARTAS CONCEDIDAS"]}, Denegadas: ${d["CARTAS DENEGADAS"]}<br>
     <b>Asilos:</b> Concedidos: ${d["ASILOS CONCEDIDOS"]}, Denegados: ${d["ASILOS DENEGADOS"]}<br>
@@ -170,7 +171,7 @@ $("btnResumenFechas").onclick = async function() {
   resumenes.forEach(r => {
     numericFields.forEach(k => agg[k] += +r[k] || 0);
     detalle += `<li><b>${formatoFechaCorta(r.fecha)}</b>:
-      Citas: ${r["CITAS-AS"]||0}, Fallos: ${r["FALLOS"]||0},
+      Citas: ${r["CITAS-G"]||0}, Fallos: ${r["FALLOS"]||0},
       Entrevistas: ${r["ENTRV. ASILO"]||0}, Fallos Entrevista: ${r["FALLOS ASILO"]||0},
       Cartas: C:${r["CARTAS CONCEDIDAS"]||0} D:${r["CARTAS DENEGADAS"]||0}
       </li>`;
@@ -178,7 +179,7 @@ $("btnResumenFechas").onclick = async function() {
   $("divResumenFechas").innerHTML = `
     <b>Resumen total del ${formatoFechaCorta(desde)} al ${formatoFechaCorta(hasta)}:</b><br>
     <ul>
-      <li><b>Citas asilo</b>: ${agg["CITAS-AS"]} (Fallos: ${agg["FALLOS"]})</li>
+      <li><b>Citas asilo</b>: ${agg["CITAS-G"]} (Fallos: ${agg["FALLOS"]})</li>
       <li><b>Entrevistas asilo</b>: ${agg["ENTRV. ASILO"]} (Fallos: ${agg["FALLOS ASILO"]})</li>
       <li><b>Cartas de invitación</b>: Concedidas: ${agg["CARTAS CONCEDIDAS"]}, Denegadas: ${agg["CARTAS DENEGADAS"]}</li>
     </ul>
