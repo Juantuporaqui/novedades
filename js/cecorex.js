@@ -94,6 +94,55 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // =================================================================================
+  // FUNCIÓN DE MAPEADO DE CAMPOS (compatibilidad novedades.js <-> cecorex.js)
+  // =================================================================================
+  function mapCECOREXFields(firebaseData) {
+    if (!firebaseData) return {};
+    const map = {
+      detenidos_cc: "detenidos", // array de detenidos
+      cons_tfno: "CONS.TFNO",
+      cons_presc: "CONS.PRESC",
+      cons_equip: "CONS. EQUIP",
+      citados: "CITADOS",
+      notificaciones: "NOTIFICACIONES",
+      al_abogados: "AL. ABOGADOS",
+      rem_subdelegacion: "REM. SUBDELEGACIÓN",
+      decretos_exp: "DECRETOS EXP.",
+      tramites_audiencia: "TRAMITES AUDIENCIA",
+      cie_concedido: "CIE CONCEDIDO",
+      cies_denegado: "CIES DENEGADO",
+      proh_entrada: "PROH. ENTRADA",
+      menas: "MENAS",
+      dil_informe: "Dil. INFORME",
+      gestiones_cecorex: "GESTIONES VARIAS" // string o array (convierte a texto si es array)
+    };
+    let result = {};
+    for (let key in map) {
+      if (firebaseData.hasOwnProperty(key)) {
+        if (key === "gestiones_cecorex") {
+          result[map[key]] = Array.isArray(firebaseData[key])
+            ? firebaseData[key].map(e => e.gestion || '').join('\n')
+            : (firebaseData[key] || '');
+        } else if (key === "detenidos_cc") {
+          result["detenidos"] = Array.isArray(firebaseData[key])
+            ? firebaseData[key].map(e => ({
+                DETENIDOS: e.detenidos_cc || '',
+                MOTIVO: e.motivo_cc || '',
+                NACIONALIDAD: e.nacionalidad_cc || '',
+                PRESENTA: e.presenta || '',
+                OBSERVACIONES: e.observaciones_cc || ''
+              }))
+            : [];
+        } else {
+          result[map[key]] = firebaseData[key];
+        }
+      }
+    }
+    if (firebaseData.fecha) result["fecha"] = firebaseData.fecha;
+    return result;
+  }
+
+  // =================================================================================
   // FUNCIONES GLOBALES (para integración con novedades.js y otros scripts)
   // =================================================================================
   window.setCECOREXData = function (data) {
@@ -155,7 +204,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const ref = db.collection("cecorex_registros").doc(fecha);
       const snap = await ref.get();
       if (snap.exists) {
-        setCECOREXData(snap.data());
+        // Mapeo automático para compatibilidad
+        const fixedData = mapCECOREXFields(snap.data());
+        setCECOREXData(fixedData);
         showStatus('Registro cargado correctamente.', 'success');
       } else {
         limpiarForm();
@@ -417,11 +468,12 @@ document.addEventListener('DOMContentLoaded', function () {
   // AUTO-IMPORT DESDE novedades.js: FUNCIONALIDAD GLOBAL
   // =================================================================================
   window.autoImportCECOREX = function(data) {
-    // Si hay campo de fecha, la ponemos
-    if (data.fecha && typeof setFecha === "function") setFecha(data.fecha);
-    setCECOREXData(data);
+    // Traduce los campos del parser al formato del formulario
+    const fixedData = mapCECOREXFields(data);
+    if (fixedData.fecha && typeof setFecha === "function") setFecha(fixedData.fecha);
+    setCECOREXData(fixedData);
     showStatus("Parte diario CECOREX auto-importado. Revisa y guarda si es correcto.", "info");
-    if (btnVerResumen) btnVerResumen.click(); // Muestra el resumen automáticamente
+    if (btnVerResumen) btnVerResumen.click();
   };
 
   // =================================================================================
