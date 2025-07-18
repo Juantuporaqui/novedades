@@ -22,7 +22,8 @@ const db = firebase.firestore();
 const GROUP1       = "grupo1_expulsiones";
 const GROUP4       = "grupo4_operativo";
 const GROUPPUERTO  = "grupoPuerto";
-const GROUPCECOREX = "cecorex";
+const GROUPCECOREX = "cecorex"; 
+const GROUPGESTION = "gestion"; 
 const GROUPCIE     = "grupoCIE";
 
 /* ============================  ELEMENTOS DOM  ============================= */
@@ -763,10 +764,8 @@ function validarDatos(data, grupo, fecha) {
   if (grupo === GROUP1 && !Object.keys(data).length) errores.push('No hay datos de Grupo 1.');
   if (grupo === GROUP4 && !Object.keys(data).length) errores.push('No hay datos de Grupo 4.');
   if (grupo === GROUPPUERTO && !Object.keys(data).length) errores.push('No hay datos de Puerto.');
-  if (grupo === GROUPCECOREX && !data.detenidos_cc && (!data.gestiones_cecorex || !data.gestiones_cecorex.length)) {
-    errores.push('No hay datos de CECOREX.');
-  }
-  if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
+  if (grupo === GROUPCECOREX && !Object.keys(data).length) errores.push('No hay datos de CECOREX.');
+   if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
   if (grupo === GROUPGESTION && !Object.keys(data).length) errores.push('No hay datos de Gestión.');
   return errores.length ? errores : [];
 }
