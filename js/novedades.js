@@ -434,19 +434,64 @@ function parseGrupoPuerto(html) {
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // DETENIDOS
+    // Tabla principal de PUERTO con todos los campos
     if (
-      header[0] === "DETENIDOS"
+      header.includes("CTRL.MARINOS") &&
+      header.includes("MARINOS ARGOS") &&
+      header.includes("CRUCEROS") &&
+      header.includes("CRUCERISTAS")
     ) {
-      datos["detenidos_p"] = [];
+      // Asigna cada campo por el índice de la cabecera
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length) continue;
+        // Guarda solo la primera fila de totales, normalmente solo hay una
+        datos.ctrl_marinos      = tds[header.indexOf("CTRL.MARINOS")]?.textContent.trim()     || '';
+        datos.marinos_argos     = tds[header.indexOf("MARINOS ARGOS")]?.textContent.trim()    || '';
+        datos.cruceros          = tds[header.indexOf("CRUCEROS")]?.textContent.trim()         || '';
+        datos.cruceristas       = tds[header.indexOf("CRUCERISTAS")]?.textContent.trim()      || '';
+        datos.visas_cg          = tds[header.indexOf("VISAS. CG")]?.textContent.trim()        || '';
+        datos.visas_val         = tds[header.indexOf("VISAS VAL.")]?.textContent.trim()       || '';
+        datos.visas_exp         = tds[header.indexOf("VISAS. EXP")]?.textContent.trim()       || '';
+        datos.veh_chequeados    = tds[header.indexOf("VEH. CHEQUEADOS")]?.textContent.trim()  || '';
+        datos.pers_chequeadas   = tds[header.indexOf("PERS. CHEQUEADAS")]?.textContent.trim() || '';
+        datos.detenidos         = tds[header.indexOf("DETENIDOS")]?.textContent.trim()        || '';
+        datos.denegaciones      = tds[header.indexOf("DENEGACIONES")]?.textContent.trim()     || '';
+        datos.entr_excep        = tds[header.indexOf("ENTR. EXCEP")]?.textContent.trim()      || '';
+        datos.eixics            = tds[header.indexOf("EIXICS")]?.textContent.trim()           || '';
+        datos.ptos_deportivos   = tds[header.indexOf("PTOS. DEPORTIVOS")]?.textContent.trim() || '';
+        break; // solo la primera fila
+      }
+    }
+
+    // Tabla de FERRYS
+    if (
+      header[0] && header[0].includes("FERRYS")
+    ) {
+      datos.ferrys = [];
       for (let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
-        datos["detenidos_p"].push({
-          detenidos_p: tds[0].textContent.trim()
+        datos.ferrys.push({
+          destino:      tds[header.indexOf("DESTINO")]?.textContent.trim() || '',
+          hora:         tds[header.indexOf("HORA")]?.textContent.trim()    || '',
+          pasajeros:    tds[header.indexOf("PASAJEROS")]?.textContent.trim() || '',
+          vehiculos:    tds[header.indexOf("VEHICULOS")]?.textContent.trim() || '',
+          incidencias:  tds[header.indexOf("INCIDENCIAS")]?.textContent.trim() || ''
         });
       }
     }
+  }
+
+  // Busca fecha: DD-MM-YYYY
+  if (!fecha) {
+    let plain = root.innerText || root.textContent || "";
+    let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+    if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  return { datos, fecha };
+}
+
 
     // GESTIONES
     if (
