@@ -2,7 +2,7 @@
    SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, CIE)
    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
 --------------------------------------------------------------------------- */
-let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
+let parsedDataForConfirmation = null;
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -177,8 +177,6 @@ async function onConfirmSave() {
     fechaManualInput.focus();
     return;
   }
-
-  // VALIDACIÓN JUSTO ANTES DE GUARDAR (usa la fecha final elegida)
   const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
   if (erroresFinal.length) {
     showStatus('<ul>'+erroresFinal.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
@@ -243,7 +241,7 @@ function onCancel(){
   parsedDataForConfirmation   = null;
   fechaEdicionDiv.style.display = "none";
 }
-
+   
 /* ========================= 📋 PARSERS POR GRUPO ========================= */
 
 /* ----------- GRUPO 1 ----------- */
@@ -450,41 +448,49 @@ function parseGrupoPuerto(html) {
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
   let datos = {};
-
+  const cabPuerto = [
+    "CTRL.MARINOS","MARINOS ARGOS","CRUCEROS","CRUCERISTAS",
+    "VISAS. CG","VISAS VAL.","VISAS. EXP",
+    "VEH. CHEQUEADOS","PERS. CHEQUEADAS",
+    "DETENIDOS","DENEGACIONES","ENTR. EXCEP","EIXICS","PTOS. DEPORTIVOS"
+  ];
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-
-    // DETENIDOS
-    if (
-      header[0] === "DETENIDOS"
-    ) {
-      datos["detenidos_p"] = [];
+    if (rows.length < 2) continue;
+    const cabecera = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+    // Si la tabla contiene la mayoría de campos de Puerto (tolerante a campos vacíos)
+    if (cabPuerto.filter(c => cabecera.includes(c)).length > 4) {
+      for (let i=0; i<cabPuerto.length; i++) {
+        const idx = cabecera.indexOf(cabPuerto[i]);
+        if (idx !== -1 && rows[1].children[idx])
+          datos[cabPuerto[i].toLowerCase().replace(/[ .]/g,'_')] = rows[1].children[idx].textContent.trim();
+      }
+    }
+    // FERRYS (tabla o subtabla propia)
+    if (/FERRYS/i.test(cabecera.join(' '))) {
+      datos.ferrys = [];
       for (let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
-        datos["detenidos_p"].push({
-          detenidos_p: tds[0].textContent.trim()
+        datos.ferrys.push({
+          destino:        tds[0]?.textContent.trim()||'',
+          hora:           tds[1]?.textContent.trim()||'',
+          pasajeros:      tds[2]?.textContent.trim()||'',
+          vehiculos:      tds[3]?.textContent.trim()||'',
+          incidencias:    tds[4]?.textContent.trim()||''
         });
       }
     }
-
-    // GESTIONES
-    if (
-      header[0] === "GESTIONES"
-    ) {
-      datos["gestiones_p"] = [];
+    // GESTIONES PUERTO (simple)
+    if (/GESTIONES PUERTO/i.test(cabecera.join(' '))) {
+      datos.gestiones_puerto = [];
       for (let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
-        datos["gestiones_p"].push({
-          gestiones_p: tds[0].textContent.trim()
-        });
+        datos.gestiones_puerto.push({ gestion: tds[0].textContent.trim() });
       }
     }
-
-    // Busca fecha: DD-MM-AAAA (en tabla)
+    // Busca fecha en tabla
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
