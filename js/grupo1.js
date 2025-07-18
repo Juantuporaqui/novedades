@@ -296,7 +296,16 @@ function mostrarListaDetenidos(lista) {
     }
     detenidosVentana.innerHTML = "";
     lista.forEach((item, idx) => {
-        let texto = `Nº ${item.numero || "-"} - ${item.motivo || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}] ${item.observaciones ? "- " + item.observaciones : ""}`;
+        // Corrige valores "vacíos", undefined o nulos
+        const numero = (item.numero !== undefined && item.numero !== null && item.numero !== "") ? item.numero : "-";
+        const motivo = item.motivo || "-";
+        const nacionalidad = item.nacionalidad || "-";
+        const diligencias = item.diligencias || "-";
+        const observaciones = item.observaciones || "";
+        // No mostrar "[]" nunca
+        let texto = `Nº ${numero} - ${motivo} (${nacionalidad}) [${diligencias}]${observaciones ? " - " + observaciones : ""}`;
+        // Si todos están vacíos, no muestres nada (evita líneas inútiles)
+        if (numero === "-" && motivo === "-" && nacionalidad === "-" && diligencias === "-") return;
         const div = document.createElement("div");
         div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
         div.innerHTML = `<span>${texto}</span>`;
@@ -311,6 +320,7 @@ function mostrarListaDetenidos(lista) {
     scrollVentana(detenidosVentana.id);
 }
 
+
 function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     if (!Array.isArray(lista) || lista.length === 0) {
         ventana.innerHTML = "<span class='text-muted'>Sin datos</span>";
@@ -321,27 +331,28 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
         let texto = "";
         switch (tipo) {
             case "expulsado":
-                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) [${item.diligencias || ""}]`;
+                // Siempre valores por defecto legibles
+                texto = `${item.nombre || "-"} (${item.nacionalidad || "-"}) [${item.diligencias || "-"}]`;
                 break;
             case "frustrada":
-                texto = `${item.nombre || ""} (${item.nacionalidad || "-"}) - ${item.motivo || ""}`;
+                texto = `${item.nombre || "-"} (${item.nacionalidad || "-"}) - ${item.motivo || "-"}`;
                 break;
             case "fletado":
-                texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
-                break;
             case "fletadoFuturo":
-                texto = `${item.destino || ""} (${item.pax || 0} pax) - ${formatoFecha(item.fecha)}`;
+                texto = `${item.destino || "-"} (${item.pax || "0"} pax) - ${formatoFecha(item.fecha)}`;
                 break;
             case "conduccionPositiva":
             case "conduccionNegativa":
-                texto = `Nº: ${item.numero || 0} (${formatoFecha(item.fecha)})`;
+                texto = `Nº: ${item.numero || "0"} (${formatoFecha(item.fecha)})`;
                 break;
             case "pendiente":
-                texto = `${item.descripcion || ""} (${formatoFecha(item.fecha)})`;
+                texto = `${item.descripcion || "-"} (${formatoFecha(item.fecha)})`;
                 break;
             default:
                 texto = JSON.stringify(item);
         }
+        // Si todos los campos están vacíos, no muestra la línea
+        if (/^(?:-|\s|0|\(\-\)|\[\-\])+$/.test(texto.replace(/\s/g,''))) return;
         const div = document.createElement("div");
         div.className = "dato-item border-bottom py-1 d-flex justify-content-between align-items-center";
         div.innerHTML = `<span>${texto}</span>`;
@@ -366,6 +377,7 @@ function mostrarListaVentana(ventana, lista, tipo, permiteEliminar) {
     });
     scrollVentana(ventana.id);
 }
+
 
 // ====== Añadir datos ======
 detenidoForm.addEventListener('submit', function(e) {
