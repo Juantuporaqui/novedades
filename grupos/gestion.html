@@ -12,16 +12,15 @@
   <link rel="stylesheet" href="../css/gestion.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
   <style>
-    /* Fondo institucional para toda la página */
     body.bg-police {
       background: linear-gradient(135deg, #193768 70%, #38588e 100%);
       min-height: 100vh;
     }
-    .header, footer { display: none; } /* Ocultamos el header antiguo, footer lo trasladamos abajo con estilo institucional */
+    .header, footer { display: none; }
   </style>
 </head>
 <body class="bg-police">
-  <!-- NAVBAR ESTILO INSTITUCIONAL -->
+  <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
     <div class="container">
       <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
@@ -75,118 +74,115 @@
             <h2 class="mb-4 text-police-blue">
               <i class="bi bi-folder2-open"></i> Gestión Oficial (Parte Diario)
             </h2>
+            <!-- FORMULARIO ADAPTADO, TODOS LOS IDS COINCIDEN CON gestion.js y novedades.js -->
             <form id="formGestion" autocomplete="off">
-              <!-- FILA 1 -->
               <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
-                  <label for="citas" class="form-label">Citas</label>
-                  <input type="number" min="0" id="citas" class="form-control" value="0">
+                  <label for="CITAS-G" class="form-label">Citas-G</label>
+                  <input type="number" min="0" id="CITAS-G" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="fallosCitas" class="form-label">Fallos</label>
-                  <input type="number" min="0" id="fallosCitas" class="form-control" value="0">
+                  <label for="FALLOS" class="form-label">Fallos</label>
+                  <input type="number" min="0" id="FALLOS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="entrevistasAsilo" class="form-label">Entrev. Asilo</label>
-                  <input type="number" min="0" id="entrevistasAsilo" class="form-control" value="0">
+                  <label for="CITAS" class="form-label">Citas</label>
+                  <input type="number" min="0" id="CITAS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="fallosAsilo" class="form-label">Fallos Asilo</label>
-                  <input type="number" min="0" id="fallosAsilo" class="form-control" value="0">
+                  <label for="ENTRV. ASILO" class="form-label">Entrev. Asilo</label>
+                  <input type="number" min="0" id="ENTRV. ASILO" class="form-control" value="0">
                 </div>
               </div>
-              <!-- FILA 2 -->
               <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
-                  <label for="asilosConcedidos" class="form-label">Asilos Concedidos</label>
-                  <input type="number" min="0" id="asilosConcedidos" class="form-control" value="0">
+                  <label for="FALLOS ASILO" class="form-label">Fallos Asilo</label>
+                  <input type="number" min="0" id="FALLOS ASILO" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="asilosDenegados" class="form-label">Asilos Denegados</label>
-                  <input type="number" min="0" id="asilosDenegados" class="form-control" value="0">
+                  <label for="ASILOS CONCEDIDOS" class="form-label">Asilos Concedidos</label>
+                  <input type="number" min="0" id="ASILOS CONCEDIDOS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="cartasConcedidas" class="form-label">Cartas Concedidas</label>
-                  <input type="number" min="0" id="cartasConcedidas" class="form-control" value="0">
+                  <label for="ASILOS DENEGADOS" class="form-label">Asilos Denegados</label>
+                  <input type="number" min="0" id="ASILOS DENEGADOS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="cartasDenegadas" class="form-label">Cartas Denegadas</label>
-                  <input type="number" min="0" id="cartasDenegadas" class="form-control" value="0">
+                  <label for="CARTAS CONCEDIDAS" class="form-label">Cartas Concedidas</label>
+                  <input type="number" min="0" id="CARTAS CONCEDIDAS" class="form-control" value="0">
                 </div>
               </div>
-              <!-- FILA 3 -->
               <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
-                  <label for="proteccionInternacional" class="form-label">Prot. Internacional</label>
-                  <input type="number" min="0" id="proteccionInternacional" class="form-control" value="0">
+                  <label for="CARTAS DENEGADAS" class="form-label">Cartas Denegadas</label>
+                  <input type="number" min="0" id="CARTAS DENEGADAS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="citasSubdeleg" class="form-label">Citas Subdeleg.</label>
-                  <input type="number" min="0" id="citasSubdeleg" class="form-control" value="0">
+                  <label for="PROT. INTERNACIONAL" class="form-label">Prot. Internacional</label>
+                  <input type="number" min="0" id="PROT. INTERNACIONAL" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="tarjetasSubdeleg" class="form-label">Tarjetas Subdeleg.</label>
-                  <input type="number" min="0" id="tarjetasSubdeleg" class="form-control" value="0">
+                  <label for="CITAS SUBDELEG" class="form-label">Citas Subdeleg.</label>
+                  <input type="number" min="0" id="CITAS SUBDELEG" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="notificacionesConcedidas" class="form-label">Notific. Concedidas</label>
-                  <input type="number" min="0" id="notificacionesConcedidas" class="form-control" value="0">
+                  <label for="TARJET. SUBDELEG" class="form-label">Tarjet. Subdeleg.</label>
+                  <input type="number" min="0" id="TARJET. SUBDELEG" class="form-control" value="0">
                 </div>
               </div>
-              <!-- FILA 4 -->
               <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
-                  <label for="notificacionesDenegadas" class="form-label">Notific. Denegadas</label>
-                  <input type="number" min="0" id="notificacionesDenegadas" class="form-control" value="0">
+                  <label for="NOTIFICACIONES CONCEDIDAS" class="form-label">Notificaciones Concedidas</label>
+                  <input type="number" min="0" id="NOTIFICACIONES CONCEDIDAS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="presentados" class="form-label">Presentados</label>
-                  <input type="number" min="0" id="presentados" class="form-control" value="0">
+                  <label for="NOTIFICACIONES DENEGADAS" class="form-label">Notificaciones Denegadas</label>
+                  <input type="number" min="0" id="NOTIFICACIONES DENEGADAS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="correosUcrania" class="form-label">Correos Ucrania</label>
-                  <input type="number" min="0" id="correosUcrania" class="form-control" value="0">
+                  <label for="PRESENTADOS" class="form-label">Presentados</label>
+                  <input type="number" min="0" id="PRESENTADOS" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="telematicasFavorables" class="form-label">Tele. Favorables</label>
-                  <input type="number" min="0" id="telematicasFavorables" class="form-control" value="0">
+                  <label for="CORREOS UCRANIA" class="form-label">Correos Ucrania</label>
+                  <input type="number" min="0" id="CORREOS UCRANIA" class="form-control" value="0">
                 </div>
               </div>
-              <!-- FILA 5 -->
               <div class="row g-3 mb-3">
                 <div class="col-6 col-md-3">
-                  <label for="telematicasDesfavorables" class="form-label">Tele. Desfavorables</label>
-                  <input type="number" min="0" id="telematicasDesfavorables" class="form-control" value="0">
+                  <label for="TELE. FAVO" class="form-label">Tele. Favorables</label>
+                  <input type="number" min="0" id="TELE. FAVO" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="citasTlfnAsilo" class="form-label">Citas Tlf. Asilo</label>
-                  <input type="number" min="0" id="citasTlfnAsilo" class="form-control" value="0">
+                  <label for="TELE. DESFAV" class="form-label">Tele. Desfavorables</label>
+                  <input type="number" min="0" id="TELE. DESFAV" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="citasTlfnCartas" class="form-label">Citas Tlf. Cartas</label>
-                  <input type="number" min="0" id="citasTlfnCartas" class="form-control" value="0">
+                  <label for="CITAS TLFN ASILO" class="form-label">Citas Tlfn. Asilo</label>
+                  <input type="number" min="0" id="CITAS TLFN ASILO" class="form-control" value="0">
                 </div>
                 <div class="col-6 col-md-3">
-                  <label for="oficios" class="form-label">Oficios</label>
-                  <input type="number" min="0" id="oficios" class="form-control" value="0">
+                  <label for="CITAS TLFN CARTAS" class="form-label">Citas Tlfn. Cartas</label>
+                  <input type="number" min="0" id="CITAS TLFN CARTAS" class="form-control" value="0">
                 </div>
               </div>
-              <!-- Observaciones -->
-              <div class="row g-3 mb-2">
+              <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3">
+                  <label for="OFICIOS" class="form-label">Oficios</label>
+                  <input type="number" min="0" id="OFICIOS" class="form-control" value="0">
+                </div>
                 <div class="col-12">
-                  <label for="observaciones" class="form-label">Observaciones</label>
-                  <textarea id="observaciones" rows="2" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
+                  <label for="OBSERVACIONES" class="form-label">Observaciones</label>
+                  <textarea id="OBSERVACIONES" rows="2" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
                 </div>
               </div>
             </form>
           </div>
-
           <!-- PANEL RESUMEN -->
           <section id="panelResumen" class="card shadow p-4 mb-4" style="display:none;">
             <h2 class="mb-3 text-police-blue"><i class="bi bi-journal-check"></i> Resumen del registro</h2>
             <div id="resumenRegistro"></div>
           </section>
-
           <!-- PANEL RESUMEN POR FECHAS Y EXPORTAR -->
           <section class="card panel-glass mt-4 p-4">
             <h3 class="mb-3 text-police-blue"><i class="bi bi-clipboard-data"></i> Resumen por rango de fechas</h3>
@@ -208,14 +204,11 @@
       </div>
     </div>
   </main>
-
-  <!-- FOOTER CORPORATIVO INSTITUCIONAL -->
   <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
     <small>
       &copy; 2025 UCRIF · Benito · Gestión Avanzada | Plataforma policial
     </small>
   </footer>
-
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Firebase -->
@@ -224,7 +217,6 @@
   <script src="../js/gestion.js" defer></script>
   <!-- Script Modo Oscuro -->
   <script>
-    // =========== MODO OSCURO =========== 
     const darkBtn = document.getElementById("darkModeBtn");
     if (darkBtn) {
       darkBtn.onclick = function() {
