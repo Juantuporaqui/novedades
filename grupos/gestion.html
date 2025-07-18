@@ -25,7 +25,7 @@
     <div class="container">
       <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
       <span class="navbar-brand fs-3 fw-bold">SIREX · Gestión Avanzada</span>
-      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
+      <button id="btnDarkMode" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
       <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
     </div>
   </nav>
@@ -217,16 +217,19 @@
   <script src="../js/gestion.js" defer></script>
   <!-- Script Modo Oscuro -->
   <script>
-    const darkBtn = document.getElementById("darkModeBtn");
-    if (darkBtn) {
-      darkBtn.onclick = function() {
-        document.body.classList.toggle("dark-mode");
-        localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
-      };
+    // Este código unifica el modo oscuro
+    document.addEventListener('DOMContentLoaded', function() {
+      var darkBtn = document.getElementById("btnDarkMode");
+      if (darkBtn) {
+        darkBtn.onclick = function() {
+          document.body.classList.toggle("dark-mode");
+          localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
+        };
+      }
       if (localStorage.getItem("sirex_darkmode") === "1") {
         document.body.classList.add("dark-mode");
       }
-    }
+    });
   </script>
 </body>
 </html>
