@@ -13,7 +13,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "241698436443",
   appId: "1:241698436443:web:1f333b3ae3f813b755167e"
 };
-const NOMBRE_COLECCION = "gestion_avanzada";
+const NOMBRE_COLECCION = "gestion_registros";
 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 const $ = id => document.getElementById(id);
