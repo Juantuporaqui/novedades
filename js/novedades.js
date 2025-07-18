@@ -511,12 +511,49 @@ function parseGrupoPuerto(html) {
   return { datos, fecha };
 }
 
-/* ----------- CECOREX ----------- */
 function parseGrupoCECOREX(html) {
   const root = document.createElement('div'); root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
-  let datos = {};
+  let datos = {
+    detenidos_cc: [],
+    cons_tfno: '',
+    cons_presc: '',
+    cons_equip: '',
+    citados: '',
+    notificaciones: '',
+    al_abogados: '',
+    rem_subdelegacion: '',
+    decretos_exp: '',
+    tramites_audiencia: '',
+    cie_concedido: '',
+    cies_denegado: '',
+    proh_entrada: '',
+    menas: '',
+    dil_informe: '',
+    gestiones_cecorex: [],
+    citas_g: '',
+    fallos: '',
+    citas: '',
+    entrv_asilo: '',
+    fallos_asilo: '',
+    asilos_concedidos: '',
+    asilos_denegados: '',
+    cartas_concedidas: '',
+    cartas_denegadas: '',
+    prot_internacional: '',
+    citas_subdeleg: '',
+    tarjet_subdeleg: '',
+    notificaciones_concedidas: '',
+    notificaciones_denegadas: '',
+    presentados: '',
+    correos_ucrania: '',
+    tele_favo: '',
+    tele_desfav: '',
+    citas_tlfn_asilo: '',
+    citas_tlfn_cartas: '',
+    oficios: ''
+  };
 
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
@@ -531,34 +568,106 @@ function parseGrupoCECOREX(html) {
       header[3] === "PRESENTA" &&
       header[4] === "OBSERVACIONES-CC"
     ) {
-      datos["detenidos_c"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 5) continue;
-        datos["detenidos_c"].push({
-          detenidos_c:       tds[0].textContent.trim(),
-          motivo_c:          tds[1].textContent.trim(),
-          nacionalidad_c:    tds[2].textContent.trim(),
-          presenta_c:        tds[3].textContent.trim(),
-          observaciones_c:   tds[4].textContent.trim()
+        if (tds[0].textContent.trim() === '') continue; // Ignora líneas vacías
+        datos.detenidos_cc.push({
+          detenidos_cc:      tds[0].textContent.trim(),
+          motivo_cc:         tds[1].textContent.trim(),
+          nacionalidad_cc:   tds[2].textContent.trim(),
+          presenta:          tds[3].textContent.trim(),
+          observaciones_cc:  tds[4].textContent.trim()
         });
       }
     }
 
-    // GESTION (literal con CITAS-G, FALLOS, etc)
-    const cabGestion = [
-      "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
-      "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
-      "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
-      "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
-      "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS"
-    ];
-    if (cabGestion.every(c => header.includes(c))) {
+    // CONS. TFNO, PRESC, EQUIP, CITADOS, NOTIFICACIONES, AL. ABOGADOS
+    if (
+      header[0] === "CONS.TFNO" &&
+      header[1] === "CONS.PRESC" &&
+      header[2] === "CONS. EQUIP" &&
+      header[3] === "CITADOS" &&
+      header[4] === "NOTIFICACIONES" &&
+      header[5] === "AL. ABOGADOS"
+    ) {
       const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      cabGestion.forEach((cab, idx) => {
-        datos[cab.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
-          tds && tds[idx] ? tds[idx].textContent.trim() : '';
-      });
+      datos.cons_tfno        = tds[0]?.textContent.trim() || '';
+      datos.cons_presc       = tds[1]?.textContent.trim() || '';
+      datos.cons_equip       = tds[2]?.textContent.trim() || '';
+      datos.citados          = tds[3]?.textContent.trim() || '';
+      datos.notificaciones   = tds[4]?.textContent.trim() || '';
+      datos.al_abogados      = tds[5]?.textContent.trim() || '';
+    }
+
+    // REM. SUBDELEGACIÓN, DECRETOS EXP., TRAMITES AUDIENCIA
+    if (
+      header[0] === "REM. SUBDELEGACIÓN" &&
+      header[1] === "DECRETOS EXP." &&
+      header[2] === "TRAMITES AUDIENCIA"
+    ) {
+      const tds = Array.from(rows[1]?.querySelectorAll('td'));
+      datos.rem_subdelegacion  = tds[0]?.textContent.trim() || '';
+      datos.decretos_exp       = tds[1]?.textContent.trim() || '';
+      datos.tramites_audiencia = tds[2]?.textContent.trim() || '';
+    }
+
+    // CIE CONCEDIDO, CIES DENEGADO, PROH. ENTRADA, MENAS, Dil. INFORME
+    if (
+      header[0] === "CIE CONCEDIDO" &&
+      header[1] === "CIES DENEGADO" &&
+      header[2] === "PROH. ENTRADA" &&
+      header[3] === "MENAS" &&
+      header[4] === "DIL. INFORME"
+    ) {
+      const tds = Array.from(rows[1]?.querySelectorAll('td'));
+      datos.cie_concedido  = tds[0]?.textContent.trim() || '';
+      datos.cies_denegado  = tds[1]?.textContent.trim() || '';
+      datos.proh_entrada   = tds[2]?.textContent.trim() || '';
+      datos.menas          = tds[3]?.textContent.trim() || '';
+      datos.dil_informe    = tds[4]?.textContent.trim() || '';
+    }
+
+    // GESTIONES CECOREX
+    if (/GESTIONES CECOREX/i.test(header[0])) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length) continue;
+        datos.gestiones_cecorex.push({ gestion: tds[0].textContent.trim() });
+      }
+    }
+
+    // GESTION (todos los indicadores de GESTIÓN abajo)
+    if (
+      header.includes("CITAS-G") &&
+      header.includes("FALLOS") &&
+      header.includes("CITAS") &&
+      header.includes("ENTRV. ASILO") &&
+      header.includes("FALLOS ASILO")
+    ) {
+      const idx = header.reduce((acc, h, i) => { acc[h] = i; return acc; }, {});
+      const tds = Array.from(rows[1]?.querySelectorAll('td'));
+      datos.citas_g             = tds[idx["CITAS-G"]]?.textContent.trim() || '';
+      datos.fallos              = tds[idx["FALLOS"]]?.textContent.trim() || '';
+      datos.citas               = tds[idx["CITAS"]]?.textContent.trim() || '';
+      datos.entrv_asilo         = tds[idx["ENTRV. ASILO"]]?.textContent.trim() || '';
+      datos.fallos_asilo        = tds[idx["FALLOS ASILO"]]?.textContent.trim() || '';
+      datos.asilos_concedidos   = tds[idx["ASILOS CONCEDIDOS"]]?.textContent.trim() || '';
+      datos.asilos_denegados    = tds[idx["ASILOS DENEGADOS"]]?.textContent.trim() || '';
+      datos.cartas_concedidas   = tds[idx["CARTAS CONCEDIDAS"]]?.textContent.trim() || '';
+      datos.cartas_denegadas    = tds[idx["CARTAS DENEGADAS"]]?.textContent.trim() || '';
+      datos.prot_internacional  = tds[idx["PROT. INTERNACIONAL"]]?.textContent.trim() || '';
+      datos.citas_subdeleg      = tds[idx["CITAS SUBDELEG"]]?.textContent.trim() || '';
+      datos.tarjet_subdeleg     = tds[idx["TARJET. SUBDELEG"]]?.textContent.trim() || '';
+      datos.notificaciones_concedidas = tds[idx["NOTIFICACIONES CONCEDIDAS"]]?.textContent.trim() || '';
+      datos.notificaciones_denegadas  = tds[idx["NOTIFICACIONES DENEGADAS"]]?.textContent.trim() || '';
+      datos.presentados         = tds[idx["PRESENTADOS"]]?.textContent.trim() || '';
+      datos.correos_ucrania     = tds[idx["CORREOS UCRANIA"]]?.textContent.trim() || '';
+      datos.tele_favo           = tds[idx["TELE. FAVO"]]?.textContent.trim() || '';
+      datos.tele_desfav         = tds[idx["TELE. DESFAV"]]?.textContent.trim() || '';
+      datos.citas_tlfn_asilo    = tds[idx["CITAS TLFN ASILO"]]?.textContent.trim() || '';
+      datos.citas_tlfn_cartas   = tds[idx["CITAS TLFN CARTAS"]]?.textContent.trim() || '';
+      datos.oficios             = tds[idx["OFICIOS"]]?.textContent.trim() || '';
     }
 
     // Busca fecha: DD-MM-AAAA (en tabla)
@@ -616,7 +725,8 @@ function validarDatos(data, grupo, fecha) {
   if (grupo === GROUP1 && !Object.keys(data).length) errores.push('No hay datos de Grupo 1.');
   if (grupo === GROUP4 && !Object.keys(data).length) errores.push('No hay datos de Grupo 4.');
   if (grupo === GROUPPUERTO && !Object.keys(data).length) errores.push('No hay datos de Puerto.');
-  if (grupo === GROUPCECOREX && !Object.keys(data).length) errores.push('No hay datos de CECOREX.');
+  if (grupo === GROUPCECOREX && !data.detenidos_cc && (!data.gestiones_cecorex || !data.gestiones_cecorex.length)) {
+    errores.push('No hay datos de CECOREX.');
   if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
   return errores.length ? errores : [];
 }
