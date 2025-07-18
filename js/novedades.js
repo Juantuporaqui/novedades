@@ -516,13 +516,9 @@ function parseGrupoCECOREX(html) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-
-// Ampliación del parser de CECOREX literal (campos numéricos y gestión)
-function parseGrupoCECOREX(html) {
-  const root = document.createElement('div'); root.innerHTML = html;
-  const tablas = Array.from(root.querySelectorAll('table'));
-  let fecha = '';
-  let datos = {};
+   }
+     return { datos, fecha };
+}
 
   // Buscar detenidos CECOREX (tabla exacta)
   for (const tabla of tablas) {
