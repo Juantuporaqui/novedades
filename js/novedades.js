@@ -24,6 +24,8 @@ const GROUP4       = "grupo4_operativo";
 const GROUPPUERTO  = "grupoPuerto";
 const GROUPCECOREX = "cecorex";
 const GROUPCIE     = "grupoCIE";
+const GROUPGESTION = "gestion";
+
 
 /* ============================  ELEMENTOS DOM  ============================= */
 const $ = id => document.getElementById(id);
@@ -637,48 +639,45 @@ function parseGrupoCECOREX(html) {
       }
     }
 
-    // GESTION (todos los indicadores de GESTIÓN abajo)
-    if (
-      header.includes("CITAS-G") &&
-      header.includes("FALLOS") &&
-      header.includes("CITAS") &&
-      header.includes("ENTRV. ASILO") &&
-      header.includes("FALLOS ASILO")
-    ) {
-      const idx = header.reduce((acc, h, i) => { acc[h] = i; return acc; }, {});
-      const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      datos.citas_g             = tds[idx["CITAS-G"]]?.textContent.trim() || '';
-      datos.fallos              = tds[idx["FALLOS"]]?.textContent.trim() || '';
-      datos.citas               = tds[idx["CITAS"]]?.textContent.trim() || '';
-      datos.entrv_asilo         = tds[idx["ENTRV. ASILO"]]?.textContent.trim() || '';
-      datos.fallos_asilo        = tds[idx["FALLOS ASILO"]]?.textContent.trim() || '';
-      datos.asilos_concedidos   = tds[idx["ASILOS CONCEDIDOS"]]?.textContent.trim() || '';
-      datos.asilos_denegados    = tds[idx["ASILOS DENEGADOS"]]?.textContent.trim() || '';
-      datos.cartas_concedidas   = tds[idx["CARTAS CONCEDIDAS"]]?.textContent.trim() || '';
-      datos.cartas_denegadas    = tds[idx["CARTAS DENEGADAS"]]?.textContent.trim() || '';
-      datos.prot_internacional  = tds[idx["PROT. INTERNACIONAL"]]?.textContent.trim() || '';
-      datos.citas_subdeleg      = tds[idx["CITAS SUBDELEG"]]?.textContent.trim() || '';
-      datos.tarjet_subdeleg     = tds[idx["TARJET. SUBDELEG"]]?.textContent.trim() || '';
-      datos.notificaciones_concedidas = tds[idx["NOTIFICACIONES CONCEDIDAS"]]?.textContent.trim() || '';
-      datos.notificaciones_denegadas  = tds[idx["NOTIFICACIONES DENEGADAS"]]?.textContent.trim() || '';
-      datos.presentados         = tds[idx["PRESENTADOS"]]?.textContent.trim() || '';
-      datos.correos_ucrania     = tds[idx["CORREOS UCRANIA"]]?.textContent.trim() || '';
-      datos.tele_favo           = tds[idx["TELE. FAVO"]]?.textContent.trim() || '';
-      datos.tele_desfav         = tds[idx["TELE. DESFAV"]]?.textContent.trim() || '';
-      datos.citas_tlfn_asilo    = tds[idx["CITAS TLFN ASILO"]]?.textContent.trim() || '';
-      datos.citas_tlfn_cartas   = tds[idx["CITAS TLFN CARTAS"]]?.textContent.trim() || '';
-      datos.oficios             = tds[idx["OFICIOS"]]?.textContent.trim() || '';
-    }
+   function parseGestion(html) {
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  let fecha = '';
+  let datos = {};
 
-    // Busca fecha: DD-MM-AAAA (en tabla)
-    if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+  // Busca la tabla de GESTIÓN (identificada por la cabecera CITAS-G, FALLOS, ...)
+  for (const tabla of tablas) {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    if (!rows.length) continue;
+    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+    // Requisito: que empiece por CITAS-G y contenga las demás cabeceras típicas
+    if (header[0] === "CITAS-G" && header.length >= 5) {
+      // Rellena cada campo aunque falten algunos valores (pueden ir vacíos)
+      const campos = [
+        "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
+        "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
+        "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
+        "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
+        "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS"
+      ];
+      const tds = Array.from(rows[1]?.querySelectorAll('td'));
+      campos.forEach((campo, idx) => {
+        datos[campo.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
+          tds && tds[idx] ? tds[idx].textContent.trim() : '';
+      });
+      // Extrae la fecha si la hay en la tabla
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+      break; // Solo la primera tabla que cumpla el patrón
     }
   }
   return { datos, fecha };
 }
+
 
 /* ----------- CIE ----------- */
 function parseGrupoCIE(html) {
@@ -728,6 +727,8 @@ function validarDatos(data, grupo, fecha) {
   if (grupo === GROUPCECOREX && !data.detenidos_cc && (!data.gestiones_cecorex || !data.gestiones_cecorex.length)) {
     errores.push('No hay datos de CECOREX.');
   if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
+   if (grupo === GROUPGESTION && !Object.keys(data).length) errores.push('No hay datos de Gestión.');
+
   return errores.length ? errores : [];
 }
 
