@@ -154,70 +154,108 @@ async function cargarDia(fecha) {
     refrescarTodo();
 }
 
+// Detenidos
 function normalizarDetenidos(arr) {
     if (!Array.isArray(arr)) return [];
-    // Parser DOCX: con sufijos _g1
+    // Si vienen con sufijos de parser DOCX
     if (arr.length && arr[0].detenidos_g1 !== undefined) {
         return arr.map(x => ({
-            numero: x.detenidos_g1,
-            motivo: x.motivo_g1,
-            nacionalidad: x.nacionalidad_g1,
-            diligencias: x.diligencias_g1,
-            observaciones: x.observaciones_g1
+            numero: x.detenidos_g1 || "",
+            motivo: x.motivo_g1 || "",
+            nacionalidad: x.nacionalidad_g1 || "",
+            diligencias: x.diligencias_g1 || "",
+            observaciones: x.observaciones_g1 || ""
         }));
     }
-    return arr;
+    // Si ya están en formato estándar (manual o ya normalizado)
+    return arr.map(x => ({
+        numero: x.numero || "",
+        motivo: x.motivo || "",
+        nacionalidad: x.nacionalidad || "",
+        diligencias: x.diligencias || "",
+        observaciones: x.observaciones || ""
+    }));
 }
 
+// Expulsados
 function normalizarExpulsados(arr) {
     if (!Array.isArray(arr)) return [];
     if (arr.length && arr[0].expulsados_g1 !== undefined) {
         return arr.map(x => ({
-            nombre: x.expulsados_g1,
-            nacionalidad: x.nacionalidad_eg1,
-            diligencias: x.diligencias_eg1,
-            nConduccionesPos: x.conduc_pos_eg1,
-            nConduccionesNeg: x.conduc_neg_eg1,
-            observaciones: x.observaciones_eg1
+            nombre: x.expulsados_g1 || "",
+            nacionalidad: x.nacionalidad_eg1 || "",
+            diligencias: x.diligencias_eg1 || "",
+            nConduccionesPos: x.conduc_pos_eg1 || "",
+            nConduccionesNeg: x.conduc_neg_eg1 || "",
+            observaciones: x.observaciones_eg1 || ""
         }));
     }
-    return arr;
+    return arr.map(x => ({
+        nombre: x.nombre || "",
+        nacionalidad: x.nacionalidad || "",
+        diligencias: x.diligencias || "",
+        nConduccionesPos: x.nConduccionesPos || "",
+        nConduccionesNeg: x.nConduccionesNeg || "",
+        observaciones: x.observaciones || ""
+    }));
 }
 
+// Frustradas
 function normalizarFrustradas(arr) {
     if (!Array.isArray(arr)) return [];
     if (arr.length && arr[0].exp_frustradas_g1 !== undefined) {
         return arr.map(x => ({
-            nombre: x.exp_frustradas_g1,
-            nacionalidad: x.nacionalidad_fg1,
-            motivo: x.motivo_fg1,
-            diligencias: x.diligencias_fg1
+            nombre: x.exp_frustradas_g1 || "",
+            nacionalidad: x.nacionalidad_fg1 || "",
+            motivo: x.motivo_fg1 || "",
+            diligencias: x.diligencias_fg1 || ""
         }));
     }
-    return arr;
+    return arr.map(x => ({
+        nombre: x.nombre || "",
+        nacionalidad: x.nacionalidad || "",
+        motivo: x.motivo || "",
+        diligencias: x.diligencias || ""
+    }));
 }
 
+// Fletados y Fletados futuros
 function normalizarFletados(arr) {
     if (!Array.isArray(arr)) return [];
     if (arr.length && arr[0].fletados_g1 !== undefined) {
         return arr.map(x => ({
-            destino: x.destino_flg1,
-            pax: x.pax_flg1,
-            observaciones: x.observaciones_flg1
+            destino: x.destino_flg1 || "",
+            pax: x.pax_flg1 || "",
+            fecha: x.fecha || "",
+            observaciones: x.observaciones_flg1 || ""
         }));
     }
-    return arr;
+    return arr.map(x => ({
+        destino: x.destino || "",
+        pax: x.pax || "",
+        fecha: x.fecha || "",
+        observaciones: x.observaciones || ""
+    }));
 }
 
+// Conducciones
 function normalizarConducciones(arr) {
     if (!Array.isArray(arr)) return [];
-    // Puedes ampliarlo si guardas campos diferentes
-    return arr;
+    return arr.map(x => ({
+        numero: x.numero || "",
+        fecha: x.fecha || ""
+    }));
 }
+
+// Pendientes
 function normalizarPendientes(arr) {
     if (!Array.isArray(arr)) return [];
-    return arr;
+    return arr.map(x => ({
+        descripcion: x.descripcion || "",
+        fecha: x.fecha || ""
+    }));
 }
+
 
 
 function limpiarTodo() {
