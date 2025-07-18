@@ -19,6 +19,7 @@ if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
+// ====== ESTADO ======
 let state = {
   detenidos: [],
   colaboraciones: [],
@@ -30,6 +31,7 @@ let state = {
   observaciones: ""
 };
 
+// ====== HELPERS ======
 function limpiarInputs(...ids) {
   ids.forEach(id => { if($(id)) $(id).value = ""; });
 }
@@ -80,6 +82,7 @@ window.eliminarItem = function(tipo, idx) {
   renderListas();
 };
 
+// ====== FIRESTORE GUARDAR/CARGAR (COMPATIBLE DOCX) ======
 async function guardarRegistro() {
   const fecha = $('fechaRegistro').value;
   if (!fecha) return alert("Selecciona la fecha");
@@ -91,9 +94,17 @@ async function guardarRegistro() {
   state.citadosObservaciones = $('citadosObservaciones').value || "";
   state.observaciones = $('observaciones').value || "";
 
+  // Guarda SIEMPRE con campos _g4
   await db.collection(NOMBRE_COLECCION).doc(fecha).set({
     fecha,
-    ...state
+    detenidos_g4: state.detenidos,
+    colaboraciones_g4: state.colaboraciones,
+    gestiones_varias_g4: state.gestiones,
+    identificados_g4: state.identificados,
+    citadosCecorex_g4: state.citadosCecorex,
+    citadosUcrif_g4: state.citadosUcrif,
+    citadosObservaciones_g4: state.citadosObservaciones,
+    observaciones_g4: state.observaciones
   });
   alert("¡Registro guardado!");
   cargarHistorial();
@@ -106,17 +117,21 @@ async function cargarRegistro() {
   if (!doc.exists) return alert("No hay registro en esa fecha.");
   const data = doc.data();
 
-  // Arrays
-  state.detenidos = data.detenidos || [];
-  state.colaboraciones = data.colaboraciones || [];
-  state.gestiones = data.gestiones || [];
+  // Arrays y campos compatibles tanto _g4 como antiguos
+  state.detenidos = data.detenidos_g4 || data.detenidos || [];
+  state.colaboraciones = data.colaboraciones_g4 || data.colaboraciones || [];
+  state.gestiones = data.gestiones_varias_g4 || data.gestiones || [];
+  state.identificados = data.identificados_g4 ?? data.identificados ?? 0;
+  state.citadosCecorex = data.citadosCecorex_g4 ?? data.citadosCecorex ?? 0;
+  state.citadosUcrif = data.citadosUcrif_g4 ?? data.citadosUcrif ?? 0;
+  state.citadosObservaciones = data.citadosObservaciones_g4 ?? data.citadosObservaciones ?? "";
+  state.observaciones = data.observaciones_g4 ?? data.observaciones ?? "";
 
-  // Individuales
-  $('identificados').value = data.identificados || 0;
-  $('citadosCecorex').value = data.citadosCecorex || 0;
-  $('citadosUcrif').value = data.citadosUcrif || 0;
-  $('citadosObservaciones').value = data.citadosObservaciones || "";
-  $('observaciones').value = data.observaciones || "";
+  $('identificados').value = state.identificados;
+  $('citadosCecorex').value = state.citadosCecorex;
+  $('citadosUcrif').value = state.citadosUcrif;
+  $('citadosObservaciones').value = state.citadosObservaciones;
+  $('observaciones').value = state.observaciones;
 
   renderListas();
   mostrarResumen();
@@ -258,19 +273,19 @@ $('btnResumenFechas').onclick = async function() {
     window._resumenesFiltrados = [];
     return;
   }
-  // Resumimos por totales
+  // Resumimos por totales (acepta ambos campos)
   let agg = {
     detenidos: 0, identificados: 0, citadosCecorex: 0, citadosUcrif: 0, colaboraciones: 0, gestiones: 0
   };
   let detalle = "";
   resumenes.forEach(r => {
-    agg.detenidos += (r.detenidos||[]).length;
-    agg.identificados += Number(r.identificados||0);
-    agg.citadosCecorex += Number(r.citadosCecorex||0);
-    agg.citadosUcrif += Number(r.citadosUcrif||0);
-    agg.colaboraciones += (r.colaboraciones||[]).length;
-    agg.gestiones += (r.gestiones||[]).length;
-    detalle += `<li><b>${r.fecha}</b>: Detenidos: ${(r.detenidos||[]).length}, Identificados: ${r.identificados||0}, CeCOREX: ${r.citadosCecorex||0}, UCRIF: ${r.citadosUcrif||0}, Colaboraciones: ${(r.colaboraciones||[]).length}, Gestiones: ${(r.gestiones||[]).length}</li>`;
+    agg.detenidos += (r.detenidos_g4 || r.detenidos || []).length;
+    agg.identificados += Number(r.identificados_g4 ?? r.identificados ?? 0);
+    agg.citadosCecorex += Number(r.citadosCecorex_g4 ?? r.citadosCecorex ?? 0);
+    agg.citadosUcrif += Number(r.citadosUcrif_g4 ?? r.citadosUcrif ?? 0);
+    agg.colaboraciones += (r.colaboraciones_g4 || r.colaboraciones || []).length;
+    agg.gestiones += (r.gestiones_varias_g4 || r.gestiones || []).length;
+    detalle += `<li><b>${r.fecha}</b>: Detenidos: ${(r.detenidos_g4 || r.detenidos || []).length}, Identificados: ${r.identificados_g4 ?? r.identificados ?? 0}, CeCOREX: ${r.citadosCecorex_g4 ?? r.citadosCecorex ?? 0}, UCRIF: ${r.citadosUcrif_g4 ?? r.citadosUcrif ?? 0}, Colaboraciones: ${(r.colaboraciones_g4 || r.colaboraciones || []).length}, Gestiones: ${(r.gestiones_varias_g4 || r.gestiones || []).length}</li>`;
   });
   $('divResumenFechas').innerHTML = `
     <b>Resumen total del ${desde} al ${hasta}:</b><br>
@@ -297,19 +312,19 @@ $('btnExportarPDF').onclick = function() {
   <h4>Del ${$('resumenDesde').value} al ${$('resumenHasta').value}</h4>`;
   window._resumenesFiltrados.forEach(r=>{
     html += `<hr><b>${r.fecha}</b><ul>`;
-    if(r.detenidos && r.detenidos.length)
+    if(r.detenidos_g4 && r.detenidos_g4.length)
+      html += `<li><b>Detenidos:</b> ${r.detenidos_g4.length}</li>`;
+    else if(r.detenidos && r.detenidos.length)
       html += `<li><b>Detenidos:</b> ${r.detenidos.length}</li>`;
-    html += `<li><b>Identificados:</b> ${r.identificados||0}</li>`;
-    html += `<li><b>Citados CeCOREX:</b> ${r.citadosCecorex||0}</li>`;
-    html += `<li><b>Citados UCRIF:</b> ${r.citadosUcrif||0}</li>`;
-    if(r.colaboraciones && r.colaboraciones.length)
-      html += `<li><b>Colaboraciones:</b> ${r.colaboraciones.length}</li>`;
-    if(r.gestiones && r.gestiones.length)
-      html += `<li><b>Gestiones varias:</b> ${r.gestiones.length}</li>`;
-    if(r.citadosObservaciones)
-      html += `<li><b>Obs. citados:</b> ${r.citadosObservaciones}</li>`;
-    if(r.observaciones)
-      html += `<li><b>Obs. generales:</b> ${r.observaciones}</li>`;
+    html += `<li><b>Identificados:</b> ${r.identificados_g4 ?? r.identificados ?? 0}</li>`;
+    html += `<li><b>Citados CeCOREX:</b> ${r.citadosCecorex_g4 ?? r.citadosCecorex ?? 0}</li>`;
+    html += `<li><b>Citados UCRIF:</b> ${r.citadosUcrif_g4 ?? r.citadosUcrif ?? 0}</li>`;
+    if((r.colaboraciones_g4 && r.colaboraciones_g4.length) || (r.colaboraciones && r.colaboraciones.length))
+      html += `<li><b>Colaboraciones:</b> ${(r.colaboraciones_g4 || r.colaboraciones || []).length}</li>`;
+    if((r.gestiones_varias_g4 && r.gestiones_varias_g4.length) || (r.gestiones && r.gestiones.length))
+      html += `<li><b>Gestiones varias:</b> ${(r.gestiones_varias_g4 || r.gestiones || []).length}</li>`;
+    html += `<li><b>Obs. citados:</b> ${r.citadosObservaciones_g4 ?? r.citadosObservaciones ?? "—"}</li>`;
+    html += `<li><b>Obs. generales:</b> ${r.observaciones_g4 ?? r.observaciones ?? "—"}</li>`;
     html += "</ul>";
   });
   const w = window.open("", "_blank");
@@ -325,7 +340,7 @@ $('btnWhatsapp').onclick = function() {
   }
   let resumen = `Resumen Gestión SIREX\n${$('resumenDesde').value} al ${$('resumenHasta').value}:\n`;
   window._resumenesFiltrados.forEach(r=>{
-    resumen += `${r.fecha} - Det: ${(r.detenidos||[]).length}, Ident: ${r.identificados||0}, CeCOREX: ${r.citadosCecorex||0}, UCRIF: ${r.citadosUcrif||0}, Colab: ${(r.colaboraciones||[]).length}, Gest: ${(r.gestiones||[]).length}\n`;
+    resumen += `${r.fecha} - Det: ${(r.detenidos_g4 || r.detenidos || []).length}, Ident: ${r.identificados_g4 ?? r.identificados ?? 0}, CeCOREX: ${r.citadosCecorex_g4 ?? r.citadosCecorex ?? 0}, UCRIF: ${r.citadosUcrif_g4 ?? r.citadosUcrif ?? 0}, Colab: ${(r.colaboraciones_g4 || r.colaboraciones || []).length}, Gest: ${(r.gestiones_varias_g4 || r.gestiones || []).length}\n`;
   });
   navigator.clipboard.writeText(resumen)
     .then(()=>alert("Resumen WhatsApp copiado. Solo tienes que pegarlo en la conversación."))
@@ -342,14 +357,14 @@ $('btnExportarCSV').onclick = function() {
   window._resumenesFiltrados.forEach(r => {
     csv += [
       r.fecha,
-      (r.detenidos||[]).length,
-      r.identificados||0,
-      r.citadosCecorex||0,
-      r.citadosUcrif||0,
-      (r.colaboraciones||[]).length,
-      (r.gestiones||[]).length,
-      JSON.stringify(r.citadosObservaciones||""),
-      JSON.stringify(r.observaciones||"")
+      (r.detenidos_g4 || r.detenidos || []).length,
+      r.identificados_g4 ?? r.identificados ?? 0,
+      r.citadosCecorex_g4 ?? r.citadosCecorex ?? 0,
+      r.citadosUcrif_g4 ?? r.citadosUcrif ?? 0,
+      (r.colaboraciones_g4 || r.colaboraciones || []).length,
+      (r.gestiones_varias_g4 || r.gestiones || []).length,
+      JSON.stringify(r.citadosObservaciones_g4 ?? r.citadosObservaciones ?? ""),
+      JSON.stringify(r.observaciones_g4 ?? r.observaciones ?? "")
     ].join(",") + "\n";
   });
   const blob = new Blob([csv], {type: 'text/csv'});
