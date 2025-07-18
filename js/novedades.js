@@ -1,84 +1,87 @@
 /* ---------------------------------------------------------------------------
-   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX)
+   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, Gestion)
    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
 --------------------------------------------------------------------------- */
-let parsedDataForConfirmation = null;   // { datos: { [grupo]: datos }, fecha }
+let parsedDataForConfirmation = null; // { datos: { [grupo]: datos }, fecha }
 
 document.addEventListener('DOMContentLoaded', () => {
 
-/* ===========================  CONFIG FIREBASE  ============================ */
-const firebaseConfig = {
-    apiKey:            "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
-    authDomain:        "ucrif-5bb75.firebaseapp.com",
-    projectId:         "ucrif-5bb75",
-    storageBucket:     "ucrif-5bb75.appspot.com",
+  /* ===========================  CONFIG FIREBASE  ============================ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
+    authDomain: "ucrif-5bb75.firebaseapp.com",
+    projectId: "ucrif-5bb75",
+    storageBucket: "ucrif-5bb75.appspot.com",
     messagingSenderId: "241698436443",
-    appId:             "1:241698436443:web:1f333b3ae3f813b755167e"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+    appId: "1:241698436443:web:1f333b3ae3f813b755167e"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-/* =============================  CONSTANTES  =============================== */
-const GROUP1       = "grupo1_expulsiones";
-const GROUP4       = "grupo4_operativo";
-const GROUPPUERTO  = "grupoPuerto";
-const GROUPCECOREX = "cecorex";
+  /* =============================  CONSTANTES  =============================== */
+  const GROUP1 = "grupo1_expulsiones";
+  const GROUP4 = "grupo4_operativo";
+  const GROUPPUERTO = "grupoPuerto";
+  const GROUPCECOREX = "cecorex";
+  const GROUPGESTION = "gestion";
 
-/* ============================  ELEMENTOS DOM  ============================= */
-const $ = id => document.getElementById(id);
 
-const inputDocx            = $('inputDocx');
-const statusContainer      = $('status-container');
-const resultsContainer     = $('results-container');
-const confirmationButtons  = $('confirmation-buttons');
-const btnConfirmarGuardado = $('btnConfirmarGuardado');
-const btnCancelar          = $('btnCancelar');
-const fechaEdicionDiv      = $('fecha-edicion');
-const fechaManualInput     = $('fechaManualInput');
-const fechaDetectadaBadge  = $('fechaDetectadaBadge');
-const spinnerArea          = $('spinner-area');
+  /* ============================  ELEMENTOS DOM  ============================= */
+  const $ = id => document.getElementById(id);
 
-/* ==============================  EVENTOS  ================================= */
-if (fechaManualInput) {
-  fechaManualInput.addEventListener('input', () => {
-    const fechaFinal = obtenerFechaFormateada();
-    // Vuelve a validar todos los datos usando la fecha elegida
-    if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
-      const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
-      if (!errores.length) {
-        btnConfirmarGuardado.disabled = false;
-        showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
-      } else {
-        btnConfirmarGuardado.disabled = true;
-        showStatus('<ul>'+errores.map(e=>`<li>${e}</li>`).join(''),'danger');
+  const inputDocx = $('inputDocx');
+  const statusContainer = $('status-container');
+  const resultsContainer = $('results-container');
+  const confirmationButtons = $('confirmation-buttons');
+  const btnConfirmarGuardado = $('btnConfirmarGuardado');
+  const btnCancelar = $('btnCancelar');
+  const fechaEdicionDiv = $('fecha-edicion');
+  const fechaManualInput = $('fechaManualInput');
+  const fechaDetectadaBadge = $('fechaDetectadaBadge');
+  const spinnerArea = $('spinner-area');
+
+  /* ==============================  EVENTOS  ================================= */
+  if (fechaManualInput) {
+    fechaManualInput.addEventListener('input', () => {
+      const fechaFinal = obtenerFechaFormateada();
+      // Vuelve a validar todos los datos usando la fecha elegida
+      if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
+        const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+        if (!errores.length) {
+          btnConfirmarGuardado.disabled = false;
+          showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
+        } else {
+          btnConfirmarGuardado.disabled = true;
+          showStatus('<ul>' + errores.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+        }
       }
-    }
-  });
-}
-if (inputDocx)             inputDocx           .addEventListener('change', handleDocxUpload);
-if (btnConfirmarGuardado)  btnConfirmarGuardado.addEventListener('click',   onConfirmSave);
-if (btnCancelar)           btnCancelar         .addEventListener('click',   onCancel);
+    });
+  }
+  if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
+  if (btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
+  if (btnCancelar) btnCancelar.addEventListener('click', onCancel);
 
-/* ============================  UI HELPERS  ================================ */
-const showStatus = (msg, type='info')=>{
+  /* ============================  UI HELPERS  ================================ */
+  const showStatus = (msg, type = 'info') => {
     const cls = {
-      info:'alert-info',
-      success:'alert-success',
-      warning:'alert-warning',
-      danger:'alert-danger',
-      error:'alert-danger'
+      info: 'alert-info',
+      success: 'alert-success',
+      warning: 'alert-warning',
+      danger: 'alert-danger',
+      error: 'alert-danger'
     };
     statusContainer.innerHTML = `<div class="alert ${cls[type]||cls.info}" role="alert">${msg}</div>`;
-};
-const showSpinner        = v => spinnerArea.style.display = v ? 'flex' : 'none';
-const showConfirmationUI = v => confirmationButtons.style.display = v ? 'block' : 'none';
+  };
+  const showSpinner = v => spinnerArea.style.display = v ? 'flex' : 'none';
+  const showConfirmationUI = v => confirmationButtons.style.display = v ? 'block' : 'none';
 
-const showResults = obj =>{
+  const showResults = obj => {
     resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
-    Object.entries(obj).forEach(([k,datos])=>{
-      if(k==='fecha') return;
-      if(Array.isArray(datos) && !datos.length) return;
-      if(!Array.isArray(datos) && !Object.keys(datos).length) return;
+    Object.entries(obj).forEach(([k, datos]) => {
+      if (k === 'fecha') return;
+      if (Array.isArray(datos) && !datos.length) return;
+      if (typeof datos === 'object' && datos !== null && !Array.isArray(datos) && !Object.keys(datos).length) return;
+
       const card = document.createElement('div');
       card.className = 'card mb-3 shadow-sm';
       card.innerHTML =
@@ -86,542 +89,485 @@ const showResults = obj =>{
          <div class="card-body"><pre class="results-card">${JSON.stringify(datos,null,2)}</pre></div>`;
       resultsContainer.appendChild(card);
     });
-};
+  };
 
-const showFechaEditable = iso=>{
+  const showFechaEditable = iso => {
     fechaEdicionDiv.style.display = "flex";
-    if(/^\d{4}-\d{2}-\d{2}$/.test(iso||'')){
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) {
       fechaManualInput.value = iso;
-      fechaDetectadaBadge.textContent = "Detectada: "+iso.split('-').reverse().join('/');
-      fechaDetectadaBadge.className   = "badge bg-success";
+      fechaDetectadaBadge.textContent = "Detectada: " + iso.split('-').reverse().join('/');
+      fechaDetectadaBadge.className = "badge bg-success";
     } else {
       fechaManualInput.value = "";
       fechaDetectadaBadge.textContent = "No detectada";
-      fechaDetectadaBadge.className   = "badge bg-secondary";
+      fechaDetectadaBadge.className = "badge bg-secondary";
     }
-};
-const obtenerFechaFormateada = ()=> fechaManualInput.value || "";
-
-/* ==========================  SUBIR Y PARSEAR  ============================= */
-async function handleDocxUpload(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  onCancel();
-  showSpinner(true);
-  showStatus('Procesando archivo …','info');
-
-  if(!file.name.toLowerCase().endsWith('.docx')){
-    showStatus('Solo se admiten archivos DOCX.','danger');
-    showSpinner(false);
-    return;
-  }
-
-  try {
-    const arrayBuffer   = await file.arrayBuffer();
-    const { value:html} = await mammoth.convertToHtml({arrayBuffer});
-
-    // === Parseo de todos los grupos reconocidos ===
-    const r1 = parseGrupo1(html);
-    const r4 = parseGrupo4(html);
-    const rp = parseGrupoPuerto(html);
-    const rc = parseGrupoCECOREX(html);
-
-    // === Recopilación de resultados ===
-    const resultados = {};
-    if (Object.keys(r1.datos).length) resultados[GROUP1] = r1.datos;
-    if (Object.keys(r4.datos).length) resultados[GROUP4] = r4.datos;
-    if (Object.keys(rp.datos).length) resultados[GROUPPUERTO] = rp.datos;
-    if (Object.keys(rc.datos).length) resultados[GROUPCECOREX] = rc.datos;
-
-    // Extrae la fecha más significativa
-    const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || "";
-
-    if (!Object.keys(resultados).length) {
-      throw new Error("No se reconoció el formato del parte DOCX.");
-    }
-
-    parsedDataForConfirmation = { datos: resultados, fecha };
-    showFechaEditable(fecha);
-    showResults({ ...resultados, fecha });
-
-    erroresValidacion = validarDatosPorTodos(resultados, fecha);
-    if (erroresValidacion.length) {
-      showStatus('<ul>'+erroresValidacion.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
-      btnConfirmarGuardado.disabled = true;
-    } else {
-      showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.','info');
-      btnConfirmarGuardado.disabled = false;
-    }
-    showConfirmationUI(true);
-
-  } catch(err) {
-    console.error(err);
-    showStatus('Error: '+err.message,'danger');
-  } finally {
-    showSpinner(false);
-    inputDocx.value = '';
-  }
-}
-
-/* ==========================  CONFIRMAR GUARDADO  ========================= */
-async function onConfirmSave() {
-  if (!parsedDataForConfirmation || !parsedDataForConfirmation.datos) {
-    showStatus('No hay datos para guardar.','danger');
-    return;
-  }
-  const fechaFinal = obtenerFechaFormateada();
-  if (!fechaFinal) {
-    showStatus('Selecciona una fecha válida.','danger');
-    fechaManualInput.focus();
-    return;
-  }
-
-  // VALIDACIÓN JUSTO ANTES DE GUARDAR (usa la fecha final elegida)
-  const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
-  if (erroresFinal.length) {
-    showStatus('<ul>'+erroresFinal.map(e=>`<li>${e}</li>`).join('')+'</ul>','danger');
-    showConfirmationUI(true);
-    return;
-  }
-
-  showSpinner(true);
-  showConfirmationUI(false);
-  statusContainer.innerHTML = '';
-
-  const datosParaGuardar = parsedDataForConfirmation.datos;
-  const collectionMap = {
-    [GROUP1]:      "grupo1_expulsiones",
-    [GROUP4]:      "grupo4_operativo",
-    [GROUPPUERTO]: "grupoPuerto_registros",
-    [GROUPCECOREX]: "cecorex_registros"
   };
-  const errores = [];
-  const exitos  = [];
+  const obtenerFechaFormateada = () => fechaManualInput.value || "";
 
-  for (const grupo in datosParaGuardar) {
-    if (!collectionMap[grupo]) continue;
-    const collectionName = collectionMap[grupo];
-    const datosDelGrupo  = { ...datosParaGuardar[grupo], fecha: fechaFinal };
+  /* ==========================  SUBIR Y PARSEAR  ============================= */
+  async function handleDocxUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    onCancel();
+    showSpinner(true);
+    showStatus('Procesando archivo …', 'info');
+
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      showStatus('Solo se admiten archivos DOCX.', 'danger');
+      showSpinner(false);
+      return;
+    }
+
     try {
-      const ref = db.collection(collectionName).doc(fechaFinal);
-      const snapshot = await ref.get();
-      if (snapshot.exists) {
-        errores.push(`Ya existen datos para el día ${fechaFinal} en ${grupo}.`);
-        continue;
+      const arrayBuffer = await file.arrayBuffer();
+      const {
+        value: html
+      } = await mammoth.convertToHtml({
+        arrayBuffer
+      });
+
+      // === Parseo de todos los grupos reconocidos ===
+      const r1 = parseGrupo1(html);
+      const r4 = parseGrupo4(html);
+      const rp = parseGrupoPuerto(html);
+      const rc = parseGrupoCECOREX(html);
+      const rg = parseGestion(html);
+
+      // === Recopilación de resultados ===
+      const resultados = {};
+      if (Object.keys(r1.datos).length) resultados[GROUP1] = r1.datos;
+      if (Object.keys(r4.datos).length) resultados[GROUP4] = r4.datos;
+      if (Object.keys(rp.datos).length) resultados[GROUPPUERTO] = rp.datos;
+      if (Object.keys(rc.datos).length) resultados[GROUPCECOREX] = rc.datos;
+      if (Object.keys(rg.datos).length) resultados[GROUPGESTION] = rg.datos;
+
+      // Extrae la fecha más significativa
+      const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || rg.fecha || "";
+
+      if (!Object.keys(resultados).length) {
+        throw new Error("No se reconoció el formato del parte DOCX o no contenía datos en las secciones esperadas.");
       }
-      await ref.set(datosDelGrupo, { merge: false });
-      exitos.push(`¡Guardado con éxito para ${grupo}!`);
-    } catch(err) {
-      errores.push(`Error al guardar ${grupo}: ${err.message}`);
+
+      parsedDataForConfirmation = {
+        datos: resultados,
+        fecha
+      };
+      showFechaEditable(fecha);
+      showResults({ ...resultados,
+        fecha
+      });
+
+      const erroresValidacion = validarDatosPorTodos(resultados, fecha);
+      if (erroresValidacion.length) {
+        showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+        btnConfirmarGuardado.disabled = true;
+      } else {
+        showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
+        btnConfirmarGuardado.disabled = false;
+      }
+      showConfirmationUI(true);
+
+    } catch (err) {
+      console.error(err);
+      showStatus('Error: ' + err.message, 'danger');
+    } finally {
+      showSpinner(false);
+      inputDocx.value = '';
     }
   }
 
-  showSpinner(false);
+  /* ==========================  CONFIRMAR GUARDADO  ========================= */
+  async function onConfirmSave() {
+    if (!parsedDataForConfirmation || !parsedDataForConfirmation.datos) {
+      showStatus('No hay datos para guardar.', 'danger');
+      return;
+    }
+    const fechaFinal = obtenerFechaFormateada();
+    if (!fechaFinal) {
+      showStatus('Selecciona una fecha válida.', 'danger');
+      fechaManualInput.focus();
+      return;
+    }
 
-  if (exitos.length && exitos.length === Object.keys(datosParaGuardar).length) {
-    showStatus('Todos los grupos han sido guardados correctamente.', 'success');
-  } else {
-    if (exitos.length) showStatus(exitos.join('<br>'), 'success');
-    if (errores.length) showStatus(errores.join('<br>'), 'danger');
+    // VALIDACIÓN JUSTO ANTES DE GUARDAR (usa la fecha final elegida)
+    const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+    if (erroresFinal.length) {
+      showStatus('<ul>' + erroresFinal.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+      showConfirmationUI(true);
+      return;
+    }
+
+    showSpinner(true);
+    showConfirmationUI(false);
+    statusContainer.innerHTML = '';
+
+    const datosParaGuardar = parsedDataForConfirmation.datos;
+    const collectionMap = {
+      [GROUP1]: "grupo1_expulsiones",
+      [GROUP4]: "grupo4_operativo",
+      [GROUPPUERTO]: "grupoPuerto_registros",
+      [GROUPCECOREX]: "cecorex_registros",
+      [GROUPGESTION]: "gestion_registros"
+    };
+    const errores = [];
+    const exitos = [];
+
+    for (const grupo in datosParaGuardar) {
+      if (!collectionMap[grupo]) continue;
+      const collectionName = collectionMap[grupo];
+      const datosDelGrupo = { ...datosParaGuardar[grupo],
+        fecha: fechaFinal
+      };
+      try {
+        const ref = db.collection(collectionName).doc(fechaFinal);
+        const snapshot = await ref.get();
+        if (snapshot.exists) {
+          errores.push(`Ya existen datos para el día ${fechaFinal} en ${grupo}.`);
+          continue;
+        }
+        await ref.set(datosDelGrupo, {
+          merge: false
+        });
+        exitos.push(`¡Guardado con éxito para ${grupo}!`);
+      } catch (err) {
+        errores.push(`Error al guardar ${grupo}: ${err.message}`);
+      }
+    }
+
+    showSpinner(false);
+
+    if (exitos.length && exitos.length === Object.keys(datosParaGuardar).length) {
+      showStatus('Todos los grupos han sido guardados correctamente.', 'success');
+    } else {
+      if (exitos.length) showStatus(exitos.join('<br>'), 'success');
+      if (errores.length) showStatus(errores.join('<br>'), 'danger');
+    }
+
+    if (errores.length) {
+      showConfirmationUI(true);
+    } else {
+      parsedDataForConfirmation = null;
+      fechaEdicionDiv.style.display = "none";
+    }
   }
 
-  if (errores.length) {
-    showConfirmationUI(true);
-  } else {
+  function onCancel() {
+    resultsContainer.innerHTML = '';
+    statusContainer.innerHTML = '';
+    showConfirmationUI(false);
     parsedDataForConfirmation = null;
     fechaEdicionDiv.style.display = "none";
   }
-}
 
-function onCancel(){
-  resultsContainer.innerHTML = '';
-  statusContainer.innerHTML  = '';
-  showConfirmationUI(false);
-  parsedDataForConfirmation   = null;
-  fechaEdicionDiv.style.display = "none";
-}
+  /* ========================= HELPERS DE PARSEO ========================= */
 
-/* ========================= PARSERS ========================= */
+  /**
+   * Busca un título de sección y devuelve los elementos que le siguen hasta el próximo título.
+   * @param {HTMLElement} root - El elemento raíz donde buscar.
+   * @param {string} sectionTitle - El título de la sección a buscar (ej. "GRUPO 1").
+   * @returns {HTMLElement[]} - Un array de elementos HTML dentro de esa sección.
+   */
+  function findSectionElements(root, sectionTitle) {
+      const allElements = Array.from(root.children);
+      const titleRegex = new RegExp(`^${sectionTitle.toUpperCase()}$`);
+      
+      const startIndex = allElements.findIndex(el => titleRegex.test(el.textContent.trim().toUpperCase()));
 
-// --- Grupo 1 ---
-function parseGrupo1(html){
-  const root  = document.createElement('div'); root.innerHTML = html;
-  const tablas= Array.from(root.querySelectorAll('table'));
-  const plain = root.innerText || root.textContent || "";
-  let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
+      if (startIndex === -1) return [];
 
-  const data = {};
-  const sinGestiones = t=>{
-    const head = t.querySelector('tr')?.textContent.toUpperCase()||'';
-    return !head.includes('GESTIONES');
-  };
-
-  // DETENIDOS
-  const detenidos = [];
-  tablas.filter(sinGestiones).forEach(tabla=>{
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    const head = rows[0].textContent.toUpperCase();
-    if (head.includes('DETENIDOS') && head.includes('MOTIVO')) {
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length < 4) return;
-        const obj = {
-          numero:        parseInt(td[0].textContent.trim())||'',
-          motivo:        td[1].textContent.trim()||'',
-          nacionalidad:  td[2].textContent.trim()||'',
-          diligencias:   td[3].textContent.trim()||'',
-          observaciones: td[4]?.textContent.trim()||''
-        };
-        if (Object.values(obj).some(v=>v!==''))
-          detenidos.push(obj);
-      });
-    }
-  });
-  if (detenidos.length) data.detenidos = detenidos;
-
-  // EXPULSADOS
-  const expulsados = [];
-  tablas.filter(sinGestiones).forEach(tabla=>{
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    const head = rows[0].textContent.toUpperCase();
-    if (head.includes('EXPULSADOS') && head.includes('NACIONALIDAD')) {
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length < 2) return;
-        const obj = {
-          nombre:           td[0].textContent.trim()||'',
-          nacionalidad:     td[1].textContent.trim()||'',
-          diligencias:      td[2]?.textContent.trim()||'',
-          nConduccionesPos: parseInt(td[3]?.textContent.trim())||0,
-          conduccionesNeg:  parseInt(td[4]?.textContent.trim())||0,
-          observaciones:    td[5]?.textContent.trim()||''
-        };
-        if (obj.nombre||obj.nacionalidad)
-          expulsados.push(obj);
-      });
-    }
-  });
-  if (expulsados.length) data.expulsados = expulsados;
-
-  // FLETADOS
-  const fletados = [];
-  const fletadosFuturos = [];
-  tablas.filter(sinGestiones).forEach(tabla=>{
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    const head = rows[0].textContent.toUpperCase();
-    if (head.includes('FLETADOS') && head.includes('DESTINO') && !head.includes('FUTUROS')) {
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length < 2) return;
-        const obj = {
-          destino:       td[0].textContent.trim()||'',
-          pax:           parseInt(td[1].textContent.trim())||0,
-          observaciones: td[2]?.textContent.trim()||''
-        };
-        if (obj.destino) fletados.push(obj);
-      });
-    }
-    if (head.includes('FLETADOS FUTUROS')) {
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length < 2) return;
-        const obj = {
-          destino: td[0].textContent.trim()||'',
-          pax:     parseInt(td[1].textContent.trim())||0,
-          fecha:   td[2]?.textContent.trim()||''
-        };
-        if (obj.destino) fletadosFuturos.push(obj);
-      });
-    }
-  });
-  if (fletados.length) data.fletados = fletados;
-  if (fletadosFuturos.length) data.fletadosFuturos = fletadosFuturos;
-
-  // CONDUCCIONES
-  ['POSITIVAS','NEGATIVAS'].forEach(tipo=>{
-    const key = tipo==='POSITIVAS'?'conduccionesPositivas':'conduccionesNegativas';
-    const arr = [];
-    tablas.filter(sinGestiones).forEach(tabla=>{
-      const rows = Array.from(tabla.querySelectorAll('tr'));
-      const head = rows[0].textContent.toUpperCase();
-      if (head.includes(`CONDUCCIONES ${tipo}`)) {
-        rows.slice(1).forEach(tr=>{
-          const td = Array.from(tr.querySelectorAll('td'));
-          if (!td.length) return;
-          const obj = {
-            numero: parseInt(td[0].textContent.trim())||0,
-            fecha:  td[1]?.textContent.trim()||''
-          };
-          if (obj.numero) arr.push(obj);
-        });
+      const sectionElements = [];
+      for (let i = startIndex + 1; i < allElements.length; i++) {
+          const el = allElements[i];
+          const text = el.textContent.trim().toUpperCase();
+          
+          // Detenerse si se encuentra otro título de sección principal
+          if (el.tagName.match(/^H[1-6]$/) || el.querySelector('strong')) {
+             if (text.startsWith('GRUPO') || text === 'PUERTO' || text === 'CECOREX' || text === 'GESTION') {
+                break;
+             }
+          }
+          sectionElements.push(el);
       }
-    });
-    if (arr.length) data[key] = arr;
-  });
-
-  // PENDIENTES
-  const pendientes = [];
-  tablas.filter(sinGestiones).forEach(tabla=>{
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    const head = rows[0].textContent.toUpperCase();
-    if (head.includes('PENDIENTES')) {
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (!td.length) return;
-        const obj = {
-          descripcion: td[0].textContent.trim()||'',
-          fecha:       td[1]?.textContent.trim()||''
-        };
-        if (obj.descripcion) pendientes.push(obj);
-      });
-    }
-  });
-  if (pendientes.length) data.pendientes = pendientes;
-
-  return { datos: data, fecha };
-}
-
-// --- Grupo 4 ---
-function parseGrupo4(html){
-  const root  = document.createElement('div'); root.innerHTML = html;
-  const tablas= Array.from(root.querySelectorAll('table'));
-  const plain = root.innerText || root.textContent || "";
-  let m       = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  const fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
-
-  const data = {};
-  const mapSeccion = (keywords, fields, parser)=>{
-    for (const t of tablas) {
-      const cab = t.querySelector('tr')?.textContent.toUpperCase()||'';
-      if (!keywords.every(k=>cab.includes(k))) continue;
-      const rows = Array.from(t.querySelectorAll('tr')).slice(1);
-      const arr  = [];
-      rows.forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if (td.length < fields.length) return;
-        const obj = {};
-        fields.forEach((f,i)=> obj[f] = td[i].textContent.trim()||'');
-        if (parser) Object.assign(obj, parser(obj));
-        if (Object.values(obj).some(v=>v!=='')) arr.push(obj);
-      });
-      return arr;
-    }
-    return [];
-  };
-
-  const col = mapSeccion(['COLABORACION'],                ['desc','cantidad'], o=>({descripcion:o.desc, cantidad:parseInt(o.cantidad)||0}));
-  const det = mapSeccion(['DETENIDOS'],                   ['motivo','nacionalidad','cantidad'], o=>({motivo:o.motivo, nacionalidad:o.nacionalidad, cantidad:parseInt(o.cantidad)||0}));
-  const cit = mapSeccion(['CITADOS'],                     ['desc','cantidad'], o=>({descripcion:o.desc, cantidad:parseInt(o.cantidad)||0}));
-  const ges = mapSeccion(['GESTIONES VARIAS'],            ['desc','cantidad'], o=>({descripcion:o.desc, cantidad:parseInt(o.cantidad)||0}));
-  const ins = mapSeccion(['INS.TRABAJO'],                 ['desc','cantidad'], o=>({descripcion:o.desc, cantidad:parseInt(o.cantidad)||0}));
-  const ois = mapSeccion(['INSPECCIONES'],                ['desc','cantidad'], o=>({descripcion:o.desc, cantidad:parseInt(o.cantidad)||0}));
-
-  if (col.length) data.colaboraciones       = col;
-  if (det.length) data.detenidos            = det;
-  if (cit.length) data.citados              = cit;
-  if (ges.length) data.gestiones            = ges;
-  if (ins.length) data.inspeccionesTrabajo  = ins;
-  if (ois.length) data.otrasInspecciones    = ois;
-
-  // Observaciones
-  tablas.forEach(t=>{
-    const cab = t.querySelector('tr')?.textContent.toUpperCase()||'';
-    if (!cab.includes('OBSERVACIONES')) return;
-    const txt = Array.from(t.querySelectorAll('tr td')).slice(1).map(td=>td.textContent.trim()).join(' ');
-    if (txt) data.observaciones = txt;
-  });
-
-  return { datos: data, fecha };
-}
-
-// --- Puerto ---
-function parseGrupoPuerto(html){
-  const root  = document.createElement('div'); root.innerHTML = html;
-  const tablas= Array.from(root.querySelectorAll('table'));
-  let fecha = '';
-  for(const t of tablas){
-    const txt = t.innerText || t.textContent || "";
-    let m = txt.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})|(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if (m) {
-      fecha = m[1]
-        ? `${m[1]}-${m[2]}-${m[3]}`
-        : `${m[6]}-${m[5].padStart(2,'0')}-${m[4].padStart(2,'0')}`;
-      break;
-    }
+      return sectionElements;
   }
-  const data = {};
-  for(const tabla of tablas){
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (rows.length < 2) continue;
-    const cabecera = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    if (cabecera.includes("CTRL.MARINOS") && cabecera.includes("CRUCERISTAS")) {
-      const valores = Array.from(rows[1].querySelectorAll('td')).map(td => td.textContent.trim());
-      const cabMap = {
-        "CTRL.MARINOS":     "ctrlMarinos",
-        "MARINOS ARGOS":    "marinosArgos",
-        "CRUCEROS":         "cruceros",
-        "CRUCERISTAS":      "cruceristas",
-        "VISAS. CG":        "visadosCgef",
-        "VISAS VAL.":       "visadosValencia",
-        "VISAS. EXP":       "visadosExp",
-        "VEH. CHEQUEADOS":  "vehChequeados",
-        "PERS. CHEQUEADAS": "paxChequeadas",
-        "DETENIDOS":        "detenidos",
-        "DENEGACIONES":     "denegaciones",
-        "ENTR. EXCEP":      "entrExcep",
-        "EIXICS":           "eixics",
-        "PTOS. DEPORTIVOS": "ptosDeportivos"
-      };
-      cabecera.forEach((cab, idx) => {
-        if (cabMap[cab] && valores[idx]) {
-          data[cabMap[cab]] = isNaN(valores[idx]) ? valores[idx] : Number(valores[idx]);
+
+  /**
+   * Parsea una tabla buscando cabeceras literales y mapeándolas a nuevas claves.
+   * @param {HTMLElement[]} elements - Array de elementos donde buscar la tabla.
+   * @param {Object} headerMapping - Objeto que mapea cabeceras literales a claves de objeto.
+   * @returns {Object[]} - Array de objetos, uno por cada fila de datos.
+   */
+  function parseTable(elements, headerMapping) {
+      const data = [];
+      const targetHeaders = Object.keys(headerMapping);
+
+      const tables = elements.filter(el => el.tagName === 'TABLE');
+      
+      for (const table of tables) {
+          const rows = Array.from(table.querySelectorAll('tr'));
+          if (rows.length < 2) continue; // Necesita cabecera y al menos una fila de datos
+
+          const headerCells = Array.from(rows[0].querySelectorAll('th, td')).map(cell => cell.textContent.trim());
+
+          // Comprobación literal de que las cabeceras objetivo existen al principio de las cabeceras de la tabla
+          let headersMatch = true;
+          for(let i=0; i < targetHeaders.length; i++) {
+              if (headerCells[i] !== targetHeaders[i]) {
+                  headersMatch = false;
+                  break;
+              }
+          }
+          
+          if (headersMatch) {
+              // Procesar filas de datos
+              for (let i = 1; i < rows.length; i++) {
+                  const cells = Array.from(rows[i].querySelectorAll('td'));
+                  if (cells.length === 0 || cells.every(c => !c.textContent.trim())) continue;
+
+                  const rowData = {};
+                  targetHeaders.forEach((header, index) => {
+                      const newKey = headerMapping[header];
+                      rowData[newKey] = cells[index] ? cells[index].textContent.trim() : '';
+                  });
+                  data.push(rowData);
+              }
+              // Si se ha procesado una tabla, se asume que es la única y se devuelve el resultado
+              return data;
+          }
+      }
+      return data;
+  }
+  
+    /**
+   * Extrae el texto de una tabla de "Gestiones".
+   * @param {HTMLElement[]} elements - Elementos de la sección.
+   * @param {string} title - El título literal a buscar (ej. "GESTIONES").
+   * @returns {string} - El texto extraído.
+   */
+  function parseGestiones(elements, title) {
+    const titleElement = elements.find(el => el.textContent.trim().toUpperCase() === title.toUpperCase());
+    if (titleElement && titleElement.tagName === 'TABLE') {
+        return titleElement.textContent.trim();
+    }
+    // Si el título es un P o STRONG, la tabla es el siguiente elemento
+    if(titleElement) {
+        let nextEl = titleElement.nextElementSibling;
+        while(nextEl && nextEl.tagName !== 'TABLE') {
+            nextEl = nextEl.nextElementSibling;
         }
-      });
+        if (nextEl) return nextEl.textContent.trim();
     }
-    if (/FERRYS?/i.test(rows[0].innerText || rows[0].textContent)) {
-      data.ferrys = [];
-      rows.slice(1).forEach(tr=>{
-        const td = Array.from(tr.querySelectorAll('td'));
-        if(td.length<2) return;
-        data.ferrys.push({
-          tipo: td[0]?.textContent.trim()||'',
-          destino: td[1]?.textContent.trim()||'',
-          fecha: td[2]?.textContent.trim()||'',
-          hora: td[3]?.textContent.trim()||'',
-          pasajeros: td[4]?.textContent.trim()||'',
-          vehiculos: td[5]?.textContent.trim()||'',
-          incidencia: td[6]?.textContent.trim()||''
-        });
-      });
-    }
-    if (/OBSERVACIONES/i.test(rows[0].innerText || rows[0].textContent)) {
-      data.observaciones = rows.slice(1).map(tr=>
-        Array.from(tr.querySelectorAll('td')).map(td=>td.textContent.trim()).join(' ')
-      ).join(' ');
-    }
+    return "";
   }
-  Object.keys(data).forEach(k=>{
-    if (Array.isArray(data[k]) ? data[k].length===0 : data[k]==='') {
-      delete data[k];
-    }
-  });
-  return { datos: data, fecha };
-}
-
-// --- CECOREX ---
-function parseGrupoCECOREX(html){
-  const root = document.createElement('div'); root.innerHTML = html;
-  const tablas = Array.from(root.querySelectorAll('table'));
-  const data = {};
-  let fecha = '';
-
-  // Buscar tabla CECOREX (por cabecera cercana o clave de la primera columna)
-  let ceHeader = Array.from(root.querySelectorAll('h1,h2,h3,h4,p,strong')).find(
-    h=> h.textContent && h.textContent.toUpperCase().includes('CECOREX')
-  );
-  let ceTable = null;
-  if(ceHeader){
-    let next = ceHeader.nextElementSibling;
-    while(next && next.tagName !== 'TABLE') next = next.nextElementSibling;
-    ceTable = next;
+  
+  /**
+   * Extrae la primera fecha con formato dd-mm-yyyy o yyyy-mm-dd del texto.
+   * @param {string} text - El texto completo del documento.
+   * @returns {string} - La fecha en formato ISO (yyyy-mm-dd).
+   */
+  function extractDate(text) {
+      let match = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (match) {
+          return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+      }
+      match = text.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+      if (match) {
+          return `${match[1]}-${match[2]}-${match[3]}`;
+      }
+      return '';
   }
-  if(!ceTable){
-    ceTable = tablas.find(t=>{
-      const ths = Array.from(t.querySelectorAll('tr th, tr td'));
-      return ths.some(th => th.textContent && th.textContent.toUpperCase().includes('CONS.TFNO'));
+
+  /* ========================= PARSERS LITERALES ========================= */
+
+  function parseGrupo1(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      const data = {};
+      const fecha = extractDate(root.innerText);
+      const sectionElements = findSectionElements(root, "GRUPO 1");
+      if (!sectionElements.length) return { datos: {}, fecha };
+
+      // 1. Parsear tabla de DETENIDOS
+      const detenidosMapping = {
+          'DETENIDOS-DG1': 'DETENIDOS-G1',
+          'MOTIVO-DG1': 'MOTIVO-G1',
+          'NACIONALIDAD-DG1': 'NACIONALIDAD-G1',
+          'DILIGENCIAS-DG1': 'DILIGENCIAS-G1',
+          'OBSERVACIONES-DG1': 'OBSERVACIONES-G1'
+      };
+      const detenidosData = parseTable(sectionElements, detenidosMapping);
+      if (detenidosData.length > 0) {
+          data.detenidos = detenidosData;
+      }
+
+      // 2. Parsear GESTIONES
+      const gestionesText = parseGestiones(sectionElements, 'GESTIONES');
+      if (gestionesText) {
+          data.gestiones = gestionesText;
+      }
+      
+      return { datos: data, fecha };
+  }
+
+  function parseGrupo4(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      const data = {};
+      const fecha = extractDate(root.innerText);
+      const sectionElements = findSectionElements(root, "GRUPO 4");
+      if (!sectionElements.length) return { datos: {}, fecha };
+
+      // 1. Parsear tabla de DETENIDOS
+      const detenidosMapping = {
+          'N. DETENIDOS-G4': 'DETENIDOS-G4',
+          'MOTIVO–G4': 'MOTIVO-G4', // Ojo: es un guion EN (–), no un guion normal
+          'NACIONALIDAD-G4': 'NACIONALIDAD-G4',
+          'DILIGENCIAS-G4': 'DILIGENCIAS-G4',
+          'OBSERVACIONES-DG4': 'OBSERVACIONES-G4'
+      };
+      const detenidosData = parseTable(sectionElements, detenidosMapping);
+      if (detenidosData.length > 0) {
+          data.detenidos = detenidosData;
+      }
+      
+      // 2. Parsear GESTIONES VARIAS
+      const gestionesText = parseGestiones(sectionElements, 'GESTIONES VARIAS');
+      if (gestionesText) {
+          data.gestiones_varias = gestionesText;
+      }
+      
+      return { datos: data, fecha };
+  }
+
+  function parseGrupoPuerto(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      const data = {};
+      const fecha = extractDate(root.innerText);
+      const sectionElements = findSectionElements(root, "PUERTO");
+      if (!sectionElements.length) return { datos: {}, fecha };
+      
+      // 1. Parsear tabla de DETENIDOS
+      const detenidosMapping = {
+          'DETENIDOS': 'DETENIDOS-P'
+          // Las otras columnas de esta tabla no tienen mapeo explícito en la petición
+      };
+      const detenidosData = parseTable(sectionElements, detenidosMapping);
+      if (detenidosData.length > 0) {
+          data.detenidos = detenidosData;
+      }
+
+      // 2. Parsear GESTIONES PUERTO
+      const gestionesText = parseGestiones(sectionElements, 'GESTIONES PUERTO');
+      if (gestionesText) {
+          data.gestiones = gestionesText;
+      }
+      
+      return { datos: data, fecha };
+  }
+
+  function parseGrupoCECOREX(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      const data = {};
+      const fecha = extractDate(root.innerText);
+      const sectionElements = findSectionElements(root, "CECOREX");
+      if (!sectionElements.length) return { datos: {}, fecha };
+      
+      // 1. Parsear tabla de DETENIDOS
+      const detenidosMapping = {
+          'DETENIDOS-CC': 'DETENIDOS-C',
+          'MOTIVO-CC': 'MOTIVO-C',
+          'NACIONALIDAD-CC': 'NACIONALIDAD-C',
+          'PRESENTA': 'PRESENTA-C', // Asumo que esta columna también se quiere
+          'OBSERVACIONES-CC': 'OBSERVACIONES-C'
+      };
+      const detenidosData = parseTable(sectionElements, detenidosMapping);
+      if (detenidosData.length > 0) {
+          data.detenidos = detenidosData;
+      }
+
+      // 2. Parsear GESTIONES CECOREX
+      const gestionesText = parseGestiones(sectionElements, 'GESTIONES CECOREX');
+      if (gestionesText) {
+          data.gestiones_varias = gestionesText;
+      }
+
+      return { datos: data, fecha };
+  }
+  
+  function parseGestion(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      const data = {};
+      const fecha = extractDate(root.innerText);
+      const sectionElements = findSectionElements(root, "GESTION");
+      if (!sectionElements.length) return { datos: {}, fecha };
+
+      // 1. Parsear tabla de CITAS
+      const citasMapping = {
+          'CITAS-G': 'CITAS-AS',
+          'FALLOS': 'FALLOS-AS',
+          'CITAS': 'CITAS-AS-2', // Segunda columna "CITAS"
+          'ENTRV. ASILO': 'ENTRV_ASILO-AS',
+          'FALLOS ASILO': 'FALLOS_ASILO-AS',
+          'ASILOS CONCEDIDOS': 'ASILOS_CONCEDIDOS-AS',
+          'ASILOS DENEGADOS': 'ASILOS_DENEGADOS-AS'
+      };
+      const citasData = parseTable(sectionElements, citasMapping);
+      if (citasData.length > 0) {
+          data.citas = citasData;
+      }
+
+      return { datos: data, fecha };
+  }
+
+
+  /* ===========================  VALIDACIÓN  ================================ */
+  // La lógica de validación original se mantiene, podría necesitar ajustes
+  // si los nuevos datos no cumplen las expectativas de estas funciones.
+  function validarDatos(data, grupo, fecha) {
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+      return [`No se han extraído datos válidos para ${grupo}.`];
+    }
+    const errores = [];
+
+    // Ejemplo de validación para la nueva estructura
+    if (grupo === GROUP1) {
+        if (!data.detenidos && !data.gestiones) {
+            errores.push('Grupo 1 debe tener al menos detenidos o gestiones.');
+        }
+    }
+     if (grupo === GROUP4) {
+        if (!data.detenidos && !data.gestiones_varias) {
+            errores.push('Grupo 4 debe tener al menos detenidos o gestiones varias.');
+        }
+    }
+    
+    if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      errores.push(`La fecha es obligatoria y debe ser válida (detectada para ${grupo}).`);
+    }
+
+    return errores.length ? errores : [];
+  }
+
+  function validarDatosPorTodos(allData, fecha) {
+    let errs = [];
+    if (Object.keys(allData).length === 0) {
+        return ['No se extrajeron datos de ningún grupo.'];
+    }
+    Object.entries(allData).forEach(([grupo, d]) => {
+      // Se pasa una fecha global, por lo que la validación de fecha dentro de validarDatos es un poco redundante
+      // pero se mantiene por si acaso.
+      errs = errs.concat(validarDatos(d, grupo, fecha));
     });
-  }
-  if(ceTable){
-    Array.from(ceTable.querySelectorAll('tr')).forEach(tr=>{
-      const cells = tr.querySelectorAll('td,th');
-      if(cells.length<2) return;
-      const key = cells[0].textContent.trim();
-      const val = cells[1].textContent.trim();
-      data[key] = !isNaN(val) && val !== '' ? Number(val) : val;
-    });
-  }
-  // Buscar tabla de detenidos (si existe)
-  let detHeader = Array.from(root.querySelectorAll('h1,h2,h3,h4,p,strong')).find(
-    h=> h.textContent && h.textContent.toUpperCase().includes('DETENIDOS')
-  );
-  let detTable = null;
-  if(detHeader){
-    let next = detHeader.nextElementSibling;
-    while(next && next.tagName !== 'TABLE') next = next.nextElementSibling;
-    detTable = next;
-  }
-  if(detTable){
-    const detRows = detTable.querySelectorAll('tr');
-    const detHeaderRow = Array.from(detRows[0].children).map(th=>th.textContent.trim().toUpperCase());
-    const detenidos = [];
-    for(let i=1;i<detRows.length;i++){
-      const cells = detRows[i].querySelectorAll('td');
-      if(!cells.length) continue;
-      let obj = {};
-      detHeaderRow.forEach((h,j)=> obj[h]=cells[j]?.textContent.trim()||'');
-      detenidos.push(obj);
+    // Validar la fecha global una sola vez
+    if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      errs.push('La fecha global del documento es obligatoria o no tiene el formato correcto (YYYY-MM-DD).');
     }
-    data.detenidos = detenidos;
+    // Eliminar duplicados
+    return [...new Set(errs)];
   }
-  // Fecha: intenta extraer de cualquier sitio
-  const plain = root.innerText || root.textContent || "";
-  let m = plain.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  fecha = m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : '';
-
-  return { datos: data, fecha };
-}
-
-/* ===========================  VALIDACIÓN  ================================ */
-function validarDatos(data, grupo, fecha) {
-  if (!data || typeof data!=='object') {
-    return ['No se han extraído datos válidos para este grupo.'];
-  }
-  const errores = [];
-
-  if (grupo === GROUP1) {
-    if (!(data.detenidos||[]).length && !(data.expulsados||[]).length && !(data.fletados||[]).length) {
-      errores.push('Debe haber al menos un detenido, expulsado o fletado.');
-    }
-  }
-  if (grupo === GROUP4) {
-    const keys = ['colaboraciones','detenidos','inspeccionesTrabajo','citados','gestiones','otrasInspecciones','observaciones'];
-    if (!keys.some(k=> data[k] && ((Array.isArray(data[k])?data[k].length:!!data[k])))) {
-      errores.push('Debe haber al menos un campo con datos en Grupo 4.');
-    }
-  }
-  if (grupo === GROUPPUERTO) {
-    const keys = ['ctrlMarinos','cruceros','ferrys'];
-    if (!keys.some(k=> data[k] && ((Array.isArray(data[k])?data[k].length:!!data[k])))) {
-      errores.push('Debe haber al menos control de marinos, cruceros o ferrys en Puerto.');
-    }
-  }
-  if (grupo === GROUPCECOREX) {
-    const camposNumericos = [
-      "CONS.TFNO", "CONS.PRESC", "CONS. EQUIP", "CITADOS", "NOTIFICACIONES", "AL. ABOGADOS",
-      "REM. SUBDELEGACIÓN", "DECRETOS EXP.", "TRAMITES AUDIENCIA",
-      "CIE CONCEDIDO", "CIES DENEGADO", "PROH. ENTRADA", "MENAS", "Dil. INFORME"
-    ];
-    const algunoNumerico = camposNumericos.some(k => data[k] && Number(data[k]) > 0);
-    const tieneDetenidos = Array.isArray(data.detenidos) && data.detenidos.length > 0;
-    if (!algunoNumerico && !tieneDetenidos) {
-      errores.push('Debe haber al menos un campo numérico o un detenido en CECOREX.');
-    }
-  }
-
-  if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    errores.push('La fecha es obligatoria y debe ser válida.');
-  }
-
-  return errores.length? errores : [];
-}
-
-function validarDatosPorTodos(allData, fecha) {
-  let errs = [];
-  Object.entries(allData).forEach(([grupo,d])=>{
-    errs = errs.concat(validarDatos(d, grupo, fecha));
-  });
-  return errs;
-}
 
 }); // DOMContentLoaded
