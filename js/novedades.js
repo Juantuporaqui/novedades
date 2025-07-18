@@ -535,28 +535,7 @@ function parseGrupoCECOREX(html) {
     proh_entrada: '',
     menas: '',
     dil_informe: '',
-    gestiones_cecorex: [],
-    citas_g: '',
-    fallos: '',
-    citas: '',
-    entrv_asilo: '',
-    fallos_asilo: '',
-    asilos_concedidos: '',
-    asilos_denegados: '',
-    cartas_concedidas: '',
-    cartas_denegadas: '',
-    prot_internacional: '',
-    citas_subdeleg: '',
-    tarjet_subdeleg: '',
-    notificaciones_concedidas: '',
-    notificaciones_denegadas: '',
-    presentados: '',
-    correos_ucrania: '',
-    tele_favo: '',
-    tele_desfav: '',
-    citas_tlfn_asilo: '',
-    citas_tlfn_cartas: '',
-    oficios: ''
+    gestiones_cecorex: []
   };
 
   for (const tabla of tablas) {
@@ -616,7 +595,7 @@ function parseGrupoCECOREX(html) {
       datos.tramites_audiencia = tds[2]?.textContent.trim() || '';
     }
 
-    // CIE CONCEDIDO, CIES DENEGADO, PROH. ENTRADA, MENAS, Dil. INFORME
+    // CIE CONCEDIDO, CIES DENEGADO, PROH. ENTRADA, MENAS, DIL. INFORME
     if (
       header[0] === "CIE CONCEDIDO" &&
       header[1] === "CIES DENEGADO" &&
@@ -641,39 +620,6 @@ function parseGrupoCECOREX(html) {
       }
     }
 
-    // GESTION (todos los indicadores de GESTIÓN abajo)
-    if (
-      header.includes("CITAS-G") &&
-      header.includes("FALLOS") &&
-      header.includes("CITAS") &&
-      header.includes("ENTRV. ASILO") &&
-      header.includes("FALLOS ASILO")
-    ) {
-      const idx = header.reduce((acc, h, i) => { acc[h] = i; return acc; }, {});
-      const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      datos.citas_g             = tds[idx["CITAS-G"]]?.textContent.trim() || '';
-      datos.fallos              = tds[idx["FALLOS"]]?.textContent.trim() || '';
-      datos.citas               = tds[idx["CITAS"]]?.textContent.trim() || '';
-      datos.entrv_asilo         = tds[idx["ENTRV. ASILO"]]?.textContent.trim() || '';
-      datos.fallos_asilo        = tds[idx["FALLOS ASILO"]]?.textContent.trim() || '';
-      datos.asilos_concedidos   = tds[idx["ASILOS CONCEDIDOS"]]?.textContent.trim() || '';
-      datos.asilos_denegados    = tds[idx["ASILOS DENEGADOS"]]?.textContent.trim() || '';
-      datos.cartas_concedidas   = tds[idx["CARTAS CONCEDIDAS"]]?.textContent.trim() || '';
-      datos.cartas_denegadas    = tds[idx["CARTAS DENEGADAS"]]?.textContent.trim() || '';
-      datos.prot_internacional  = tds[idx["PROT. INTERNACIONAL"]]?.textContent.trim() || '';
-      datos.citas_subdeleg      = tds[idx["CITAS SUBDELEG"]]?.textContent.trim() || '';
-      datos.tarjet_subdeleg     = tds[idx["TARJET. SUBDELEG"]]?.textContent.trim() || '';
-      datos.notificaciones_concedidas = tds[idx["NOTIFICACIONES CONCEDIDAS"]]?.textContent.trim() || '';
-      datos.notificaciones_denegadas  = tds[idx["NOTIFICACIONES DENEGADAS"]]?.textContent.trim() || '';
-      datos.presentados         = tds[idx["PRESENTADOS"]]?.textContent.trim() || '';
-      datos.correos_ucrania     = tds[idx["CORREOS UCRANIA"]]?.textContent.trim() || '';
-      datos.tele_favo           = tds[idx["TELE. FAVO"]]?.textContent.trim() || '';
-      datos.tele_desfav         = tds[idx["TELE. DESFAV"]]?.textContent.trim() || '';
-      datos.citas_tlfn_asilo    = tds[idx["CITAS TLFN ASILO"]]?.textContent.trim() || '';
-      datos.citas_tlfn_cartas   = tds[idx["CITAS TLFN CARTAS"]]?.textContent.trim() || '';
-      datos.oficios             = tds[idx["OFICIOS"]]?.textContent.trim() || '';
-    }
-
     // Busca fecha: DD-MM-AAAA (en tabla)
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
@@ -683,7 +629,7 @@ function parseGrupoCECOREX(html) {
   }
   return { datos, fecha };
 }
-  
+
 // ----------- GESTIÓN -----------
 function parseGestion(html) {
   const root = document.createElement('div'); root.innerHTML = html;
@@ -768,6 +714,15 @@ function validarDatos(data, grupo, fecha) {
    if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
   if (grupo === GROUPGESTION && !Object.keys(data).length) errores.push('No hay datos de Gestión.');
   return errores.length ? errores : [];
+}
+   
+function validarDatosPorTodos(datosPorGrupo, fecha) {
+  const errores = [];
+  // Comprueba todos los grupos presentes
+  for (const grupo in datosPorGrupo) {
+    errores.push(...validarDatos(datosPorGrupo[grupo], grupo, fecha));
+  }
+  return errores;
 }
 
 
