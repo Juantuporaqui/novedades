@@ -414,6 +414,17 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // =================================================================================
+  // AUTO-IMPORT DESDE novedades.js: FUNCIONALIDAD GLOBAL
+  // =================================================================================
+  window.autoImportCECOREX = function(data) {
+    // Si hay campo de fecha, la ponemos
+    if (data.fecha && typeof setFecha === "function") setFecha(data.fecha);
+    setCECOREXData(data);
+    showStatus("Parte diario CECOREX auto-importado. Revisa y guarda si es correcto.", "info");
+    if (btnVerResumen) btnVerResumen.click(); // Muestra el resumen automáticamente
+  };
+
+  // =================================================================================
   // INICIALIZACIÓN AL ABRIR PÁGINA
   // =================================================================================
   setFecha(isoDate());
