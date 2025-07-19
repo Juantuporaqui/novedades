@@ -204,33 +204,7 @@ async function onConfirmSave() {
   const exitos = [];
 
   // --- Función para transformar gestión ---
-  function transformarDatosGestion(datosOriginales) {
-    return {
-      "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
-      "FALLOS":            datosOriginales["FALLOS"]            || 0,
-      "CITAS":             datosOriginales["CITAS"]             || 0,
-      "ENTRV. ASILO":      datosOriginales["ENTRV. ASILO"]      || 0,
-      "FALLOS ASILO":      datosOriginales["FALLOS ASILO"]      || 0,
-      "ASILOS CONCEDIDOS": datosOriginales["ASILOS CONCEDIDOS"] || 0,
-      "ASILOS DENEGADOS":  datosOriginales["ASILOS DENEGADOS"]  || 0,
-      "CARTAS CONCEDIDAS": datosOriginales["CARTAS CONCEDIDAS"] || 0,
-      "CARTAS DENEGADAS":  datosOriginales["CARTAS DENEGADAS"]  || 0,
-      "PROT. INTERNACIONAL": datosOriginales["PROT. INTERNACIONAL"] || 0,
-      "CITAS SUBDELEG":    datosOriginales["CITAS SUBDELEG"]    || 0,
-      "TARJET. SUBDELEG":  datosOriginales["TARJET. SUBDELEG"]  || 0,
-      "NOTIFICACIONES CONCEDIDAS": datosOriginales["NOTIFICACIONES CONCEDIDAS"] || 0,
-      "NOTIFICACIONES DENEGADAS":  datosOriginales["NOTIFICACIONES DENEGADAS"]  || 0,
-      "PRESENTADOS":       datosOriginales["PRESENTADOS"]       || 0,
-      "CORREOS UCRANIA":   datosOriginales["CORREOS UCRANIA"]   || 0,
-      "TELE. FAVO":        datosOriginales["TELE. FAVO"]        || 0,
-      "TELE. DESFAV":      datosOriginales["TELE. DESFAV"]      || 0,
-      "CITAS TLFN ASILO":  datosOriginales["CITAS TLFN ASILO"]  || 0,
-      "CITAS TLFN CARTAS": datosOriginales["CITAS TLFN CARTAS"] || 0,
-      "OFICIOS":           datosOriginales["OFICIOS"]           || 0,
-      "OBSERVACIONES":     datosOriginales["OBSERVACIONES"]     || "",
-      "fecha":             datosOriginales["fecha"]
-    };
-  }
+  
 function transformarDatosGestion(datosOriginales) {
   return {
     "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
@@ -258,8 +232,7 @@ function transformarDatosGestion(datosOriginales) {
     "fecha":             datosOriginales["fecha"]
   };
 }
-   
-  // --- Guardado por grupos ---
+     // --- Guardado por grupos ---
   for (const grupo in datosParaGuardar) {
     if (!collectionMap[grupo]) continue;
     const collectionName = collectionMap[grupo];
