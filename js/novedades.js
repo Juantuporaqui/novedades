@@ -400,14 +400,24 @@ function parseGrupo4(html) {
   const root = document.createElement('div'); root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
-  let datos = {};
+  let datos = {
+    detenidos_g4: [],
+    colaboraciones_g4: [],
+    gestiones_varias_g4: [],
+    traslados_g4: [],
+    identificados_g4: 0,
+    citadosCecorex_g4: 0,
+    citadosUcrif_g4: 0,
+    citadosObservaciones_g4: "",
+    observaciones_g4: ""
+  };
 
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // N. DETENIDOS-G4
+    // ========== DETENIDOS ==========
     if (
       header[0] === "N. DETENIDOS-G4" &&
       header[1] === "MOTIVO–G4" &&
@@ -415,59 +425,80 @@ function parseGrupo4(html) {
       header[3] === "DILIGENCIAS-G4" &&
       header[4] === "OBSERVACIONES-DG4"
     ) {
-      datos["detenidos_g4"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 5) continue;
-        datos["detenidos_g4"].push({
-          detenidos_g4:         tds[0].textContent.trim(),
-          motivo_g4:            tds[1].textContent.trim(),
-          nacionalidad_g4:      tds[2].textContent.trim(),
-          diligencias_g4:       tds[3].textContent.trim(),
-          observaciones_dg4:    tds[4].textContent.trim()
+        if (tds.length < 5 || !tds[0].textContent.trim()) continue;
+        datos.detenidos_g4.push({
+          detenidos_g4: tds[0].textContent.trim(),
+          motivo_g4: tds[1].textContent.trim(),
+          nacionalidad_g4: tds[2].textContent.trim(),
+          diligencias_g4: tds[3].textContent.trim(),
+          observaciones_dg4: tds[4].textContent.trim()
         });
       }
     }
 
-    // IDENTIFICADOS
+    // ========== IDENTIFICADOS, CITADOS, OBSERVACIONES, ETC ==========
     if (
-      header[0] === "IDENTIFICADOS"
+      header[0] === "IDENTIFICADOS" ||
+      header[0] === "CITADOS CECOREX" ||
+      header[0] === "CITADOS UCRIF" ||
+      header[0] === "OBSERVACIONES-G4"
     ) {
-      datos["identificados_g4"] = [];
-      for (let i=1; i<rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 1) continue;
-        datos["identificados_g4"].push({
-          identificados_g4: tds[0].textContent.trim()
-        });
+      for (let i = 0; i < header.length; i++) {
+        if (header[i] === "IDENTIFICADOS") {
+          datos.identificados_g4 = parseInt(rows[1]?.children[i]?.textContent.trim() || "0", 10);
+        }
+        if (header[i] === "CITADOS CECOREX") {
+          datos.citadosCecorex_g4 = parseInt(rows[1]?.children[i]?.textContent.trim() || "0", 10);
+        }
+        if (header[i] === "CITADOS UCRIF") {
+          datos.citadosUcrif_g4 = parseInt(rows[1]?.children[i]?.textContent.trim() || "0", 10);
+        }
+        if (header[i] === "OBSERVACIONES-G4") {
+          datos.observaciones_g4 = rows[1]?.children[i]?.textContent.trim() || "";
+        }
       }
     }
 
-    // GESTIONES VARIAS
+    // ========== COLABORACIONES ==========
     if (
-      header[0] === "GESTIONES VARIAS"
+      header[0] === "COLABORACION" &&
+      header[1] === "UNIDAD C." &&
+      header[2] === "RESULTADO C."
     ) {
-      datos["gestiones_varias_g4"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length) continue;
-        datos["gestiones_varias_g4"].push({
-          gestiones_varias_g4: tds[0].textContent.trim()
+        if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+        datos.colaboraciones_g4.push({
+          colaboracionDesc: tds[0].textContent.trim(),
+          colaboracionUnidad: tds[1].textContent.trim(),
+          colaboracionResultado: tds[2].textContent.trim()
         });
       }
     }
 
-    // TRASLADOS-G4
+    // ========== GESTIONES VARIAS ==========
+    if (header[0] === "GESTIONES VARIAS") {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length || !tds[0].textContent.trim()) continue;
+        datos.gestiones_varias_g4.push({
+          gestionDesc: tds[0].textContent.trim()
+        });
+      }
+    }
+
+    // ========== TRASLADOS ==========
     if (
       header[0] === "TRASLADOS-G4" &&
       header[1] === "DESTINO" &&
       header[2] === "OBSERVACIONES-TRASLADO"
     ) {
-      datos["traslados_g4"] = [];
       for (let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 3) continue;
-        datos["traslados_g4"].push({
+        datos.traslados_g4.push({
           traslados_g4:        tds[0].textContent.trim(),
           destino_traslado:    tds[1].textContent.trim(),
           observaciones_traslado: tds[2].textContent.trim()
@@ -475,13 +506,21 @@ function parseGrupo4(html) {
       }
     }
 
-    // Busca fecha: DD-MM-AAAA (en tabla)
+    // ========== FECHA (en cualquier tabla) ==========
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
+
+  // Si algún campo individual no se encontró, déjalo en 0 o string vacío
+  if (!('identificados_g4' in datos)) datos.identificados_g4 = 0;
+  if (!('citadosCecorex_g4' in datos)) datos.citadosCecorex_g4 = 0;
+  if (!('citadosUcrif_g4' in datos)) datos.citadosUcrif_g4 = 0;
+  if (!('observaciones_g4' in datos)) datos.observaciones_g4 = "";
+  if (!('citadosObservaciones_g4' in datos)) datos.citadosObservaciones_g4 = "";
+
   return { datos, fecha };
 }
 
