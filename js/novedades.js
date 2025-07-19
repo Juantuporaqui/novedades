@@ -103,6 +103,17 @@ const showFechaEditable = iso=>{
 };
 const obtenerFechaFormateada = ()=> fechaManualInput.value || "";
 
+   function onCancel() {
+  // Limpia la UI y el estado
+  parsedDataForConfirmation = null;
+  resultsContainer.innerHTML = "";
+  fechaEdicionDiv.style.display = "none";
+  showConfirmationUI(false);
+  statusContainer.innerHTML = "";
+  inputDocx.value = '';
+  showSpinner(false);
+}
+
 /* ==========================  SUBIR Y PARSEAR  ============================= */
 async function handleDocxUpload(e){
   const file = e.target.files[0];
