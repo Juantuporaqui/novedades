@@ -1,6 +1,6 @@
 /********************************************************************************
 * SIREX · Módulo CIE (Centro de Internamiento de Extranjeros)                 *
-* Versión 1.0 - Compatible con importación de DOCX                            *
+* Versión 2.0 - Compatible con importación de DOCX                            *
 * Gestiona internos, entradas, salidas y observaciones.                       *
 * Incluye resúmenes avanzados, exportación a PDF, CSV y formato para WhatsApp.*
 *********************************************************************************/
@@ -23,17 +23,29 @@ const db = firebase.firestore();
 const $ = id => document.getElementById(id);
 
 // ======================== FUNCIONES HELPERS =======================
-function showToast(msg) { alert(msg); }
+function showToast(msg, type = 'info') {
+    const toastContainer = $('toast');
+    if(toastContainer) {
+        toastContainer.textContent = msg;
+        toastContainer.className = `toast show toast-${type}`;
+        setTimeout(() => { toastContainer.className = 'toast'; }, 3000);
+    } else {
+        alert(msg);
+    }
+}
 
 function formatoFecha(f) {
   if (!f) return "";
   const d = new Date(f);
-  if (isNaN(d.getTime())) return f;
-  return `${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")}/${d.getFullYear()}`;
+  if (isNaN(d.getTime()) || f.length < 10) return f;
+  const [year, month, day] = f.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 function limpiarFormulario() {
   $('formCIE')?.reset();
+  const hoy = new Date().toISOString().slice(0, 10);
+  $('fechaCIE').value = hoy;
   if ($('panelResumenCIE')) $('panelResumenCIE').style.display = "none";
 }
 
@@ -62,65 +74,55 @@ function mostrarResumen(datos) {
   
   panel.style.display = 'block';
   div.innerHTML = `
-    <b>Fecha:</b> ${formatoFecha(datos.fecha)}<br>
-    <b>Nº de Internos:</b> ${datos.n_internos}<br>
-    <b>Entradas:</b> ${datos.entradas}<br>
-    <b>Salidas:</b> ${datos.salidas}<br>
-    <b>Observaciones:</b> ${datos.observaciones_cie || "---"}
+    <p><strong>Fecha:</strong> ${formatoFecha(datos.fecha)}</p>
+    <p><strong>Nº de Internos:</strong> ${datos.n_internos}</p>
+    <p><strong>Entradas:</strong> ${datos.entradas}</p>
+    <p><strong>Salidas:</strong> ${datos.salidas}</p>
+    <p><strong>Observaciones:</strong> ${datos.observaciones_cie || "---"}</p>
   `;
 }
 
 // ======================= EVENTOS PRINCIPALES ======================
 document.addEventListener('DOMContentLoaded', () => {
+  limpiarFormulario(); // Pone la fecha de hoy al cargar
 
-  // --- Carga de registro ---
   $('btnCargar').addEventListener('click', async () => {
     const fecha = $('fechaCIE').value;
-    if (!fecha) return showToast("Por favor, selecciona una fecha para cargar.");
-    
-    const docRef = db.collection(NOMBRE_COLECCION).doc(fecha);
-    const docSnap = await docRef.get();
-
-    if (docSnap.exists) {
-      const datos = docSnap.data();
-      uiPoblarFormulario(datos);
-      mostrarResumen(datos);
-      showToast("Registro cargado correctamente.");
+    if (!fecha) return showToast("Por favor, selecciona una fecha para cargar.", 'warning');
+    const doc = await db.collection(NOMBRE_COLECCION).doc(fecha).get();
+    if (doc.exists) {
+      uiPoblarFormulario(doc.data());
+      mostrarResumen(doc.data());
     } else {
+      showToast("No se encontró ningún registro para la fecha seleccionada.", 'info');
       limpiarFormulario();
-      showToast("No se encontró ningún registro para la fecha seleccionada.");
+      $('fechaCIE').value = fecha;
     }
   });
 
-  // --- Guardar registro ---
   $('formCIE').addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // El botón de grabar es de tipo submit
     const fecha = $('fechaCIE').value;
-    if (!fecha) return showToast("La fecha es obligatoria para guardar.");
-
+    if (!fecha) return showToast("La fecha es obligatoria para guardar.", 'danger');
     const datos = uiLeerDatosDelFormulario();
-    
     await db.collection(NOMBRE_COLECCION).doc(fecha).set(datos);
     mostrarResumen(datos);
-    showToast("Registro guardado con éxito.");
+    showToast("Registro guardado con éxito.", 'success');
   });
   
-  // --- Nuevo registro ---
   $('btnNuevo').addEventListener('click', () => {
-    if (confirm("¿Estás seguro de que quieres limpiar el formulario para un nuevo registro?")) {
+    if (confirm("¿Estás seguro? Se borrarán los datos del formulario actual.")) {
       limpiarFormulario();
     }
   });
   
-  // --- Eliminar registro ---
   $('btnEliminar').addEventListener('click', async () => {
     const fecha = $('fechaCIE').value;
-    if (!fecha) return showToast("Selecciona una fecha para eliminar.");
-    if (!confirm(`¿Estás seguro de que quieres eliminar el registro del día ${fecha}? Esta acción no se puede deshacer.`)) return;
-
+    if (!fecha) return showToast("Selecciona una fecha para eliminar.", 'warning');
+    if (!confirm(`¿ELIMINAR el registro del día ${formatoFecha(fecha)}? Esta acción no se puede deshacer.`)) return;
     await db.collection(NOMBRE_COLECCION).doc(fecha).delete();
     limpiarFormulario();
-    showToast("Registro eliminado correctamente.");
+    showToast("Registro eliminado.", 'danger');
   });
 
   // ========== RESUMEN AVANZADO Y EXPORTACIONES ==========
@@ -129,85 +131,50 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btnGenerarResumen').addEventListener('click', async () => {
     const desde = $('desdeResumen').value;
     const hasta = $('hastaResumen').value;
-    if (!desde || !hasta) return showToast("Selecciona un rango de fechas.");
-
-    const snapshot = await db.collection(NOMBRE_COLECCION).orderBy('fecha').startAt(desde).endAt(hasta).get();
+    if (!desde || !hasta) return showToast("Selecciona un rango de fechas.", 'warning');
+    const snapshot = await db.collection(NOMBRE_COLECCION).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
     resumenFiltrado = snapshot.docs.map(doc => doc.data());
+    resumenFiltrado.sort((a,b) => a.fecha.localeCompare(b.fecha)); // Ordenar por fecha
 
     const ventanaResumen = $('resumenAvanzadoVentana');
     if (resumenFiltrado.length === 0) {
-      ventanaResumen.innerHTML = "<p class='text-muted'>No hay datos en el rango seleccionado.</p>";
+      ventanaResumen.innerHTML = "<p class='text-muted mt-2'>No hay datos en el rango seleccionado.</p>";
       return;
     }
-
-    let html = `<div class='table-responsive'><table class='table table-striped'>
-      <thead><tr>
-        <th>Fecha</th><th>Nº Internos</th><th>Entradas</th><th>Salidas</th><th>Observaciones</th>
-      </tr></thead><tbody>`;
+    let html = `<div class='table-responsive mt-3'><table class='table table-striped table-hover'>
+      <thead class="table-dark"><tr><th>Fecha</th><th>Internos</th><th>Entradas</th><th>Salidas</th><th>Observaciones</th></tr></thead><tbody>`;
     resumenFiltrado.forEach(item => {
-      html += `<tr>
-        <td>${formatoFecha(item.fecha)}</td>
-        <td>${item.n_internos || 0}</td>
-        <td>${item.entradas || 0}</td>
-        <td>${item.salidas || 0}</td>
-        <td>${item.observaciones_cie || ""}</td>
-      </tr>`;
+      html += `<tr><td>${formatoFecha(item.fecha)}</td><td>${item.n_internos||0}</td><td>${item.entradas||0}</td><td>${item.salidas||0}</td><td>${item.observaciones_cie||""}</td></tr>`;
     });
     html += "</tbody></table></div>";
     ventanaResumen.innerHTML = html;
   });
 
-  // --- Exportar a PDF ---
-  $('btnExportarPDF').addEventListener('click', () => {
-    if (resumenFiltrado.length === 0) return showToast("Primero genera un resumen.");
-    let html = `<h2>Resumen CIE</h2><h4>Del ${$('desdeResumen').value} al ${$('hastaResumen').value}</h4>
-    <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
-    <thead><tr><th>Fecha</th><th>Nº Internos</th><th>Entradas</th><th>Salidas</th><th>Observaciones</th></tr></thead><tbody>`;
-    resumenFiltrado.forEach(item => {
-      html += `<tr>
-        <td>${formatoFecha(item.fecha)}</td><td>${item.n_internos||0}</td><td>${item.entradas||0}</td>
-        <td>${item.salidas||0}</td><td>${item.observaciones_cie||""}</td>
-      </tr>`;
-    });
-    html += "</tbody></table>";
-    const w = window.open("", "_blank");
-    w.document.write(`<html><head><title>Resumen CIE</title></head><body>${html}</body></html>`);
-    w.print();
-  });
-
-  // --- Exportar a CSV ---
-  $('btnExportarCSV').addEventListener('click', () => {
-    if (resumenFiltrado.length === 0) return showToast("Primero genera un resumen.");
-    let csv = "Fecha,N_Internos,Entradas,Salidas,Observaciones\n";
-    resumenFiltrado.forEach(item => {
-      csv += [
-        item.fecha, item.n_internos||0, item.entradas||0, item.salidas||0,
-        `"${(item.observaciones_cie||"").replace(/"/g, '""')}"`
-      ].join(",") + "\n";
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "resumen_cie.csv";
-    link.click();
-    URL.revokeObjectURL(link.href);
-  });
-  
-  // --- Copiar para WhatsApp ---
-  $('btnWhatsapp').addEventListener('click', () => {
-    if (resumenFiltrado.length === 0) return showToast("Primero genera un resumen.");
-    let texto = `*Resumen CIE del ${formatoFecha($('desdeResumen').value)} al ${formatoFecha($('hastaResumen').value)}*\n\n`;
-    resumenFiltrado.forEach(item => {
-      texto += `*${formatoFecha(item.fecha)}:*\n`;
-      texto += `- Internos: ${item.n_internos||0}\n`;
-      texto += `- Entradas: ${item.entradas||0}\n`;
-      texto += `- Salidas: ${item.salidas||0}\n`;
-      if(item.observaciones_cie) texto += `- Obs: ${item.observaciones_cie}\n`;
-      texto += "\n";
-    });
-    navigator.clipboard.writeText(texto)
-      .then(() => showToast("Resumen para WhatsApp copiado al portapapeles."))
-      .catch(() => showToast("Error al copiar. Es posible que tu navegador no sea compatible."));
-  });
-
+  const exportar = (tipo) => {
+    if (resumenFiltrado.length === 0) return showToast("Primero genera un resumen.", 'warning');
+    const desde = $('desdeResumen').value, hasta = $('hastaResumen').value;
+    const titulo = `<h2>Resumen CIE del ${formatoFecha(desde)} al ${formatoFecha(hasta)}</h2>`;
+    if (tipo === 'pdf') {
+        const headers = "<th>Fecha</th><th>Internos</th><th>Entradas</th><th>Salidas</th><th>Observaciones</th>";
+        const rows = resumenFiltrado.map(item => `<tr><td>${formatoFecha(item.fecha)}</td><td>${item.n_internos||0}</td><td>${item.entradas||0}</td><td>${item.salidas||0}</td><td>${item.observaciones_cie||""}</td></tr>`).join('');
+        const win = window.open();
+        win.document.write(`<html><head><title>Resumen CIE</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body><div class="container">${titulo}<table class="table table-bordered">${headers}${rows}</table></div></body></html>`);
+        setTimeout(() => win.print(), 500);
+    } else if (tipo === 'csv') {
+        let csv = "Fecha,Internos,Entradas,Salidas,Observaciones\n";
+        resumenFiltrado.forEach(r => { csv += [r.fecha, r.n_internos||0, r.entradas||0, r.salidas||0, `"${(r.observaciones_cie||"").replace(/"/g,'""')}"`].join(",") + "\n"; });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `resumen_cie_${desde}_${hasta}.csv`;
+        link.click();
+    } else if (tipo === 'whatsapp') {
+        let texto = `*Resumen CIE del ${formatoFecha(desde)} al ${formatoFecha(hasta)}*\n\n`;
+        resumenFiltrado.forEach(item => { texto += `*${formatoFecha(item.fecha)}:*\n- Internos: ${item.n_internos||0}\n- Entradas: ${item.entradas||0}\n- Salidas: ${item.salidas||0}\n${item.observaciones_cie ? `- Obs: ${item.observaciones_cie}\n` : ''}\n`; });
+        navigator.clipboard.writeText(texto).then(() => showToast('Resumen copiado para WhatsApp.', 'success'), () => showToast('Error al copiar.', 'danger'));
+    }
+  };
+  $('btnExportarPDF').addEventListener('click', () => exportar('pdf'));
+  $('btnExportarCSV').addEventListener('click', () => exportar('csv'));
+  $('btnWhatsapp').addEventListener('click', () => exportar('whatsapp'));
 });
