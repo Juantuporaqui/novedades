@@ -525,139 +525,152 @@ function parseGrupo4(html) {
 }
 
    
+* Parsea el contenido HTML de un parte del Grupo Puerto.
+ *
+ * Esta versión mejorada combina las siguientes características:
+ * 1.  **Expresiones Regulares Flexibles**: Tolera pequeñas variaciones en las cabeceras
+ * (p. ej., "CTRL.MARINOS" vs "CTRL MARINOS").
+ * 2.  **Procesamiento de Múltiples Tablas**: Acumula correctamente los datos numéricos
+ * que están distribuidos en varias tablas horizontales en el documento.
+ * 3.  **Detección Fiable de Tablas Secundarias**: Identifica tablas como "Ferrys"
+ * buscando sus columnas específicas, un método mucho más robusto.
+ *
+ * @param {string} html - El contenido HTML extraído del archivo .docx.
+ * @returns {{datos: object, fecha: string}} - Un objeto con los datos parseados y la fecha detectada.
+ */
 function parseGrupoPuerto(html) {
-  const root = document.createElement('div');
-  root.innerHTML = html;
-  const tablas = Array.from(root.querySelectorAll('table'));
-  let fecha = '';
-  let datos = {
-    ctrlMarinos: 0,
-    marinosArgos: 0,
-    cruceros: 0,
-    cruceristas: 0,
-    visadosCgef: 0,
-    visadosValencia: 0,
-    visadosExp: 0,
-    vehChequeados: 0,
-    paxChequeadas: 0,
-    detenidos: 0,
-    denegaciones: 0,
-    entrExcep: 0,
-    eixics: 0,
-    ptosDeportivos: 0,
-    ferrys: [],
-    gestiones_puerto: [],
-    observaciones: ""
-  };
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
 
-  // Cabeceras admitidas (clave en datos -> regexp para búsqueda tolerante)
-  const mapCampos = {
-    ctrlMarinos:      /^CTRL\.?\s*MARINOS?$/i,
-    marinosArgos:     /^MARINOS?\s*ARGOS$/i,
-    cruceros:         /^CRUCEROS$/i,
-    cruceristas:      /^CRUCERISTAS$/i,
-    visadosCgef:      /^VIS(AS?|ADOS?)\.?\s*CG(EF)?$/i,
-    visadosValencia:  /^VIS(AS?|ADOS?)\.?\s*VAL(ENCIA)?$/i,
-    visadosExp:       /^VIS(AS?|ADOS?)\.?\s*EXP$/i,
-    vehChequeados:    /^VEH(\.|ICULOS?)?\s*CHEQUEADOS$/i,
-    paxChequeadas:    /^(PERS(\.|ONAS)?|PASAJEROS?)\s*CHEQUEADAS$/i,
-    detenidos:        /^DETENIDOS$/i,
-    denegaciones:     /^DENEGACIONES$/i,
-    entrExcep:        /^ENTR(\.|ADA)?S?\s*EXCEP$/i,
-    eixics:           /^EIXICS$/i,
-    ptosDeportivos:   /^PT(OS?|OS\.?)\s*DEPORTIVOS$/i
-  };
+    // El objeto de datos que se irá rellenando
+    let datos = {
+        ctrlMarinos: 0,
+        marinosArgos: 0,
+        cruceros: 0,
+        cruceristas: 0,
+        visadosCgef: 0,
+        visadosValencia: 0,
+        visadosExp: 0,
+        vehChequeados: 0,
+        paxChequeadas: 0,
+        detenidos: 0,
+        denegaciones: 0,
+        entrExcep: 0,
+        eixics: 0,
+        ptosDeportivos: 0,
+        ferrys: [],
+        gestiones_puerto: [],
+        observaciones: ""
+    };
 
-  for (const tabla of tablas) {
-    const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (!rows.length) continue;
+    // Mapa de campos con expresiones regulares para una detección flexible y robusta.
+    const mapCampos = {
+        ctrlMarinos:    /^CTRL\.?\s*MARINOS?$/i,
+        marinosArgos:   /^MARINOS?\s*ARGOS$/i,
+        cruceros:       /^CRUCEROS$/i,
+        cruceristas:    /^CRUCERISTAS$/i,
+        visadosCgef:    /^VIS(AS?|ADOS?)\.?\s*CG(EF)?$/i,
+        visadosValencia: /^VIS(AS?|ADOS?)\.?\s*VAL(\.|ENCIA)?$/i,
+        visadosExp:     /^VIS(AS?|ADOS?)\.?\s*EXP$/i,
+        vehChequeados:  /^VEH(\.|ICULOS?)?\s*CHEQUEADOS$/i,
+        paxChequeadas:  /^(PERS(\.|ONAS)?|PASAJEROS?)\s*CHEQUEADAS$/i,
+        detenidos:      /^DETENIDOS$/i,
+        denegaciones:   /^DENEGACIONES$/i,
+        entrExcep:      /^ENTR(\.|ADA)?S?\s*EXCEP$/i,
+        eixics:         /^EIXICS$/i,
+        ptosDeportivos: /^PT(OS?|OS\.?)\s*DEPORTIVOS$/i
+    };
 
-    // Si es horizontal, primera fila cabecera, segunda valores
-    if (rows.length >= 2) {
-      const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
-      const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+    // Recorremos cada tabla del documento
+    for (const tabla of tablas) {
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        if (rows.length === 0) continue;
+        const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
 
-      let camposReconocidos = 0;
-      cabeceras.forEach((cab, idx) => {
-        for (const clave in mapCampos) {
-          if (mapCampos[clave].test(cab)) {
-            let val = valores[idx] !== undefined ? valores[idx].replace(",", ".") : "";
-            datos[clave] = isNaN(Number(val)) ? 0 : parseInt(val) || 0;
-            camposReconocidos++;
-            break;
-          }
+        // --- 1. PROCESAMIENTO DE DATOS NUMÉRICOS PRINCIPALES ---
+        // Esta lógica procesa cualquier tabla horizontal que contenga datos del puerto.
+        // No se detiene después de la primera, permitiendo acumular datos de varias tablas.
+        if (rows.length >= 2) {
+            const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+            cabeceras.forEach((cab, idx) => {
+                for (const clave in mapCampos) {
+                    if (mapCampos[clave].test(cab)) {
+                        const val = valores[idx] !== undefined ? valores[idx].replace(",", ".") : "";
+                        // Solo se asigna si el valor no es cero, para no sobreescribir datos ya leídos.
+                        // O si el valor actual es cero, para poder asignarlo por primera vez.
+                        if (!isNaN(Number(val)) && (parseInt(val) !== 0 || datos[clave] === 0)) {
+                           datos[clave] = parseInt(val) || 0;
+                        }
+                        break; // Pasa a la siguiente cabecera
+                    }
+                }
+            });
         }
-      });
-      // Si reconoció al menos 5, ya es tabla horizontal principal del Puerto
-      if (camposReconocidos >= 5) continue;
-    }
 
-    // Si es vertical, cada fila cabecera-valor
-    if (rows.length >= 5 && rows[0].children.length === 2) {
-      for (let i = 0; i < rows.length; i++) {
-        const celdas = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        if (celdas.length < 2) continue;
-        for (const clave in mapCampos) {
-          if (mapCampos[clave].test(celdas[0])) {
-            let val = celdas[1].replace(",", ".");
-            datos[clave] = isNaN(Number(val)) ? 0 : parseInt(val) || 0;
-            break;
-          }
+        // --- 2. DETECCIÓN FIABLE DE LA TABLA DE FERRYS ---
+        // Se busca por la combinación única de sus cabeceras, que es más seguro que buscar un título.
+        const esTablaFerrys = cabeceras.some(c => /^DESTINO$/i.test(c)) &&
+                              cabeceras.some(c => /^PASAJEROS$/i.test(c)) &&
+                              cabeceras.some(c => /^VEHICULOS$/i.test(c));
+
+        if (esTablaFerrys) {
+            for (let i = 1; i < rows.length; i++) { // Empezamos en 1 para saltar la cabecera
+                const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+                // Ignora filas completamente vacías para evitar entradas basura
+                if (ftds.every(td => td === '')) continue;
+                
+                const ferryData = {};
+                cabeceras.forEach((cab, idx) => {
+                    if (/^DESTINO$/i.test(cab)) ferryData.destino = ftds[idx] || "";
+                    if (/^HORA$/i.test(cab)) ferryData.hora = ftds[idx] || "";
+                    if (/^PASAJEROS$/i.test(cab)) ferryData.pasajeros = ftds[idx] || "";
+                    if (/^VEHICULOS$/i.test(cab)) ferryData.vehiculos = ftds[idx] || "";
+                    if (/^INCIDENCIAS$/i.test(cab)) ferryData.incidencias = ftds[idx] || "";
+                });
+                // Solo añade el ferry si tiene al menos un dato relevante
+                if (ferryData.destino || ferryData.pasajeros) {
+                    datos.ferrys.push(ferryData);
+                }
+            }
         }
-      }
+
+        // --- 3. DETECCIÓN DE OTRAS TABLAS (GESTIONES, OBSERVACIONES) ---
+        const tituloTabla = (rows[0].cells?.[0]?.textContent || "").trim();
+
+        if (/^GESTIONES PUERTO$/i.test(tituloTabla)) {
+            for (let i = 1; i < rows.length; i++) {
+                const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+                if (gtds[0]) {
+                    datos.gestiones_puerto.push({ gestion: gtds[0] });
+                }
+            }
+        }
+
+        if (/^OBSERVACIONES$/i.test(tituloTabla)) {
+            for (let i = 1; i < rows.length; i++) {
+                const txt = rows[i].cells[0]?.textContent.trim();
+                if (txt) {
+                    datos.observaciones += (datos.observaciones ? "\n" : "") + txt;
+                }
+            }
+        }
+
+        // --- 4. BÚSQUEDA DE FECHA ---
+        // Se busca en cada tabla por si acaso, pero solo se asigna una vez.
+        if (!fecha) {
+            const plainText = tabla.innerText || tabla.textContent || "";
+            const match = plainText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (match) {
+                // Formato YYYY-MM-DD
+                fecha = `${match[3]}-${match[2]}-${match[1]}`;
+            }
+        }
     }
 
-       // Ferrys
-    if (/^FERRYS$/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
-      for (let i = 1; i < rows.length; i++) {
-        const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        if (ftds.filter(Boolean).length === 0) continue; // Salta filas 100% vacías
-        if (ftds.length < 5 || !ftds[0]) continue;
-        datos.ferrys.push({
-          destino:     ftds[0] || "",
-          hora:        ftds[1] || "",
-          pasajeros:   ftds[2] || "",
-          vehiculos:   ftds[3] || "",
-          incidencias: ftds[4] || ""
-        });
-      }
-      continue;
-    }
-
-
-    // Gestiones Puerto
-    if (/GESTIONES PUERTO/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
-      for (let i = 1; i < rows.length; i++) {
-        const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        if (!gtds[0]) continue;
-        datos.gestiones_puerto.push({ gestion: gtds[0] });
-      }
-      continue;
-    }
-
-    // Observaciones: busca campo largo en tablas con 'OBSERVACIONES'
-    if (
-      rows[0].children.length === 1 &&
-      /OBSERVACIONES/i.test(rows[0].cells[0].textContent)
-    ) {
-      for (let i = 1; i < rows.length; i++) {
-        const txt = rows[i].cells[0]?.textContent.trim();
-        if (txt) datos.observaciones += (datos.observaciones ? "\n" : "") + txt;
-      }
-      continue;
-    }
-
-    // Busca fecha: DD-MM-YYYY (en cualquier tabla)
-    if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-    }
-  }
-
-  return { datos, fecha };
+    return { datos, fecha };
 }
-
 
 
 function parseGrupoCECOREX(html) {
