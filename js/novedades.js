@@ -550,58 +550,65 @@ function parseGrupoPuerto(html) {
     observaciones: ""
   };
 
-  // Definición tolerante de cabeceras
+  // Cabeceras admitidas (clave en datos -> regexp para búsqueda tolerante)
   const mapCampos = {
-    "CTRL.MARINOS":      "ctrlMarinos",
-    "CTRL MARINOS":      "ctrlMarinos",
-    "MARINOS ARGOS":     "marinosArgos",
-    "CRUCEROS":          "cruceros",
-    "CRUCERISTAS":       "cruceristas",
-    "VISAS. CG":         "visadosCgef",
-    "VISADOS CGEF":      "visadosCgef",
-    "VISAS VAL.":        "visadosValencia",
-    "VISADOS VALENCIA":  "visadosValencia",
-    "VISAS. EXP":        "visadosExp",
-    "VISADOS EXP":       "visadosExp",
-    "VEH. CHEQUEADOS":   "vehChequeados",
-    "VEHICULOS CHEQUEADOS": "vehChequeados",
-    "PERS. CHEQUEADAS":  "paxChequeadas",
-    "PASAJEROS CHEQUEADOS": "paxChequeadas",
-    "DETENIDOS":         "detenidos",
-    "DENEGACIONES":      "denegaciones",
-    "ENTR. EXCEP":       "entrExcep",
-    "ENTR EXCEP":        "entrExcep",
-    "EIXICS":            "eixics",
-    "PTOS. DEPORTIVOS":  "ptosDeportivos",
-    "PTOS DEPORTIVOS":   "ptosDeportivos"
+    ctrlMarinos:      /^CTRL\.?\s*MARINOS?$/i,
+    marinosArgos:     /^MARINOS?\s*ARGOS$/i,
+    cruceros:         /^CRUCEROS$/i,
+    cruceristas:      /^CRUCERISTAS$/i,
+    visadosCgef:      /^VIS(AS?|ADOS?)\.?\s*CG(EF)?$/i,
+    visadosValencia:  /^VIS(AS?|ADOS?)\.?\s*VAL(ENCIA)?$/i,
+    visadosExp:       /^VIS(AS?|ADOS?)\.?\s*EXP$/i,
+    vehChequeados:    /^VEH(\.|ICULOS?)?\s*CHEQUEADOS$/i,
+    paxChequeadas:    /^(PERS(\.|ONAS)?|PASAJEROS?)\s*CHEQUEADAS$/i,
+    detenidos:        /^DETENIDOS$/i,
+    denegaciones:     /^DENEGACIONES$/i,
+    entrExcep:        /^ENTR(\.|ADA)?S?\s*EXCEP$/i,
+    eixics:           /^EIXICS$/i,
+    ptosDeportivos:   /^PT(OS?|OS\.?)\s*DEPORTIVOS$/i
   };
 
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
-    if (rows.length < 2) continue;
-    const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td =>
-      td.textContent.trim().toUpperCase().replace(/\s+/g, " ").replace(/\./g, ".")
-    );
-    const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+    if (!rows.length) continue;
 
-    // Solo si es una tabla de datos PUERTO (mínimo 5 campos de los esperados)
-    let nCamposReconocidos = 0;
-    cabeceras.forEach(cab => {
-      if (mapCampos[cab]) nCamposReconocidos++;
-    });
-    if (nCamposReconocidos >= 5) {
+    // Si es horizontal, primera fila cabecera, segunda valores
+    if (rows.length >= 2) {
+      const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
+      const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+
+      let camposReconocidos = 0;
       cabeceras.forEach((cab, idx) => {
-        const clave = mapCampos[cab];
-        if (clave && typeof datos[clave] !== "undefined") {
-          const valor = valores[idx] !== undefined ? valores[idx].replace(",", ".") : "";
-          datos[clave] = isNaN(Number(valor)) ? 0 : parseInt(valor) || 0;
+        for (const clave in mapCampos) {
+          if (mapCampos[clave].test(cab)) {
+            let val = valores[idx] !== undefined ? valores[idx].replace(",", ".") : "";
+            datos[clave] = isNaN(Number(val)) ? 0 : parseInt(val) || 0;
+            camposReconocidos++;
+            break;
+          }
         }
       });
-      continue;
+      // Si reconoció al menos 5, ya es tabla horizontal principal del Puerto
+      if (camposReconocidos >= 5) continue;
     }
 
-    // FERRYS
-    if (/^FERRYS$/i.test(cabeceras[0])) {
+    // Si es vertical, cada fila cabecera-valor
+    if (rows.length >= 5 && rows[0].children.length === 2) {
+      for (let i = 0; i < rows.length; i++) {
+        const celdas = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+        if (celdas.length < 2) continue;
+        for (const clave in mapCampos) {
+          if (mapCampos[clave].test(celdas[0])) {
+            let val = celdas[1].replace(",", ".");
+            datos[clave] = isNaN(Number(val)) ? 0 : parseInt(val) || 0;
+            break;
+          }
+        }
+      }
+    }
+
+    // Ferrys
+    if (/^FERRYS$/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
       for (let i = 1; i < rows.length; i++) {
         const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
         if (ftds.length < 5 || !ftds[0]) continue;
@@ -616,8 +623,8 @@ function parseGrupoPuerto(html) {
       continue;
     }
 
-    // GESTIONES PUERTO
-    if (/GESTIONES PUERTO/i.test(cabeceras[0])) {
+    // Gestiones Puerto
+    if (/GESTIONES PUERTO/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
       for (let i = 1; i < rows.length; i++) {
         const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
         if (!gtds[0]) continue;
@@ -626,11 +633,14 @@ function parseGrupoPuerto(html) {
       continue;
     }
 
-    // OBSERVACIONES: si es texto largo, lo añade
-    if (cabeceras.some(cab => /OBSERVACIONES/i.test(cab))) {
+    // Observaciones: busca campo largo en tablas con 'OBSERVACIONES'
+    if (
+      rows[0].children.length === 1 &&
+      /OBSERVACIONES/i.test(rows[0].cells[0].textContent)
+    ) {
       for (let i = 1; i < rows.length; i++) {
-        const obs = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        if (obs[0]) datos.observaciones += (datos.observaciones ? "\n" : "") + obs[0];
+        const txt = rows[i].cells[0]?.textContent.trim();
+        if (txt) datos.observaciones += (datos.observaciones ? "\n" : "") + txt;
       }
       continue;
     }
@@ -642,8 +652,10 @@ function parseGrupoPuerto(html) {
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
+
   return { datos, fecha };
 }
+
 
 
 function parseGrupoCECOREX(html) {
