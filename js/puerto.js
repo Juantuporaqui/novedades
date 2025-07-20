@@ -121,7 +121,7 @@ function addFerry() {
 function getDocIdDia(fecha) {
   if (!fecha) return null;
   const fechaISO = new Date(fecha).toISOString().slice(0, 10);
-  return `puerto_${fechaISO}`;
+  return fechaISO; // Se ha eliminado el prefijo "puerto_"
 }
 function getDocRefDia(fecha) {
   return db.collection("grupoPuerto_registros").doc(getDocIdDia(fecha));
