@@ -607,10 +607,11 @@ function parseGrupoPuerto(html) {
       }
     }
 
-    // Ferrys
+       // Ferrys
     if (/^FERRYS$/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
       for (let i = 1; i < rows.length; i++) {
         const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+        if (ftds.filter(Boolean).length === 0) continue; // Salta filas 100% vacías
         if (ftds.length < 5 || !ftds[0]) continue;
         datos.ferrys.push({
           destino:     ftds[0] || "",
@@ -622,6 +623,7 @@ function parseGrupoPuerto(html) {
       }
       continue;
     }
+
 
     // Gestiones Puerto
     if (/GESTIONES PUERTO/i.test((rows[0].cells?.[0]?.textContent || "").trim())) {
