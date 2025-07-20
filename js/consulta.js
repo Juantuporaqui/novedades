@@ -1,5 +1,5 @@
 // js/consulta.js
-// SIREX · Consulta Global / Resúmenes (Versión Final Optimizada)
+// SIREX · Consulta Global / Resúmenes (Versión Final Corregida y Optimizada)
 
 // --- CONFIGURACIÓN FIREBASE ---
 const firebaseConfig = {
@@ -35,6 +35,7 @@ const GRUPOS_CONFIG = {
 // =================================================================================
 
 const QUERY_STRATEGIES = {
+    // Estrategia genérica para sumar campos numéricos o contar elementos de un array
     sumarCampos: async (collection, desde, hasta, fields) => {
         const snap = await db.collection(collection).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
         const totals = fields.reduce((acc, field) => ({ ...acc, [field.key]: 0 }), {});
@@ -42,12 +43,17 @@ const QUERY_STRATEGIES = {
             const data = doc.data();
             fields.forEach(field => {
                 const value = data[field.name];
-                totals[field.key] += Array.isArray(value) ? value.length : (Number(value) || 0);
+                if (Array.isArray(value)) {
+                    totals[field.key] += value.length;
+                } else {
+                    totals[field.key] += Number(value) || 0;
+                }
             });
         });
         return totals;
     },
     
+    // --- ESTRATEGIAS ESPECÍFICAS POR GRUPO ---
     getGrupo1: function(d, h) { return this.sumarCampos('grupo1_expulsiones',d,h,[{name:'detenidos_g1',key:'Detenidos'},{name:'expulsados_g1',key:'Exp. OK'},{name:'exp_frustradas_g1',key:'Exp. KO'},{name:'fletados_g1',key:'Fletados'}]); },
     getGrupo4: function(d, h) { return this.sumarCampos('grupo4_operativo',d,h,[{name:'identificados_g4',key:'Identif.'},{name:'detenidos_g4',key:'Detenidos'},{name:'colaboraciones_g4',key:'Colab.'},{name:'citadosCecorex_g4',key:'Citados CECOREX'}]); },
     getPuerto: function(d, h) { return this.sumarCampos('grupoPuerto_registros',d,h,[{name:'denegaciones',key:'Denegaciones'},{name:'cruceristas',key:'Cruceristas'},{name:'visadosExp',key:'Visados Exp.'},{name:'detenidos',key:'Detenidos'},{name:'marinosArgos',key:'Ctrl. Argos'},{name:'ptosDeportivos',key:'Ptos. Deport.'},{name:'ferrys',key:'Mov. Ferry'}]); },
@@ -80,10 +86,14 @@ form.addEventListener('submit', async function(e) {
     }
 
     try {
-        const promesas = Object.keys(GRUPOS_CONFIG).reduce((acc, key) => {
-            acc[key] = QUERY_STRATEGIES[key](desde, hasta);
-            return acc;
-        }, {});
+        const promesas = {};
+        for (const key in GRUPOS_CONFIG) {
+            // CORRECCIÓN: Construir el nombre de la función dinámicamente
+            const funcionNombre = `get${key.charAt(0).toUpperCase() + key.slice(1)}`;
+            if (typeof QUERY_STRATEGIES[funcionNombre] === 'function') {
+                promesas[key] = QUERY_STRATEGIES[funcionNombre](desde, hasta);
+            }
+        }
 
         await Promise.all(Object.values(promesas));
         const resumen = {};
@@ -106,7 +116,8 @@ form.addEventListener('submit', async function(e) {
 
 function findHechoDestacado(resumen) {
     let max = { valor: -1, texto: '', icono: '' };
-    const camposMenosRelevantes = ['Identif.', 'Cruceristas', 'Ctrl. Argos', 'Notif.', 'Mov. Ferry'];
+    // Campos a ignorar para el titular, ya que suelen tener cifras altas pero son menos "noticia"
+    const camposMenosRelevantes = ['Identif.', 'Cruceristas', 'Ctrl. Argos', 'Notif.'];
 
     for (const grupoId in resumen) {
         const config = GRUPOS_CONFIG[grupoId];
@@ -180,7 +191,6 @@ document.getElementById('btnWhatsapp').addEventListener('click', () => {
     window.open(url, '_blank');
 });
 
-// La función de PDF se mantiene por si se necesita, aunque el foco es WhatsApp
 document.getElementById('btnExportarPDF').addEventListener('click', () => {
     if (!window._ultimoResumen) return alert("Primero genera un resumen.");
     const { resumen, desde, hasta, hechoDestacado } = window._ultimoResumen;
