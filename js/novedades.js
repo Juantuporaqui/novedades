@@ -524,6 +524,7 @@ function parseGrupo4(html) {
   return { datos, fecha };
 }
 
+   
 function parseGrupoPuerto(html) {
   const root = document.createElement('div');
   root.innerHTML = html;
@@ -549,8 +550,8 @@ function parseGrupoPuerto(html) {
     observaciones: ""
   };
 
-  // Definición flexible de campos admitidos para las cabeceras
-  const camposMap = {
+  // Definición tolerante de cabeceras
+  const mapCampos = {
     "CTRL.MARINOS":      "ctrlMarinos",
     "CTRL MARINOS":      "ctrlMarinos",
     "MARINOS ARGOS":     "marinosArgos",
@@ -559,7 +560,7 @@ function parseGrupoPuerto(html) {
     "VISAS. CG":         "visadosCgef",
     "VISADOS CGEF":      "visadosCgef",
     "VISAS VAL.":        "visadosValencia",
-    "VISAS VALENCIA":    "visadosValencia",
+    "VISADOS VALENCIA":  "visadosValencia",
     "VISAS. EXP":        "visadosExp",
     "VISADOS EXP":       "visadosExp",
     "VEH. CHEQUEADOS":   "vehChequeados",
@@ -578,20 +579,20 @@ function parseGrupoPuerto(html) {
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (rows.length < 2) continue;
+    const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td =>
+      td.textContent.trim().toUpperCase().replace(/\s+/g, " ").replace(/\./g, ".")
+    );
+    const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
 
-    // Busca una tabla con cabecera horizontal reconocida
-    const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    // Si es tabla principal de Puerto:
-    if (
-      cabeceras.includes("CTRL.MARINOS") ||
-      cabeceras.includes("MARINOS ARGOS") ||
-      cabeceras.includes("CRUCEROS")
-    ) {
-      const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+    // Solo si es una tabla de datos PUERTO (mínimo 5 campos de los esperados)
+    let nCamposReconocidos = 0;
+    cabeceras.forEach(cab => {
+      if (mapCampos[cab]) nCamposReconocidos++;
+    });
+    if (nCamposReconocidos >= 5) {
       cabeceras.forEach((cab, idx) => {
-        const clave = camposMap[cab] || camposMap[cab.replace(/\s+/g, " ")] || null;
+        const clave = mapCampos[cab];
         if (clave && typeof datos[clave] !== "undefined") {
-          // Admite tanto vacío como texto numérico
           const valor = valores[idx] !== undefined ? valores[idx].replace(",", ".") : "";
           datos[clave] = isNaN(Number(valor)) ? 0 : parseInt(valor) || 0;
         }
@@ -599,7 +600,7 @@ function parseGrupoPuerto(html) {
       continue;
     }
 
-    // Tabla de Ferrys
+    // FERRYS
     if (/^FERRYS$/i.test(cabeceras[0])) {
       for (let i = 1; i < rows.length; i++) {
         const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
@@ -615,7 +616,7 @@ function parseGrupoPuerto(html) {
       continue;
     }
 
-    // Tabla de Gestiones Puerto
+    // GESTIONES PUERTO
     if (/GESTIONES PUERTO/i.test(cabeceras[0])) {
       for (let i = 1; i < rows.length; i++) {
         const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
@@ -625,7 +626,7 @@ function parseGrupoPuerto(html) {
       continue;
     }
 
-    // Tabla de observaciones (si existiera, puede estar en otra tabla o fila)
+    // OBSERVACIONES: si es texto largo, lo añade
     if (cabeceras.some(cab => /OBSERVACIONES/i.test(cab))) {
       for (let i = 1; i < rows.length; i++) {
         const obs = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
@@ -641,9 +642,9 @@ function parseGrupoPuerto(html) {
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
-
   return { datos, fecha };
 }
+
 
 function parseGrupoCECOREX(html) {
   const root = document.createElement('div'); root.innerHTML = html;
