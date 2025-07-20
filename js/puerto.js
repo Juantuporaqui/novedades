@@ -8,7 +8,7 @@ const firebaseConfig = {
   appId: "1:241698436443:web:1f333b3ae3f813b755167e",
   measurementId: "G-S2VPQNWZ21"
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
@@ -173,10 +173,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnNuevo) btnNuevo.addEventListener('click', () => {
     limpiarFormulario();
     if (panelResumen) panelResumen.style.display = 'none';
-    // No resetees la fecha, así se puede crear nuevo registro para el mismo día si lo deseas
   });
 
-  // BORRADO DE REGISTRO
   if (btnBorrarRegistro) btnBorrarRegistro.addEventListener('click', async () => {
     if (!fechaInput.value) return showToast("Selecciona una fecha para borrar.");
     if (!confirm("¿Seguro que deseas borrar el registro de este día? Esta acción no se puede deshacer.")) return;
