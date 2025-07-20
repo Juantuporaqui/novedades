@@ -1,5 +1,5 @@
 // js/consulta.js
-// SIREX · Consulta Global / Resúmenes
+// SIREX · Consulta Global / Resúmenes (Versión Final Optimizada)
 
 // --- CONFIGURACIÓN FIREBASE ---
 const firebaseConfig = {
@@ -8,333 +8,211 @@ const firebaseConfig = {
     projectId: "ucrif-5bb75",
     storageBucket: "ucrif-5bb75.appspot.com",
     messagingSenderId: "241698436443",
-    appId: "1:241698436443:web:1f333b3ae3f813b755167e",
-    measurementId: "G-S2VPQNWZ21"
+    appId: "1:241698436443:web:1f333b3ae3f813b755167e"
 };
 if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const FieldPath = firebase.firestore.FieldPath;
 
 // --- ELEMENTOS DOM ---
 const form = document.getElementById('consultaForm');
 const spinner = document.getElementById('spinner');
 const resumenVentana = document.getElementById('resumenVentana');
 const exportBtns = document.getElementById('exportBtns');
-const btnExportarPDF = document.getElementById('btnExportarPDF');
-const btnWhatsapp = document.getElementById('btnWhatsapp');
 
 // --- NOMBRES Y ETIQUETAS DE GRUPOS ---
-const GRUPOS = [
-    { id: 'grupo1', label: 'Expulsiones', icon: '🚔' },
-    { id: 'grupo2', label: 'Investigación 1', icon: '🕵️' },
-    { id: 'grupo3', label: 'Investigación 2', icon: '🕵️‍♂️' },
-    { id: 'grupo4', label: 'Operativo', icon: '🚨' },
-    { id: 'puerto', label: 'Puerto', icon: '⚓' },
-    { id: 'gestion', label: 'Gestión', icon: '📋' },
-    { id: 'cecorex', label: 'CECOREX', icon: '📡' },
-    { id: 'cie', label: 'CIE', icon: '🏢' },
-    { id: 'estadistica', label: 'Estadística', icon: '📊' }
-];
-
+const GRUPOS_CONFIG = {
+    grupo1: { label: 'Expulsiones', icon: '🚔', collection: 'grupo1_expulsiones' },
+    grupo4: { label: 'Operativo', icon: '🚨', collection: 'grupo4_operativo' },
+    puerto: { label: 'Puerto', icon: '⚓', collection: 'grupoPuerto_registros' },
+    cecorex: { label: 'CECOREX', icon: '📡', collection: 'cecorex_registros' },
+    gestion: { label: 'Gestión', icon: '📋', collection: 'gestion_registros' },
+    cie: { label: 'CIE', icon: '🏢', collection: 'cie_registros' }
+};
 
 // =================================================================================
-// ====== ARQUITECTURA DE CONSULTA REFACTORIZADA ===================================
+// ====== ARQUITECTURA DE CONSULTA Y AGREGACIÓN ===================================
 // =================================================================================
 
-const GROUP_STRATEGIES = {
-    grupo1: {
-        query: async (desde, hasta) => {
-            const snap = await db.collection("grupo1_expulsiones")
-                .where(firebase.firestore.FieldPath.documentId(), '>=', `expulsiones_${desde}`)
-                .where(firebase.firestore.FieldPath.documentId(), '<=', `expulsiones_${hasta}`)
-                .get();
-            let results = [];
-            snap.forEach(doc => {
-                const data = doc.data();
-                const fechaDia = doc.id.replace("expulsiones_", "");
-                if (data.expulsados) results.push(...data.expulsados.map(item => ({ ...item, tipo: 'expulsado', fecha: fechaDia })));
-                if (data.fletados) results.push(...data.fletados.map(item => ({ ...item, tipo: 'fletado' })));
-                if (data.conduccionesPositivas) results.push(...data.conduccionesPositivas.map(item => ({ ...item, tipo: 'conduccionPositiva', fecha: fechaDia })));
-                if (data.conduccionesNegativas) results.push(...data.conduccionesNegativas.map(item => ({ ...item, tipo: 'conduccionNegativa', fecha: fechaDia })));
-                if (data.pendientes) results.push(...data.pendientes.map(item => ({ ...item, tipo: 'pendiente' })));
+const QUERY_STRATEGIES = {
+    sumarCampos: async (collection, desde, hasta, fields) => {
+        const snap = await db.collection(collection).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
+        const totals = fields.reduce((acc, field) => ({ ...acc, [field.key]: 0 }), {});
+        snap.forEach(doc => {
+            const data = doc.data();
+            fields.forEach(field => {
+                const value = data[field.name];
+                totals[field.key] += Array.isArray(value) ? value.length : (Number(value) || 0);
             });
-            return results;
-        },
-        formatter: (item) => {
-            switch (item.tipo) {
-                case 'expulsado': return `Expulsado: <b>${item.nombre||''}</b> (${item.nacionalidad||'-'}) [Diligencias: ${item.diligencias||'-'}]`;
-                case 'fletado': return `Fletado: <b>${item.destino||''}</b> (${item.pax||0} pax) - Fecha: ${item.fecha||'-'}`;
-                case 'conduccionPositiva': return `Conducción Positiva: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
-                case 'conduccionNegativa': return `Conducción Negativa: <b>${item.numero||0}</b> - Fecha: ${item.fecha||'-'}`;
-                case 'pendiente': return `Pendiente: <b>${item.descripcion||''}</b> (Para el: ${item.fecha||'-'})`;
-                default: return JSON.stringify(item);
-            }
-        }
+        });
+        return totals;
     },
-    investigacion: {
-        query: async (desde, hasta, grupoId) => {
-            const nombreColeccion = `${grupoId}_operaciones`;
-            const operacionesSnap = await db.collection(nombreColeccion).get();
-            let results = [];
-            for (const opDoc of operacionesSnap.docs) {
-                const opData = opDoc.data();
-                const detenidosSnap = await opDoc.ref.collection("detenidos").where("fechaDetenido", ">=", desde).where("fechaDetenido", "<=", hasta).get();
-                detenidosSnap.forEach(det => results.push({ tipo: "detenido", operacion: opData.nombreOperacion || opDoc.id, ...det.data() }));
-                if (grupoId === "grupo3") {
-                    const inspeccionesSnap = await opDoc.ref.collection("inspecciones").where("fechaInspeccion", ">=", desde).where("fechaInspeccion", "<=", hasta).get();
-                    inspeccionesSnap.forEach(ins => results.push({ tipo: "inspeccion", operacion: opData.nombreOperacion || opDoc.id, ...ins.data() }));
-                }
-            }
-            return results;
-        },
-        formatter: (item) => {
-            if (item.tipo === "detenido") return `Detenido: <b>${item.nombreDetenido||''}</b> (${item.nacionalidadDetenido||'-'}) - Motivo: ${item.delitoDetenido||'-'} [Op: ${item.operacion}]`;
-            if (item.tipo === "inspeccion") return `Inspección: <b>${item.casa}</b> (${item.fechaInspeccion}) - Filiadas: ${item.numFiliadas} [${(item.nacionalidadesFiliadas||[]).join(", ")}] [Op: ${item.operacion}]`;
-            return JSON.stringify(item);
-        }
-    },
-    default: {
-        query: async (desde, hasta, grupoId) => {
-            const snap = await db.collection(grupoId).where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
-            return snap.docs.map(doc => doc.data());
-        },
-        formatter: (item) => `Fecha: ${item.fecha} - ${item.asunto || item.descripcion || 'Registro genérico'}`
-    },
-    grupo4: {
-        query: async (desde, hasta) => {
-            // La colección es 'grupo4_gestion' y el ID es 'gestion_YYYYMMDD'
-            const snap = await db.collection("grupo4_gestion").get();
-            const results = [];
-            snap.forEach(doc => {
-                let fechaStr = doc.id.replace("gestion_", "");
-                if (fechaStr.length === 8) fechaStr = `${fechaStr.slice(0,4)}-${fechaStr.slice(4,6)}-${fechaStr.slice(6,8)}`;
-                if (fechaStr >= desde && fechaStr <= hasta) {
-                    // Se añade la fecha extraída del ID al objeto de datos
-                    results.push({ fecha: fechaStr, ...doc.data() });
-                }
-            });
-            return results;
-        },
-        formatter: (item) => {
-            // CORRECCIÓN: Sumar las cantidades de los arrays internos.
-            const sumCantidad = (arr) => (arr || []).reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
-            
-            const totalDetenidos = sumCantidad(item.detenidos);
-            const totalCitados = sumCantidad(item.citados);
-            const totalColaboraciones = sumCantidad(item.colaboraciones);
-            const totalGestiones = sumCantidad(item.gestiones);
-            const totalInspecciones = sumCantidad(item.inspeccionesTrabajo) + sumCantidad(item.otrasInspecciones);
-
-            return `Fecha: ${item.fecha} - Detenidos: <b>${totalDetenidos}</b>, Citados: <b>${totalCitados}</b>, Colaboraciones: <b>${totalColaboraciones}</b>, Inspecciones: <b>${totalInspecciones}</b>`;
-        }
-    },
-    puerto: {
-        query: async (desde, hasta) => {
-            const snap = await db.collection("grupoPuerto_registros").where(firebase.firestore.FieldPath.documentId(), '>=', `puerto_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `puerto_${hasta}`).get();
-            return snap.docs.map(doc => ({ fecha: doc.id.replace("puerto_", ""), ...doc.data() }));
-        },
-        formatter: (item) => `Fecha: ${item.fecha} - Denegaciones: ${item.denegaciones||0}, Marinos/Argos: ${item.marinosArgos||0}, Cruceristas: ${item.cruceristas||0}`
-    },
-    cie: {
-        query: async (desde, hasta) => {
-            const snap = await db.collection("grupo_cie").where(firebase.firestore.FieldPath.documentId(), '>=', desde).where(firebase.firestore.FieldPath.documentId(), '<=', hasta).get();
-            return snap.docs.map(doc => ({ fecha: doc.id, ...doc.data() }));
-        },
-        formatter: (item) => {
-            const totalIngresos = (item.ingresos || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
-            const totalSalidas = (item.salidas || []).reduce((acc, curr) => acc + (curr.numero || 0), 0);
-            return `Fecha: ${item.fecha} - Total Internos: <b>${item.nInternos || 0}</b>, Ingresos: ${totalIngresos}, Salidas: ${totalSalidas}`;
-        }
-    },
-    cecorex: {
-        query: async (desde, hasta) => {
-            const snap = await db.collection("cecorex").where(firebase.firestore.FieldPath.documentId(), '>=', `cecorex_${desde}`).where(firebase.firestore.FieldPath.documentId(), '<=', `cecorex_${hasta}`).get();
-            return snap.docs.map(doc => doc.data());
-        },
-        formatter: (item) => `Fecha: ${item.fecha} - Incoacciones: ${item.incoacciones||0}, Consultas Tel: ${item.consultasTel||0}, Diligencias: ${item.diligenciasInforme||0}, CIEs Concedidos: ${item.ciesConcedidos||0}`
-    },
-    gestion: {
-        query: async (desde, hasta) => {
-            const snap = await db.collection("gestion_avanzada").where('fecha', '>=', desde).where('fecha', '<=', hasta).get();
-            return snap.docs.map(doc => doc.data());
-        },
-        formatter: (item) => {
-            const resumen = [
-                `Trámite: <b>${item.tipoTramite || 'N/A'}</b>`,
-                `Citas: ${item.citas || 0}`,
-                `Entrevistas Asilo: ${item.entrevistasAsilo || 0}`,
-                `MENAs: ${item.menas || 0}`,
-                `Oficios: ${item.oficios || 0}`
-            ];
-            return `Fecha: ${item.fecha} - ${resumen.join(', ')}`;
-        }
+    
+    getGrupo1: function(d, h) { return this.sumarCampos('grupo1_expulsiones',d,h,[{name:'detenidos_g1',key:'Detenidos'},{name:'expulsados_g1',key:'Exp. OK'},{name:'exp_frustradas_g1',key:'Exp. KO'},{name:'fletados_g1',key:'Fletados'}]); },
+    getGrupo4: function(d, h) { return this.sumarCampos('grupo4_operativo',d,h,[{name:'identificados_g4',key:'Identif.'},{name:'detenidos_g4',key:'Detenidos'},{name:'colaboraciones_g4',key:'Colab.'},{name:'citadosCecorex_g4',key:'Citados CECOREX'}]); },
+    getPuerto: function(d, h) { return this.sumarCampos('grupoPuerto_registros',d,h,[{name:'denegaciones',key:'Denegaciones'},{name:'cruceristas',key:'Cruceristas'},{name:'visadosExp',key:'Visados Exp.'},{name:'detenidos',key:'Detenidos'},{name:'marinosArgos',key:'Ctrl. Argos'},{name:'ptosDeportivos',key:'Ptos. Deport.'},{name:'ferrys',key:'Mov. Ferry'}]); },
+    getCecorex: function(d, h) { return this.sumarCampos('cecorex_registros',d,h,[{name:'detenidos_cc',key:'Detenidos'},{name:'decretos_exp',key:'Decretos Exp.'},{name:'proh_entrada',key:'Prohib. Entrada'},{name: 'dil_informe',key:'Dilig. Informe'},{name:'notificaciones',key:'Notif.'},{name:'al_abogados',key:'Asist. Letrada'}]); },
+    getGestion: function(d, h) { return this.sumarCampos('gestion_registros',d,h,[{name:'ENTRV. ASILO',key:'Entrev. Asilo'},{name:'ASILOS CONCEDIDOS',key:'Asilos OK'},{name:'ASILOS DENEGADOS',key:'Asilos KO'},{name:'CARTAS CONCEDIDAS',key:'Cartas OK'},{name:'CARTAS DENEGADAS',key:'Cartas KO'},{name:'TARJET. SUBDELEG',key:'Tarjetas Subd.'}]); },
+    async getCIE(desde, hasta) {
+        const rangeTotals = await this.sumarCampos('cie_registros', desde, hasta, [{ name: 'entradas', key: 'Entradas' }, { name: 'salidas', key: 'Salidas' }]);
+        const snapLastDay = await db.collection('cie_registros').where(FieldPath.documentId(), '<=', hasta).orderBy(FieldPath.documentId(), 'desc').limit(1).get();
+        const finalCount = snapLastDay.empty ? "N/D" : (snapLastDay.docs[0].data().n_internos || 0);
+        return { ...rangeTotals, "Internos (fin)": finalCount };
     }
 };
 
-// Asignar estrategias a los grupos correspondientes
-GROUP_STRATEGIES.grupo2 = GROUP_STRATEGIES.investigacion;
-GROUP_STRATEGIES.grupo3 = GROUP_STRATEGIES.investigacion;
-GROUP_STRATEGIES.estadistica = GROUP_STRATEGIES.default;
-
-
-// --- FUNCIÓN DE CONSULTA PRINCIPAL (AHORA MÁS LIMPIA) ---
-async function getDatosGrupo(grupo, desde, hasta) {
-    const strategy = GROUP_STRATEGIES[grupo] || GROUP_STRATEGIES.default;
-    try {
-        return await strategy.query(desde, hasta, grupo);
-    } catch (e) {
-        console.warn(`Error al consultar el grupo '${grupo}':`, e.message);
-        return [];
-    }
-}
-
-// --- FUNCIÓN DE FORMATO PRINCIPAL (AHORA MÁS LIMPIA) ---
-function formatearItem(item, grupoId) {
-    const strategy = GROUP_STRATEGIES[grupoId] || GROUP_STRATEGIES.default;
-    try {
-        return strategy.formatter(item, grupoId);
-    } catch (e) {
-        console.error(`Error al formatear item para el grupo '${grupoId}':`, e);
-        return `Error al mostrar dato: ${JSON.stringify(item)}`;
-    }
-}
-
 // =================================================================================
-// ====== SECCIÓN DE RENDERIZADO Y EXPORTACIÓN (SIN CAMBIOS) =======================
+// ====== EVENTO PRINCIPAL Y RENDERIZADO ==========================================
 // =================================================================================
 
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
     resumenVentana.innerHTML = '';
-    mostrarSpinner(true);
+    spinner.classList.remove('d-none');
     exportBtns.classList.add('d-none');
 
     const desde = form.fechaDesde.value;
     const hasta = form.fechaHasta.value;
     if (desde > hasta) {
-        mostrarError('La fecha de inicio no puede ser posterior a la de fin.');
-        mostrarSpinner(false);
+        resumenVentana.innerHTML = `<div class="alert alert-danger">La fecha de inicio no puede ser posterior a la de fin.</div>`;
+        spinner.classList.add('d-none');
         return;
     }
 
     try {
-        const gruposDatos = await Promise.all(GRUPOS.map(g => getDatosGrupo(g.id, desde, hasta)));
-        const resumen = {};
-        GRUPOS.forEach((g, idx) => {
-            resumen[g.id] = gruposDatos[idx];
-        });
+        const promesas = Object.keys(GRUPOS_CONFIG).reduce((acc, key) => {
+            acc[key] = QUERY_STRATEGIES[key](desde, hasta);
+            return acc;
+        }, {});
 
-        resumenVentana.innerHTML = renderizarResumenHTML(resumen, desde, hasta);
-        mostrarSpinner(false);
+        await Promise.all(Object.values(promesas));
+        const resumen = {};
+        for(const key in promesas) {
+            resumen[key] = await promesas[key];
+        }
+
+        const hechoDestacado = findHechoDestacado(resumen);
+        window._ultimoResumen = { resumen, desde, hasta, hechoDestacado };
+        resumenVentana.innerHTML = renderizarResumenHTML(resumen, desde, hasta, hechoDestacado);
         exportBtns.classList.remove('d-none');
-        window._ultimoResumen = { resumen, desde, hasta };
+
     } catch (err) {
         console.error("Error al generar resumen:", err);
-        mostrarError('Error al consultar los datos: ' + err.message);
-        mostrarSpinner(false);
+        resumenVentana.innerHTML = `<div class="alert alert-danger">Error al consultar los datos: ${err.message}</div>`;
+    } finally {
+        spinner.classList.add('d-none');
     }
 });
 
-function renderizarResumenHTML(resumen, desde, hasta) {
-    let html = `<h4 class="mb-3">Resumen global del <b>${desde}</b> al <b>${hasta}</b></h4>`;
-    html += `<div class="table-responsive"><table class="table table-striped align-middle">
-    <thead><tr><th>Grupo</th><th class="text-end">Eventos Registrados</th></tr></thead><tbody>`;
-    let total = 0;
-    GRUPOS.forEach(g => {
-        const cantidad = resumen[g.id].length;
-        total += cantidad;
-        html += `<tr><td>${g.icon} <b>${g.label}</b></td><td class="text-end">${cantidad}</td></tr>`;
-    });
-    html += `<tr class="table-info"><td><b>Total general</b></td><td class="text-end"><b>${total}</b></td></tr>`;
-    html += `</tbody></table></div>`;
-    html += `<details class="mt-3"><summary>Ver detalle por grupo</summary>`;
-    GRUPOS.forEach(g => {
-        if (resumen[g.id].length > 0) {
-            html += `<h6 class="mt-3">${g.icon} ${g.label}</h6><ul>`;
-            resumen[g.id].forEach((item) => {
-                html += `<li>${formatearItem(item, g.id)}</li>`;
-            });
-            html += `</ul>`;
+function findHechoDestacado(resumen) {
+    let max = { valor: -1, texto: '', icono: '' };
+    const camposMenosRelevantes = ['Identif.', 'Cruceristas', 'Ctrl. Argos', 'Notif.', 'Mov. Ferry'];
+
+    for (const grupoId in resumen) {
+        const config = GRUPOS_CONFIG[grupoId];
+        for (const [key, value] of Object.entries(resumen[grupoId])) {
+            if (typeof value === 'number' && value > max.valor && !camposMenosRelevantes.includes(key)) {
+                max = { valor: value, texto: key, icono: config.icon };
+            }
         }
-    });
-    html += `</details>`;
+    }
+    return max.valor > 0 ? max : null;
+}
+
+function renderizarResumenHTML(resumen, desde, hasta, hechoDestacado) {
+    let html = `<h4 class="mb-3">Resumen global del <b>${desde}</b> al <b>${hasta}</b></h4>`;
+    
+    if (hechoDestacado) {
+        html += `<div class="alert alert-warning text-center">
+                   <div class="fs-6 fw-bold text-uppercase">Hecho Destacado</div>
+                   <div class="fs-2 fw-bolder">${hechoDestacado.icono} ${hechoDestacado.valor}</div>
+                   <div class="fs-5">${hechoDestacado.texto}</div>
+                 </div>`;
+    }
+
+    html += `<div class="list-group">`;
+    for (const grupoId in resumen) {
+        const config = GRUPOS_CONFIG[grupoId];
+        const datosGrupo = resumen[grupoId];
+        const tieneDatos = Object.values(datosGrupo).some(val => (typeof val === 'number' && val > 0) || (val && val !== "N/D"));
+
+        if (tieneDatos) {
+            html += `<div class="list-group-item">`;
+            html += `<h5 class="mb-1">${config.icon} ${config.label}</h5>`;
+            const items = Object.entries(datosGrupo)
+                .map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('');
+            html += `<ul class="list-unstyled mb-0">${items}</ul></div>`;
+        }
+    }
+    html += `</div>`;
     return html;
 }
 
-function mostrarSpinner(mostrar) {
-    spinner.classList.toggle('d-none', !mostrar);
-}
-function mostrarError(msg) {
-    resumenVentana.innerHTML = `<div class="alert alert-danger">${msg}</div>`;
-}
+// =================================================================================
+// ====== EXPORTACIÓN A WHATSAPP Y OTROS ==========================================
+// =================================================================================
 
-btnExportarPDF.addEventListener('click', () => {
-    if (!window._ultimoResumen) return;
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    exportarPDF(resumen, desde, hasta);
-});
+document.getElementById('btnWhatsapp').addEventListener('click', () => {
+    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
+    const { resumen, desde, hasta, hechoDestacado } = window._ultimoResumen;
+    let msg = `*🇪🇸 SIREX Resumen Global*\n*Periodo:* ${desde} al ${hasta}\n`;
 
-function exportarPDF(resumen, desde, hasta) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFont('helvetica');
-    doc.setFontSize(16);
-    doc.text(`SIREX - Resumen Global`, 10, 18);
-    doc.setFontSize(12);
-    doc.text(`Periodo: ${desde} al ${hasta}`, 10, 28);
-    let y = 40;
-    GRUPOS.forEach(g => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        const cantidad = resumen[g.id].length;
-        if (cantidad > 0) {
-            doc.setFont(undefined, 'bold');
-            doc.text(`${g.icon} ${g.label} (${cantidad} eventos)`, 10, y);
-            y += 8;
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(9);
-            resumen[g.id].forEach(item => {
-                if (y > 280) { doc.addPage(); y = 20; }
-                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, "");
-                doc.text(`- ${textoItem}`, 15, y, { maxWidth: 180 });
-                y += 5;
-            });
-            y += 4;
-            doc.setFontSize(12);
+    if (hechoDestacado) {
+        msg += `\n*HECHO DESTACADO*\n${hechoDestacado.icono} *${hechoDestacado.valor}* ${hechoDestacado.texto}\n`;
+    }
+
+    for (const grupoId in resumen) {
+        const config = GRUPOS_CONFIG[grupoId];
+        const datosGrupo = resumen[grupoId];
+        const tieneDatos = Object.values(datosGrupo).some(val => (typeof val === 'number' && val > 0) || (val && val !== "N/D"));
+
+        if (tieneDatos) {
+            msg += `\n*${config.icon} ${config.label}*\n`;
+            for (const [key, value] of Object.entries(datosGrupo)) {
+                 if((typeof value === 'number' && value > 0) || (typeof value === 'string' && value !== "N/D")) {
+                    msg += `- ${key}: *${value}*\n`;
+                 }
+            }
         }
-    });
-    doc.save(`SIREX-Resumen_${desde}_a_${hasta}.pdf`);
-}
-
-btnWhatsapp.addEventListener('click', () => {
-    if (!window._ultimoResumen) return;
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    const mensaje = crearMensajeWhatsapp(resumen, desde, hasta);
-    const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+    }
+    
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
 });
 
-function crearMensajeWhatsapp(resumen, desde, hasta) {
-    let msg = `*SIREX Resumen Global*\n(del ${desde} al ${hasta})\n`;
-    let total = 0;
-    let totalesMsg = "\n*Totales por grupo:*\n";
-    GRUPOS.forEach(g => {
-        const cantidad = resumen[g.id].length;
-        total += cantidad;
-        if (cantidad > 0) {
-            totalesMsg += `${g.icon} ${g.label}: ${cantidad}\n`;
+// La función de PDF se mantiene por si se necesita, aunque el foco es WhatsApp
+document.getElementById('btnExportarPDF').addEventListener('click', () => {
+    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
+    const { resumen, desde, hasta, hechoDestacado } = window._ultimoResumen;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text(`SIREX - Resumen Global del ${desde} al ${hasta}`, 10, 10);
+    let y = 20;
+
+    if (hechoDestacado) {
+        doc.setFontSize(14);
+        doc.text(`HECHO DESTACADO: ${hechoDestacado.valor} ${hechoDestacado.texto}`, 10, y);
+        y += 10;
+    }
+
+    doc.setFontSize(10);
+    for (const grupoId in resumen) {
+        if (y > 270) { doc.addPage(); y = 10; }
+        const config = GRUPOS_CONFIG[grupoId];
+        const datosGrupo = resumen[grupoId];
+        const tieneDatos = Object.values(datosGrupo).some(val => val > 0 || (val && val !== "N/D"));
+        if(tieneDatos) {
+            doc.setFont(undefined, 'bold');
+            doc.text(`${config.icon} ${config.label}`, 10, y);
+            y += 6;
+            doc.setFont(undefined, 'normal');
+            for(const [key, value] of Object.entries(datosGrupo)){
+                if (y > 280) { doc.addPage(); y = 10; }
+                doc.text(`- ${key}: ${value}`, 15, y);
+                y += 5;
+            }
+            y += 2;
         }
-    });
-    totalesMsg += `*Total general: ${total}*\n`;
-    msg += totalesMsg;
-    let detalleMsg = "\n*Detalle:*\n";
-    GRUPOS.forEach(g => {
-        const cantidad = resumen[g.id].length;
-        if (cantidad > 0) {
-            detalleMsg += `\n*${g.icon} ${g.label}:*\n`;
-            resumen[g.id].forEach(item => {
-                const textoItem = formatearItem(item, g.id).replace(/<[^>]*>/g, "");
-                detalleMsg += `- ${textoItem}\n`;
-            });
-        }
-    });
-    return msg + detalleMsg;
-}
+    }
+    doc.save(`SIREX-Resumen_${desde}_a_${hasta}.pdf`);
+});
