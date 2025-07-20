@@ -776,40 +776,54 @@ function parseGrupoCECOREX(html) {
   return { datos, fecha };
 }
 
-// ----------- GESTIÓN -----------
+
+/* ----------- GESTIÓN (VERSIÓN CORREGIDA) ----------- */
 function parseGestion(html) {
-  const root = document.createElement('div'); root.innerHTML = html;
+  const root = document.createElement('div');
+  root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
-  let fecha = '';
   let datos = {};
+  let fecha = '';
+  let gestionEncontrada = false;
+
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-    if (header[0] === "CITAS-G" && header.length >= 5) {
-      const campos = [
-        "CITAS-G", "FALLOS", "CITAS", "ENTRV. ASILO", "FALLOS ASILO",
-        "ASILOS CONCEDIDOS", "ASILOS DENEGADOS", "CARTAS CONCEDIDAS", "CARTAS DENEGADAS",
-        "PROT. INTERNACIONAL", "CITAS SUBDELEG", "TARJET. SUBDELEG", "NOTIFICACIONES CONCEDIDAS",
-        "NOTIFICACIONES DENEGADAS", "PRESENTADOS", "CORREOS UCRANIA", "TELE. FAVO",
-        "TELE. DESFAV", "CITAS TLFN ASILO", "CITAS TLFN CARTAS", "OFICIOS"
-      ];
-      const tds = Array.from(rows[1]?.querySelectorAll('td'));
-      campos.forEach((campo, idx) => {
-        datos[campo.replace(/\./g,'').replace(/\s+/g,'_').toLowerCase()] =
-          tds && tds[idx] ? tds[idx].textContent.trim() : '';
+    const primercelda = rows[0].cells[0]?.textContent.trim().toUpperCase();
+
+    // Detecta el inicio del bloque GESTION
+    if (primercelda === 'GESTION') {
+      gestionEncontrada = true;
+      continue; // Pasa a la siguiente tabla para empezar a leer datos
+    }
+
+    // Si ya hemos encontrado GESTION, procesamos las tablas de datos
+    if (gestionEncontrada) {
+      // Si encontramos otra cabecera de grupo, paramos
+      if (['GRUPO 1', 'GRUPO 4', 'PUERTO', 'CECOREX', 'CIE'].includes(primercelda)) {
+        break;
+      }
+      
+      const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      const valores = Array.from(rows[1]?.querySelectorAll('td,th') || []).map(td => td.textContent.trim());
+
+      cabeceras.forEach((cab, idx) => {
+        if (valores[idx] && valores[idx] !== '') {
+            // Usa la cabecera del DOCX como clave, sin transformarla
+            datos[cab] = parseInt(valores[idx]) || valores[idx];
+        }
       });
+
+      // Busca la fecha en cualquiera de las tablas de gestión
       if (!fecha) {
         let plain = tabla.innerText || tabla.textContent || "";
         let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
         if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
       }
-      break;
     }
   }
   return { datos, fecha };
 }
-
 
 /* ----------- CIE ----------- */
 function parseGrupoCIE(html) {
