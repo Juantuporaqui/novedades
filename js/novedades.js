@@ -525,19 +525,7 @@ function parseGrupo4(html) {
 }
 
    
-* Parsea el contenido HTML de un parte del Grupo Puerto.
- *
- * Esta versión mejorada combina las siguientes características:
- * 1.  **Expresiones Regulares Flexibles**: Tolera pequeñas variaciones en las cabeceras
- * (p. ej., "CTRL.MARINOS" vs "CTRL MARINOS").
- * 2.  **Procesamiento de Múltiples Tablas**: Acumula correctamente los datos numéricos
- * que están distribuidos en varias tablas horizontales en el documento.
- * 3.  **Detección Fiable de Tablas Secundarias**: Identifica tablas como "Ferrys"
- * buscando sus columnas específicas, un método mucho más robusto.
- *
- * @param {string} html - El contenido HTML extraído del archivo .docx.
- * @returns {{datos: object, fecha: string}} - Un objeto con los datos parseados y la fecha detectada.
- */
+
 function parseGrupoPuerto(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
