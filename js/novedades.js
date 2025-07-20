@@ -528,70 +528,122 @@ function parseGrupoPuerto(html) {
   const root = document.createElement('div'); root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
-  let datos = {};
+  let datos = {
+    ctrlMarinos: 0,
+    marinosArgos: 0,
+    cruceros: 0,
+    cruceristas: 0,
+    visadosCgef: 0,
+    visadosValencia: 0,
+    visadosExp: 0,
+    vehChequeados: 0,
+    paxChequeadas: 0,
+    detenidos: 0,
+    denegaciones: 0,
+    entrExcep: 0,
+    eixics: 0,
+    ptosDeportivos: 0,
+    ferrys: [],
+    gestiones_puerto: [],
+    observaciones: ""
+  };
+
+  // Diccionario de mapeo flexible encabezado → key
+  const cabeceraMap = {
+    "CTRL.MARINOS": "ctrlMarinos",
+    "MARINOS ARGOS": "marinosArgos",
+    "CRUCEROS": "cruceros",
+    "CRUCERISTAS": "cruceristas",
+    "VISAS. CG": "visadosCgef",
+    "VISAS VAL.": "visadosValencia",
+    "VISAS. EXP": "visadosExp",
+    "VEH. CHEQUEADOS": "vehChequeados",
+    "PERS. CHEQUEADAS": "paxChequeadas",
+    "DETENIDOS": "detenidos",
+    "DENEGACIONES": "denegaciones",
+    "ENTR. EXCEP": "entrExcep",
+    "EIXICS": "eixics",
+    "PTOS. DEPORTIVOS": "ptosDeportivos"
+  };
 
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // Tabla principal de Puerto
-    if (header.includes("CTRL.MARINOS") && header.includes("CRUCERISTAS")) {
-      const campos = [
-        "CTRL.MARINOS", "MARINOS ARGOS", "CRUCEROS", "CRUCERISTAS",
-        "VISAS. CG", "VISAS VAL.", "VISAS. EXP", "VEH. CHEQUEADOS",
-        "PERS. CHEQUEADAS", "DETENIDOS", "DENEGACIONES", "ENTR. EXCEP",
-        "EIXICS", "PTOS. DEPORTIVOS"
-      ];
-      const values = Array.from(rows[1]?.querySelectorAll('td')).map(td => td.textContent.trim());
-      campos.forEach((campo, idx) => {
-        const key = campo.toLowerCase().replace(/[\.\s]/g,'_').replace('visas_cg', 'visadosCgef').replace('visas_val', 'visadosValencia').replace('visas_exp', 'visadosExp')
-                        .replace('veh_chequeados','vehChequeados').replace('pers_chequeadas','paxChequeadas')
-                        .replace('detenidos','detenidos').replace('denegaciones','denegaciones')
-                        .replace('entr_excep','entrExcep').replace('eixics','eixics').replace('ptos_deportivos','ptosDeportivos')
-                        .replace('ctrl_marinos','ctrlMarinos').replace('marinos_argos','marinosArgos')
-                        .replace('cruceros','cruceros').replace('cruceristas','cruceristas');
-        datos[key] = values[idx] || '';
+    // ----------- TABLA PRINCIPAL PUERTO -----------
+    let headerIdx = -1, header = [];
+    for (let i = 0; i < rows.length; i++) {
+      const cells = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      // Detecta fila cabecera con al menos dos claves típicas (cruceristas y marinos)
+      const hits = ["CTRL.MARINOS","CRUCERISTAS","VISAS. CG","DETENIDOS"].filter(h => cells.includes(h));
+      if (hits.length >= 2) {
+        header = cells;
+        headerIdx = i;
+        break;
+      }
+    }
+    if (headerIdx !== -1) {
+      // Siguiente fila de datos
+      let values = [];
+      for (let j = headerIdx + 1; j < rows.length; j++) {
+        const tds = Array.from(rows[j].querySelectorAll('td')).map(td => td.textContent.trim());
+        if (tds.length && tds.some(x => x.length > 0)) {
+          values = tds;
+          break;
+        }
+      }
+      // Mapear valores por posición
+      header.forEach((campo, idx) => {
+        if (cabeceraMap[campo]) {
+          const key = cabeceraMap[campo];
+          let val = values[idx] || "0";
+          datos[key] = /^\d+$/.test(val) ? parseInt(val) : (val || "0");
+        }
       });
     }
 
-    // Tabla FERRYS
-    if (/FERRYS?/i.test(header[0])) {
+    // ----------- TABLA FERRYS -----------
+    if (/FERRYS?/i.test((rows[0]?.cells[0]?.textContent || ""))) {
       datos.ferrys = [];
       for(let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length<6) continue;
+        if (tds.length<5) continue;
+        if (!tds[0].textContent.trim()) continue;
         datos.ferrys.push({
           destino:     tds[0].textContent.trim(),
           hora:        tds[1].textContent.trim(),
-          pasajeros:   tds[2].textContent.trim(),
-          vehiculos:   tds[3].textContent.trim(),
+          pasajeros:   parseInt(tds[2].textContent.trim()) || 0,
+          vehiculos:   parseInt(tds[3].textContent.trim()) || 0,
           incidencias: tds[4].textContent.trim()
         });
       }
     }
 
-    // Tabla GESTIONES PUERTO
-    if (/GESTIONES PUERTO/i.test(header[0])) {
+    // ----------- TABLA GESTIONES PUERTO -----------
+    if (/GESTIONES PUERTO/i.test((rows[0]?.cells[0]?.textContent || ""))) {
       datos.gestiones_puerto = [];
       for(let i=1; i<rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length) continue;
+        if (!tds[0].textContent.trim()) continue;
         datos.gestiones_puerto.push({
           gestion: tds[0].textContent.trim()
         });
       }
     }
 
-    // Busca fecha: DD-MM-AAAA (en tabla)
+    // ----------- FECHA EN CUALQUIER TABLA -----------
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
+
+  // Asegura que SIEMPRE devuelve estructura completa (nunca objeto vacío)
   return { datos, fecha };
 }
+
 
 function parseGrupoCECOREX(html) {
   const root = document.createElement('div'); root.innerHTML = html;
