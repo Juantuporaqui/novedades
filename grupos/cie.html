@@ -4,125 +4,139 @@
   <meta charset="UTF-8">
   <title>SIREX · Grupo CIE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../css/cie.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/grupo1.css">
   <link rel="icon" type="image/png" href="../img/logo_cnp.png">
+  <style>
+    /* Estilos para modo oscuro (reutilizados de grupo1.html) */
+    body.dark-mode { background: #17233a !important; color: #f8fafc !important; }
+    body.dark-mode .card, body.dark-mode .bg-police-light { background: #222e49 !important; color: #fff !important; }
+    body.dark-mode .navbar, body.dark-mode .footer.bg-police-blue { background: #151e34 !important; }
+    body.dark-mode label, body.dark-mode .text-police-blue, body.dark-mode .navbar-brand { color: #ffd94a !important; }
+    body.dark-mode .form-control { background: #212b48 !important; color: #fff !important; border-color: #ffd94a !important; }
+    body.dark-mode .btn { filter: brightness(1.1); }
+    .ayuda-btn { border: none; background: #ffd94a; color: #24385d; border-radius: 50%; width: 1.9em; height: 1.9em; font-weight: bold; margin-left: 6px; cursor: pointer; }
+    .modo-oscuro-btn { border: none; background: transparent; color: #ffd94a; font-size: 1.5em; margin-left: 10px; cursor: pointer; }
+  </style>
 </head>
-<body class="bg-cie">
-  <header class="cie-header">
-    <div class="cie-logo-title">
-      <span class="cie-logo" style="font-size:48px; display:inline-block;">🏢</span>
-      <div class="cie-title">
-        <span class="title-main">GRUPO CIE</span>
-        <span class="title-desc">Centro de Internamiento - Control de Internos</span>
+<body class="bg-police">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-3">
+    <div class="container">
+      <img src="../img/logo_cnp.png" alt="CNP" width="42" height="42" class="me-2 d-none d-md-block">
+      <span class="navbar-brand fs-3 fw-bold">SIREX · Grupo CIE</span>
+      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo oscuro"><i class="bi bi-moon-stars"></i></button>
+      <a href="../index.html" class="btn btn-outline-light ms-auto"><i class="bi bi-house-door"></i> Menú principal</a>
+    </div>
+  </nav>
+
+  <div class="container mb-3">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow p-3 bg-police-dark text-white border-0">
+          <form id="formCIE" autocomplete="off">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-sm-4 mb-2 mb-sm-0">
+                <label for="fechaCIE" class="form-label fw-bold mb-1">Fecha de trabajo</label>
+                <input type="date" id="fechaCIE" class="form-control form-control-lg" required>
+              </div>
+              <div class="col-6 col-sm-2">
+                <button id="btnCargar" class="btn btn-primary w-100 btn-lg" type="button"><i class="bi bi-upload"></i> Cargar</button>
+              </div>
+              <div class="col-6 col-sm-2">
+                <button id="btnGuardar" class="btn btn-success w-100 btn-lg" type="submit"><i class="bi bi-save"></i> Grabar</button>
+              </div>
+              <div class="col-6 col-sm-2">
+                <button id="btnEliminar" class="btn btn-danger w-100 btn-lg" type="button"><i class="bi bi-trash"></i> Borrar</button>
+              </div>
+              <div class="col-6 col-sm-2">
+                <button id="btnNuevo" class="btn btn-secondary w-100 btn-lg" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-    <div class="header-actions" style="margin-left:auto; display:flex; align-items:center; gap:10px;">
-      <button class="btn-menu" onclick="window.location.href='../index.html'" title="Volver al menú principal">🏠</button>
-      <button id="darkModeBtn" class="modo-oscuro-btn" title="Modo día/noche">🌙</button>
+  </div>
+
+  <div class="container mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-lg p-4">
+          <h2 class="mb-4 text-police-blue"><i class="bi bi-building"></i> Gestión de Internos (CIE)</h2>
+          
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="n_internos" class="form-label fw-bold">Nº de Internos</label>
+              <input type="number" id="n_internos" class="form-control" placeholder="Total de internos" min="0">
+            </div>
+            <div class="col-md-4">
+              <label for="entradas" class="form-label fw-bold">Entradas</label>
+              <input type="number" id="entradas" class="form-control" placeholder="Nuevos ingresos" min="0">
+            </div>
+            <div class="col-md-4">
+              <label for="salidas" class="form-label fw-bold">Salidas</label>
+              <input type="number" id="salidas" class="form-control" placeholder="Salidas del centro" min="0">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="observaciones_cie" class="form-label fw-bold">Observaciones e Incidencias</label>
+            <textarea id="observaciones_cie" class="form-control" rows="3" placeholder="Anota aquí cualquier observación o incidencia relevante del día..."></textarea>
+          </div>
+
+          <div id="panelResumenCIE" class="bg-light p-3 rounded mt-4" style="display:none;">
+            <h4 class="mb-3">Resumen del Día</h4>
+            <div id="resumenCIE"></div>
+          </div>
+          
+          <div class="bg-police-light rounded-3 p-4 mt-5">
+            <h4 class="mb-3"><i class="bi bi-clipboard-data"></i> Generar resumen avanzado</h4>
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-5">
+                <label for="desdeResumen" class="form-label">Desde</label>
+                <input type="date" id="desdeResumen" class="form-control">
+              </div>
+              <div class="col-12 col-md-5">
+                <label for="hastaResumen" class="form-label">Hasta</label>
+                <input type="date" id="hastaResumen" class="form-control">
+              </div>
+              <div class="col-12 col-md-2 d-grid">
+                <button id="btnGenerarResumen" class="btn btn-police-blue w-100" type="button">
+                  <i class="bi bi-file-earmark-bar-graph"></i> Resumen
+                </button>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <button id="btnExportarPDF" class="btn btn-police-yellow" type="button"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button>
+              <button id="btnExportarCSV" class="btn btn-police-green" type="button"><i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV</button>
+              <button id="btnWhatsapp" class="btn btn-police-blue" type="button"><i class="bi bi-whatsapp"></i> WhatsApp</button>
+            </div>
+            <div id="resumenAvanzadoVentana" class="mt-4"></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <main class="main-container">
-    <form id="formCIE" autocomplete="off">
-      <section class="panel panel-glass">
-        <!-- Fecha y acciones -->
-        <div class="row-cols fecha-row flex-wrap-row">
-          <label for="fechaCIE">Fecha</label>
-          <input type="date" id="fechaCIE" required class="form-control input-date">
-          <div class="top-actions-bar-header">
-            <button type="button" class="btn-cargar" id="btnCargar" title="Cargar registro">📂 Cargar</button>
-            <button type="button" class="btn-nuevo" id="btnNuevo" title="Nuevo registro">🆕 Nuevo</button>
-            <button type="submit" class="btn-guardar" id="btnGuardarRegistro" title="Guardar">💾 Guardar</button>
-          </div>
-        </div>
-        <!-- Número de internos total -->
-        <div class="row-cols">
-          <label for="nInternos">Nº de internos total</label>
-          <input type="number" min="0" id="nInternos" required placeholder="Total internos" class="form-control">
-        </div>
-        <!-- Desglose por nacionalidades -->
-        <div class="subseccion">
-          <label>Internos por nacionalidad</label>
-          <div class="input-row-multi responsive-input-row">
-            <input type="text" id="nacionalidadInterno" placeholder="Nacionalidad" maxlength="30" class="form-control">
-            <input type="number" min="0" id="numInternosNac" placeholder="Número" class="form-control">
-            <button type="button" class="btn-add" id="btnAddInternoNac">Añadir</button>
-          </div>
-          <div class="ventana-datos" id="ventanaInternosNac"></div>
-        </div>
-        <!-- Ingresos -->
-        <div class="subseccion">
-          <label>Ingresos</label>
-          <div class="input-row-multi responsive-input-row">
-            <input type="text" id="nacionalidadIngreso" placeholder="Nacionalidad" maxlength="30" class="form-control">
-            <input type="number" min="0" id="numIngresos" placeholder="Número" class="form-control">
-            <button type="button" class="btn-add" id="btnAddIngreso">Añadir</button>
-          </div>
-          <div class="ventana-datos" id="ventanaIngresos"></div>
-        </div>
-        <!-- Salidas -->
-        <div class="subseccion">
-          <label>Salidas</label>
-          <div class="input-row-multi responsive-input-row">
-            <input type="text" id="destinoSalida" placeholder="Destino" maxlength="30" class="form-control">
-            <input type="number" min="0" id="numSalidas" placeholder="Número" class="form-control">
-            <button type="button" class="btn-add" id="btnAddSalida">Añadir</button>
-          </div>
-          <div class="ventana-datos" id="ventanaSalidas"></div>
-        </div>
-        <!-- Observaciones/Incidentes -->
-        <div class="subseccion">
-          <label for="observaciones">Observaciones e incidencias</label>
-          <textarea id="observaciones" class="form-control" placeholder="Observaciones, incidencias..."></textarea>
-        </div>
-      </section>
-    </form>
-
-    <!-- RESUMEN DEL DÍA -->
-    <section class="panel panel-glass mt-4" id="panelResumenCIE" style="display:none;">
-      <h3>Resumen del día</h3>
-      <div id="resumenCIE"></div>
-    </section>
-
-    <!-- RESUMEN AVANZADO / EXPORTACIÓN -->
-    <section class="panel panel-glass mt-4" id="panelResumenAvanzado">
-      <h3>Resumen avanzado
-        <button class="ayuda-btn" type="button" title="Resumen y exportación" onclick="alert('Puedes generar un resumen por rango de fechas y exportar los datos en PDF, CSV o copiar para WhatsApp.')">?</button>
-      </h3>
-      <div class="row-cols mb-2 resumen-fechas-row flex-wrap-row">
-        <label for="desdeResumen">Desde</label>
-        <input type="date" id="desdeResumen" class="form-control input-date">
-        <label for="hastaResumen">Hasta</label>
-        <input type="date" id="hastaResumen" class="form-control input-date">
-        <button id="btnGenerarResumen" class="btn btn-guardar" type="button" title="Generar resumen" style="height:38px; margin-left:.5em;">📋 Resumen</button>
-      </div>
-      <div class="export-btns resumen-btns-grid">
-        <button id="btnExportarPDF" class="btn btn-pdf" type="button" title="Exportar PDF">📄 PDF</button>
-        <button id="btnExportarCSV" class="btn btn-guardar" type="button" title="Exportar CSV">📊 CSV</button>
-        <button id="btnWhatsapp" class="btn btn-menu" type="button" title="Compartir WhatsApp">💬 WA</button>
-      </div>
-      <div id="resumenAvanzadoVentana" class="ventana-datos mt-3"></div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    SIREX · UCRIF · Grupo CIE &copy; 2025
+  <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
+    <small>&copy; 2025 UCRIF · Benito · Grupo CIE | Plataforma policial</small>
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore-compat.js"></script>
   <script src="../js/cie.js"></script>
   <script>
+    // MODO OSCURO
     const darkBtn = document.getElementById("darkModeBtn");
     if (darkBtn) {
-      darkBtn.onclick = function () {
+      darkBtn.onclick = function() {
         document.body.classList.toggle("dark-mode");
         localStorage.setItem("sirex_darkmode", document.body.classList.contains("dark-mode") ? "1" : "0");
-        darkBtn.innerText = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
       };
       if (localStorage.getItem("sirex_darkmode") === "1") {
         document.body.classList.add("dark-mode");
-        darkBtn.innerText = "☀️";
       }
     }
   </script>
