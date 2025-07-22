@@ -417,10 +417,17 @@ if ([GROUP2, GROUP3].includes(grupo)) {
 
 /* ----------- GRUPO 1 ----------- */
 function parseGrupo1(html) {
-  const root  = document.createElement('div'); root.innerHTML = html;
+  const root = document.createElement('div');
+  root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
-  let datos = {};
+  let datos = {
+    detenidos_g1: [],
+    expulsados_g1: [],
+    exp_frustradas_g1: [],
+    fletados_g1: [],
+    pendientes_g1: []
+  };
 
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
@@ -435,16 +442,15 @@ function parseGrupo1(html) {
       header[3] === "DILIGENCIAS-DG1" &&
       header[4] === "OBSERVACIONES-DG1"
     ) {
-      datos["detenidos_g1"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 5) continue;
-        datos["detenidos_g1"].push({
-          detenidos_g1:      tds[0].textContent.trim(),
-          motivo_g1:         tds[1].textContent.trim(),
-          nacionalidad_g1:   tds[2].textContent.trim(),
-          diligencias_g1:    tds[3].textContent.trim(),
-          observaciones_g1:  tds[4].textContent.trim()
+        datos.detenidos_g1.push({
+          detenidos_g1: tds[0].textContent.trim(),
+          motivo_g1: tds[1].textContent.trim(),
+          nacionalidad_g1: tds[2].textContent.trim(),
+          diligencias_g1: tds[3].textContent.trim(),
+          observaciones_g1: tds[4].textContent.trim()
         });
       }
     }
@@ -458,17 +464,16 @@ function parseGrupo1(html) {
       header[4] === "CONDUC. NEG" &&
       header[5] === "OBSERVACIONES-EG1"
     ) {
-      datos["expulsados_g1"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 6) continue;
-        datos["expulsados_g1"].push({
-          expulsados_g1:      tds[0].textContent.trim(),
-          nacionalidad_eg1:   tds[1].textContent.trim(),
-          diligencias_eg1:    tds[2].textContent.trim(),
-          conduc_pos_eg1:     tds[3].textContent.trim(),
-          conduc_neg_eg1:     tds[4].textContent.trim(),
-          observaciones_eg1:  tds[5].textContent.trim()
+        datos.expulsados_g1.push({
+          expulsados_g1: tds[0].textContent.trim(),
+          nacionalidad_eg1: tds[1].textContent.trim(),
+          diligencias_eg1: tds[2].textContent.trim(),
+          conduc_pos_eg1: tds[3].textContent.trim(),
+          conduc_neg_eg1: tds[4].textContent.trim(),
+          observaciones_eg1: tds[5].textContent.trim()
         });
       }
     }
@@ -480,15 +485,14 @@ function parseGrupo1(html) {
       header[2] === "DILIGENCIAS-FG1" &&
       header[3] === "MOTIVO-FG1"
     ) {
-      datos["exp_frustradas_g1"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 4) continue;
-        datos["exp_frustradas_g1"].push({
-          exp_frustradas_g1:  tds[0].textContent.trim(),
-          nacionalidad_fg1:   tds[1].textContent.trim(),
-          diligencias_fg1:    tds[2].textContent.trim(),
-          motivo_fg1:         tds[3].textContent.trim()
+        datos.exp_frustradas_g1.push({
+          exp_frustradas_g1: tds[0].textContent.trim(),
+          nacionalidad_fg1: tds[1].textContent.trim(),
+          diligencias_fg1: tds[2].textContent.trim(),
+          motivo_fg1: tds[3].textContent.trim()
         });
       }
     }
@@ -500,20 +504,30 @@ function parseGrupo1(html) {
       header[2] === "Nº PAX" &&
       header[3] === "OBSERVACIONES-FLG1"
     ) {
-      datos["fletados_g1"] = [];
-      for (let i=1; i<rows.length; i++) {
+      for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 4) continue;
-        datos["fletados_g1"].push({
-          fletados_g1:         tds[0].textContent.trim(),
-          destino_flg1:        tds[1].textContent.trim(),
-          pax_flg1:            tds[2].textContent.trim(),
-          observaciones_flg1:  tds[3].textContent.trim()
+        datos.fletados_g1.push({
+          fletados_g1: tds[0].textContent.trim(),
+          destino_flg1: tds[1].textContent.trim(),
+          pax_flg1: tds[2].textContent.trim(),
+          observaciones_flg1: tds[3].textContent.trim()
         });
       }
     }
 
-    // Busca fecha: DD-MM-AAAA (en cabecera de parte)
+    // GESTIONES → PENDIENTES_G1
+    if (header[0] === "GESTIONES") {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length || !tds[0].textContent.trim()) continue;
+        datos.pendientes_g1.push({
+          descripcion: tds[0].textContent.trim()
+        });
+      }
+    }
+
+    // FECHA: busca en cualquier tabla
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
