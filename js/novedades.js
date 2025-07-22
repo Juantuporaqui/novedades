@@ -1063,28 +1063,7 @@ function parseGrupo3(html) {
   return { datos, fecha };
 }
 
-    // ========== ACTUACIONES (GESTIONES/CRONOLOGÍA) ==========
-    if (
-      header[0] === "ACTUACION G3"
-    ) {
-      for (let i = 1; i < rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length || !tds[0].textContent.trim()) continue;
-        datos.actuaciones.push({
-          descripcion: tds[0].textContent.trim()
-        });
-      }
-    }
-
-    // ========== FECHA (igual que en otros grupos) ==========
-    if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-    }
-  }
-  return { datos, fecha };
-}
+    
 
 /* ===========================  VALIDACIÓN  ================================ */
 function validarDatos(data, grupo, fecha) {
