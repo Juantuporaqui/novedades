@@ -357,32 +357,7 @@ if ([GROUP2, GROUP3].includes(grupo)) {
     }
   }
 
-  // --- Guardar actuaciones en cronología ---
-  if (Array.isArray(datosDelGrupo.actuaciones)) {
-    for (const act of datosDelGrupo.actuaciones) {
-      const nombreOperacion = normalizarOperacion(
-        act.nombreOperacion ||
-        act.nombre_operacion ||
-        act.operacion ||
-        act.OPERACION ||
-        act.operación ||
-        ""
-      );
-      if (nombreOperacion && nombreOperacion.length > 2 && act.descripcion) {
-        await db
-          .collection(coleccionOp)
-          .doc(nombreOperacion)
-          .collection("cronologia")
-          .add({
-            descripcionCronologia: act.descripcion,
-            fecha: fechaFinal,
-            ts: new Date().toISOString()
-          });
-      }
-    }
-  }
-}
-
+ 
 
     } catch (err) {
       errores.push(`Error al guardar ${grupo}: ${err.message}`);
