@@ -104,6 +104,17 @@ const showFechaEditable = iso=>{
       fechaDetectadaBadge.className   = "badge bg-secondary";
     }
 };
+
+   function normalizarOperacion(nombre) {
+  if (!nombre) return "";
+  return nombre
+    .toUpperCase()                     // Mayúsculas
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+    .replace(/^[A-Z]\.\s*/, "")         // Quitar "A." o "O." al inicio
+    .replace(/\s+/g, " ")               // Un solo espacio
+    .trim();                            // Quitar espacios extremos
+}
+
 const obtenerFechaFormateada = ()=> fechaManualInput.value || "";
 
    function onCancel() {
@@ -284,13 +295,15 @@ async function onConfirmSave() {
         ];
         for (const reg of registros) {
           // Busca el nombre de operación en los posibles campos
-          const nombreOperacion =
-            reg.nombreOperacion ||
-            reg.nombre_operacion ||
-            reg.operacion ||
-            reg.OPERACION ||
-            reg.operación ||
-            ""; // Añade aquí variantes si tienes otras
+         const nombreOperacion = normalizarOperacion(
+  reg.nombreOperacion ||
+  reg.nombre_operacion ||
+  reg.operacion ||
+  reg.OPERACION ||
+  reg.operación ||
+  ""
+);
+ // Añade aquí variantes si tienes otras
 
           if (nombreOperacion && nombreOperacion.length > 2) {
             // Guardado bajo grupo2_operaciones o grupo3_operaciones
