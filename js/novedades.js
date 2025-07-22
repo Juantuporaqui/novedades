@@ -18,6 +18,41 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ======= INICIALIZACIÓN FIREBASE (ya lo tienes arriba) =======
+// ...firebase.initializeApp(firebaseConfig), db, storage...
+
+// ==== SINCRONIZAR ACTUACIONES CON CRONOLOGÍA DE OPERACIONES ====
+// ============ SINCRONIZAR ACTUACIONES CON CRONOLOGÍA (Grupo 2 y Grupo 3) ===========
+async function añadirActuacionesACronologia(grupo, actuaciones, fechaParte) {
+  if (!Array.isArray(actuaciones) || !actuaciones.length) return;
+
+  // Determinar colección según grupo
+  const coleccion = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+  for (const actuacion of actuaciones) {
+    const nombreOperacion = normalizarOperacion(
+      actuacion.operacion ||
+      actuacion.operacion_d ||
+      actuacion.nombreOperacion ||
+      ""
+    );
+    if (!nombreOperacion) continue;
+
+    const opRef = db.collection(coleccion).doc(nombreOperacion);
+    const doc = await opRef.get();
+    if (!doc.exists) {
+      console.warn(`No existe operación "${nombreOperacion}", no se añaden actuaciones.`);
+      continue;
+    }
+    // Crea un nuevo evento en cronología (no sobrescribe)
+    await opRef.collection("cronologia").add({
+      descripcionCronologia: actuacion.descripcion || "",
+      fecha: fechaParte,
+      ts: new Date().toISOString()
+    });
+  }
+}
+
+   
 /* =============================  CONSTANTES  =============================== */
 const GROUP1       = "grupo1_expulsiones";
 const GROUP4       = "grupo4_operativo";
@@ -236,36 +271,7 @@ async function onConfirmSave() {
   const errores = [];
   const exitos = [];
 
-   async function guardarActuacionesEnCronologia(grupo, actuaciones, fechaFinal) {
-  if (!Array.isArray(actuaciones) || !actuaciones.length) return;
-
-  for (const actuacion of actuaciones) {
-    const nombreOperacion = normalizarOperacion(
-      actuacion.operacion || actuacion.operacion_d || ""
-    );
-    if (!nombreOperacion) continue;
-
-    try {
-      const coleccion = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
-      const ref = db
-        .collection(coleccion)
-        .doc(nombreOperacion)
-        .collection("cronologia")
-        .doc(fechaFinal);
-
-      await ref.set({
-        descripcion: actuacion.descripcion,
-        fecha: fechaFinal
-      }, { merge: true });
-
-      console.log(`Actuación guardada en ${coleccion}/${nombreOperacion}/cronologia`);
-    } catch (error) {
-      console.error(`Error guardando actuación en cronología: ${error.message}`);
-    }
-  }
-}
-
-
+  
   // --- Función para transformar gestión ---
   function transformarDatosGestion(datosOriginales) {
     return {
@@ -316,23 +322,11 @@ async function onConfirmSave() {
       exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
 
        // --- Añadir actuaciones a cronología si es Grupo 2 ---
-if (grupo === GROUP2 && datosDelGrupo.actuaciones.length) {
-  await añadirActuacionesAG2Cronologia(
-    datosDelGrupo.actuaciones[0]?.operacion || "",
-    datosDelGrupo.actuaciones,
-    fechaFinal
-  );
+// --- Añadir actuaciones a cronología si es Grupo 2 o Grupo 3 ---
+if ([GROUP2, GROUP3].includes(grupo) && Array.isArray(datosDelGrupo.actuaciones) && datosDelGrupo.actuaciones.length) {
+  await añadirActuacionesACronologia(grupo, datosDelGrupo.actuaciones, fechaFinal);
 }
-
-       // --- Añadir actuaciones a cronología si es Grupo 3 ---
-if (grupo === GROUP3 && datosDelGrupo.actuaciones.length) {
-  await añadirActuacionesAG3Cronologia(
-    datosDelGrupo.actuaciones[0]?.operacion || "",
-    datosDelGrupo.actuaciones,
-    fechaFinal
-  );
-}
-       
+  
       // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
       // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
 if ([GROUP2, GROUP3].includes(grupo)) {
@@ -1227,34 +1221,6 @@ function validarDatosPorTodos(datosPorGrupo, fecha) {
   return errores;
 }
 
-async function guardarActuacionesEnCronologia(grupo, actuaciones, fechaFinal) {
-  if (!Array.isArray(actuaciones) || !actuaciones.length) return;
-
-  for (const actuacion of actuaciones) {
-    const nombreOperacion = normalizarOperacion(
-      actuacion.operacion || actuacion.operacion_d || ""
-    );
-    if (!nombreOperacion) continue;
-
-    try {
-      const coleccion = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
-      const ref = db
-        .collection(coleccion)
-        .doc(nombreOperacion)
-        .collection("cronologia")
-        .doc(fechaFinal);
-
-      await ref.set({
-        descripcion: actuacion.descripcion,
-        fecha: fechaFinal
-      }, { merge: true });
-
-      console.log(`Actuación guardada en ${coleccion}/${nombreOperacion}/cronologia`);
-    } catch (error) {
-      console.error(`Error guardando actuación en cronología: ${error.message}`);
-    }
-  }
-}
 
 function normalizarOperacion(nombre) {
   if (!nombre) return "";
