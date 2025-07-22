@@ -327,8 +327,7 @@ if ([GROUP2, GROUP3].includes(grupo) && Array.isArray(datosDelGrupo.actuaciones)
   await añadirActuacionesACronologia(grupo, datosDelGrupo.actuaciones, fechaFinal);
 }
   
-      // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
-      // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
+          // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
 if ([GROUP2, GROUP3].includes(grupo)) {
   const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
 
