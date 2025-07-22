@@ -221,41 +221,40 @@ async function onConfirmSave() {
     [GROUPCIE]:    "cie_registros",
     [GROUP2]:      "grupo2_registros",
     [GROUP3]:      "grupo3_registros",
-
   };
   const errores = [];
   const exitos = [];
 
   // --- Función para transformar gestión ---
-  
-function transformarDatosGestion(datosOriginales) {
-  return {
-    "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
-    "FALLOS":            datosOriginales["FALLOS"]            || 0,
-    "CITAS":             datosOriginales["CITAS"]             || 0,
-    "ENTRV. ASILO":      datosOriginales["ENTRV. ASILO"]      || 0,
-    "FALLOS ASILO":      datosOriginales["FALLOS ASILO"]      || 0,
-    "ASILOS CONCEDIDOS": datosOriginales["ASILOS CONCEDIDOS"] || 0,
-    "ASILOS DENEGADOS":  datosOriginales["ASILOS DENEGADOS"]  || 0,
-    "CARTAS CONCEDIDAS": datosOriginales["CARTAS CONCEDIDAS"] || 0,
-    "CARTAS DENEGADAS":  datosOriginales["CARTAS DENEGADAS"]  || 0,
-    "PROT. INTERNACIONAL": datosOriginales["PROT. INTERNACIONAL"] || 0,
-    "CITAS SUBDELEG":    datosOriginales["CITAS SUBDELEG"]    || 0,
-    "TARJET. SUBDELEG":  datosOriginales["TARJET. SUBDELEG"]  || 0,
-    "NOTIFICACIONES CONCEDIDAS": datosOriginales["NOTIFICACIONES CONCEDIDAS"] || 0,
-    "NOTIFICACIONES DENEGADAS":  datosOriginales["NOTIFICACIONES DENEGADAS"]  || 0,
-    "PRESENTADOS":       datosOriginales["PRESENTADOS"]       || 0,
-    "CORREOS UCRANIA":   datosOriginales["CORREOS UCRANIA"]   || 0,
-    "TELE. FAVO":        datosOriginales["TELE. FAVO"]        || 0,
-    "TELE. DESFAV":      datosOriginales["TELE. DESFAV"]      || 0,
-    "CITAS TLFN ASILO":  datosOriginales["CITAS TLFN ASILO"]  || 0,
-    "CITAS TLFN CARTAS": datosOriginales["CITAS TLFN CARTAS"] || 0,
-    "OFICIOS":           datosOriginales["OFICIOS"]           || 0,
-    "OBSERVACIONES":     datosOriginales["OBSERVACIONES"]     || "",
-    "fecha":             datosOriginales["fecha"]
-  };
-}
-     // --- Guardado por grupos ---
+  function transformarDatosGestion(datosOriginales) {
+    return {
+      "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
+      "FALLOS":            datosOriginales["FALLOS"]            || 0,
+      "CITAS":             datosOriginales["CITAS"]             || 0,
+      "ENTRV. ASILO":      datosOriginales["ENTRV. ASILO"]      || 0,
+      "FALLOS ASILO":      datosOriginales["FALLOS ASILO"]      || 0,
+      "ASILOS CONCEDIDOS": datosOriginales["ASILOS CONCEDIDOS"] || 0,
+      "ASILOS DENEGADOS":  datosOriginales["ASILOS DENEGADOS"]  || 0,
+      "CARTAS CONCEDIDAS": datosOriginales["CARTAS CONCEDIDAS"] || 0,
+      "CARTAS DENEGADAS":  datosOriginales["CARTAS DENEGADAS"]  || 0,
+      "PROT. INTERNACIONAL": datosOriginales["PROT. INTERNACIONAL"] || 0,
+      "CITAS SUBDELEG":    datosOriginales["CITAS SUBDELEG"]    || 0,
+      "TARJET. SUBDELEG":  datosOriginales["TARJET. SUBDELEG"]  || 0,
+      "NOTIFICACIONES CONCEDIDAS": datosOriginales["NOTIFICACIONES CONCEDIDAS"] || 0,
+      "NOTIFICACIONES DENEGADAS":  datosOriginales["NOTIFICACIONES DENEGADAS"]  || 0,
+      "PRESENTADOS":       datosOriginales["PRESENTADOS"]       || 0,
+      "CORREOS UCRANIA":   datosOriginales["CORREOS UCRANIA"]   || 0,
+      "TELE. FAVO":        datosOriginales["TELE. FAVO"]        || 0,
+      "TELE. DESFAV":      datosOriginales["TELE. DESFAV"]      || 0,
+      "CITAS TLFN ASILO":  datosOriginales["CITAS TLFN ASILO"]  || 0,
+      "CITAS TLFN CARTAS": datosOriginales["CITAS TLFN CARTAS"] || 0,
+      "OFICIOS":           datosOriginales["OFICIOS"]           || 0,
+      "OBSERVACIONES":     datosOriginales["OBSERVACIONES"]     || "",
+      "fecha":             datosOriginales["fecha"]
+    };
+  }
+
+  // --- Guardado por grupos ---
   for (const grupo in datosParaGuardar) {
     if (!collectionMap[grupo]) continue;
     const collectionName = collectionMap[grupo];
@@ -274,6 +273,38 @@ function transformarDatosGestion(datosOriginales) {
       }
       await ref.set(datosDelGrupo, { merge: false }); // siempre sobrescribe
       exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
+
+      // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
+      if ([GROUP2, GROUP3].includes(grupo)) {
+        // Se buscan todos los posibles arrays de registros
+        const registros = [
+          ...(datosDelGrupo.detenidos || []),
+          ...(datosDelGrupo.inspecciones || []),
+          ...(datosDelGrupo.actuaciones || [])
+        ];
+        for (const reg of registros) {
+          // Busca el nombre de operación en los posibles campos
+          const nombreOperacion =
+            reg.nombreOperacion ||
+            reg.nombre_operacion ||
+            reg.operacion ||
+            reg.OPERACION ||
+            reg.operación ||
+            ""; // Añade aquí variantes si tienes otras
+
+          if (nombreOperacion && nombreOperacion.length > 2) {
+            // Guardado bajo grupo2_operaciones o grupo3_operaciones
+            const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+            await db
+              .collection(coleccionOp)
+              .doc(nombreOperacion)
+              .collection("registros")
+              .doc(fechaFinal)
+              .set({ ...reg, fecha: fechaFinal }, { merge: true });
+          }
+        }
+      }
+
     } catch (err) {
       errores.push(`Error al guardar ${grupo}: ${err.message}`);
     }
