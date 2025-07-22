@@ -286,37 +286,61 @@ async function onConfirmSave() {
       exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
 
       // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
-      if ([GROUP2, GROUP3].includes(grupo)) {
-        // Se buscan todos los posibles arrays de registros
-        const registros = [
-          ...(datosDelGrupo.detenidos || []),
-          ...(datosDelGrupo.inspecciones || []),
-          ...(datosDelGrupo.actuaciones || [])
-        ];
-        for (const reg of registros) {
-          // Busca el nombre de operación en los posibles campos
-         const nombreOperacion = normalizarOperacion(
-  reg.nombreOperacion ||
-  reg.nombre_operacion ||
-  reg.operacion ||
-  reg.OPERACION ||
-  reg.operación ||
-  ""
-);
- // Añade aquí variantes si tienes otras
+      // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
+if ([GROUP2, GROUP3].includes(grupo)) {
+  const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
 
-          if (nombreOperacion && nombreOperacion.length > 2) {
-            // Guardado bajo grupo2_operaciones o grupo3_operaciones
-            const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
-            await db
-              .collection(coleccionOp)
-              .doc(nombreOperacion)
-              .collection("registros")
-              .doc(fechaFinal)
-              .set({ ...reg, fecha: fechaFinal }, { merge: true });
-          }
-        }
+  const registros = [
+    ...(datosDelGrupo.detenidos || []),
+    ...(datosDelGrupo.inspecciones || [])
+  ];
+
+  for (const reg of registros) {
+    const nombreOperacion = normalizarOperacion(
+      reg.nombreOperacion ||
+      reg.nombre_operacion ||
+      reg.operacion ||
+      reg.OPERACION ||
+      reg.operación ||
+      ""
+    );
+
+    if (nombreOperacion && nombreOperacion.length > 2) {
+      await db
+        .collection(coleccionOp)
+        .doc(nombreOperacion)
+        .collection("registros")
+        .doc(fechaFinal)
+        .set({ ...reg, fecha: fechaFinal }, { merge: true });
+    }
+  }
+
+  // --- Guardar actuaciones en cronología ---
+  if (Array.isArray(datosDelGrupo.actuaciones)) {
+    for (const act of datosDelGrupo.actuaciones) {
+      const nombreOperacion = normalizarOperacion(
+        act.nombreOperacion ||
+        act.nombre_operacion ||
+        act.operacion ||
+        act.OPERACION ||
+        act.operación ||
+        ""
+      );
+      if (nombreOperacion && nombreOperacion.length > 2 && act.descripcion) {
+        await db
+          .collection(coleccionOp)
+          .doc(nombreOperacion)
+          .collection("cronologia")
+          .add({
+            descripcionCronologia: act.descripcion,
+            fecha: fechaFinal,
+            ts: new Date().toISOString()
+          });
       }
+    }
+  }
+}
+
 
     } catch (err) {
       errores.push(`Error al guardar ${grupo}: ${err.message}`);
