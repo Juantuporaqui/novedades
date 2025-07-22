@@ -218,7 +218,7 @@ async function onConfirmSave() {
     [GROUPPUERTO]: "grupoPuerto_registros",
     [GROUPCECOREX]: "cecorex_registros",
     [GROUPGESTION]: "gestion_registros",
-    [GROUPCIE]:    "cie_registros"
+    [GROUPCIE]:    "cie_registros",
     [GROUP2]:      "grupo2_registros",
     [GROUP3]:      "grupo3_registros",
 
