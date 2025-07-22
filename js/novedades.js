@@ -236,6 +236,36 @@ async function onConfirmSave() {
   const errores = [];
   const exitos = [];
 
+   async function guardarActuacionesEnCronologia(grupo, actuaciones, fechaFinal) {
+  if (!Array.isArray(actuaciones) || !actuaciones.length) return;
+
+  for (const actuacion of actuaciones) {
+    const nombreOperacion = normalizarOperacion(
+      actuacion.operacion || actuacion.operacion_d || ""
+    );
+    if (!nombreOperacion) continue;
+
+    try {
+      const coleccion = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+      const ref = db
+        .collection(coleccion)
+        .doc(nombreOperacion)
+        .collection("cronologia")
+        .doc(fechaFinal);
+
+      await ref.set({
+        descripcion: actuacion.descripcion,
+        fecha: fechaFinal
+      }, { merge: true });
+
+      console.log(`Actuación guardada en ${coleccion}/${nombreOperacion}/cronologia`);
+    } catch (error) {
+      console.error(`Error guardando actuación en cronología: ${error.message}`);
+    }
+  }
+}
+
+
   // --- Función para transformar gestión ---
   function transformarDatosGestion(datosOriginales) {
     return {
@@ -1129,15 +1159,28 @@ function validarDatos(data, grupo, fecha) {
   if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
     errores.push('La fecha es obligatoria y debe ser válida.');
   }
-  if (grupo === GROUP1 && !Object.keys(data).length) errores.push('No hay datos de Grupo 1.');
-  if (grupo === GROUP4 && !Object.keys(data).length) errores.push('No hay datos de Grupo 4.');
-  if (grupo === GROUPPUERTO && !Object.keys(data).length) errores.push('No hay datos de Puerto.');
-  if (grupo === GROUPCECOREX && !Object.keys(data).length) errores.push('No hay datos de CECOREX.');
-   if (grupo === GROUPCIE && !Object.keys(data).length) errores.push('No hay datos de CIE.');
-  if (grupo === GROUPGESTION && !Object.keys(data).length) errores.push('No hay datos de Gestión.');
+
+  const tieneDatos =
+    Object.keys(data).length > 0 ||
+    (data.detenidos && data.detenidos.length > 0) ||
+    (data.inspecciones && data.inspecciones.length > 0) ||
+    (data.actuaciones && data.actuaciones.length > 0);
+
+  if (!tieneDatos) {
+    errores.push(`No hay datos extraídos para ${grupo.toUpperCase()}.`);
+  }
+
+  // Validación específica de actuaciones (G2 y G3)
+  if ((grupo === GROUP2 || grupo === GROUP3) && data.actuaciones) {
+    const vacias = data.actuaciones.filter(a => !a.descripcion || a.descripcion.trim() === "");
+    if (vacias.length) {
+      errores.push(`Hay ${vacias.length} actuaciones sin descripción en ${grupo.toUpperCase()}.`);
+    }
+  }
+
   return errores.length ? errores : [];
 }
-   
+
 function validarDatosPorTodos(datosPorGrupo, fecha) {
   const errores = [];
   // Comprueba todos los grupos presentes
@@ -1147,5 +1190,43 @@ function validarDatosPorTodos(datosPorGrupo, fecha) {
   return errores;
 }
 
+async function guardarActuacionesEnCronologia(grupo, actuaciones, fechaFinal) {
+  if (!Array.isArray(actuaciones) || !actuaciones.length) return;
+
+  for (const actuacion of actuaciones) {
+    const nombreOperacion = normalizarOperacion(
+      actuacion.operacion || actuacion.operacion_d || ""
+    );
+    if (!nombreOperacion) continue;
+
+    try {
+      const coleccion = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+      const ref = db
+        .collection(coleccion)
+        .doc(nombreOperacion)
+        .collection("cronologia")
+        .doc(fechaFinal);
+
+      await ref.set({
+        descripcion: actuacion.descripcion,
+        fecha: fechaFinal
+      }, { merge: true });
+
+      console.log(`Actuación guardada en ${coleccion}/${nombreOperacion}/cronologia`);
+    } catch (error) {
+      console.error(`Error guardando actuación en cronología: ${error.message}`);
+    }
+  }
+}
+
+function normalizarOperacion(nombre) {
+  if (!nombre) return "";
+  return nombre
+    .toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+    .replace(/^[A-Z]\.\s*/, "") // Quitar "A." o "O." al inicio
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 }); // DOMContentLoaded
