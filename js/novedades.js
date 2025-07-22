@@ -235,6 +235,7 @@ async function handleDocxUpload(e){
 }
 
 /* ==========================  CONFIRMAR GUARDADO  ========================= */
+/* ==========================  CONFIRMAR GUARDADO  ========================= */
 async function onConfirmSave() {
   if (!parsedDataForConfirmation || !parsedDataForConfirmation.datos) {
     showStatus('No hay datos para guardar.', 'danger');
@@ -259,45 +260,45 @@ async function onConfirmSave() {
 
   const datosParaGuardar = parsedDataForConfirmation.datos;
   const collectionMap = {
-    [GROUP1]:      "grupo1_expulsiones",
-    [GROUP4]:      "grupo4_operativo",
+    [GROUP1]: "grupo1_expulsiones",
+    [GROUP4]: "grupo4_operativo",
     [GROUPPUERTO]: "grupoPuerto_registros",
     [GROUPCECOREX]: "cecorex_registros",
     [GROUPGESTION]: "gestion_registros",
-    [GROUPCIE]:    "cie_registros",
-    [GROUP2]:      "grupo2_registros",     
-    [GROUP3]:      "grupo3_registros",
+    [GROUPCIE]: "cie_registros",
+    [GROUP2]: "grupo2_registros",
+    [GROUP3]: "grupo3_registros",
   };
   const errores = [];
   const exitos = [];
 
-  
+
   // --- Función para transformar gestión ---
   function transformarDatosGestion(datosOriginales) {
     return {
-      "CITAS-G":           datosOriginales["CITAS-G"]           || 0,
-      "FALLOS":            datosOriginales["FALLOS"]            || 0,
-      "CITAS":             datosOriginales["CITAS"]             || 0,
-      "ENTRV. ASILO":      datosOriginales["ENTRV. ASILO"]      || 0,
-      "FALLOS ASILO":      datosOriginales["FALLOS ASILO"]      || 0,
+      "CITAS-G": datosOriginales["CITAS-G"] || 0,
+      "FALLOS": datosOriginales["FALLOS"] || 0,
+      "CITAS": datosOriginales["CITAS"] || 0,
+      "ENTRV. ASILO": datosOriginales["ENTRV. ASILO"] || 0,
+      "FALLOS ASILO": datosOriginales["FALLOS ASILO"] || 0,
       "ASILOS CONCEDIDOS": datosOriginales["ASILOS CONCEDIDOS"] || 0,
-      "ASILOS DENEGADOS":  datosOriginales["ASILOS DENEGADOS"]  || 0,
+      "ASILOS DENEGADOS": datosOriginales["ASILOS DENEGADOS"] || 0,
       "CARTAS CONCEDIDAS": datosOriginales["CARTAS CONCEDIDAS"] || 0,
-      "CARTAS DENEGADAS":  datosOriginales["CARTAS DENEGADAS"]  || 0,
+      "CARTAS DENEGADAS": datosOriginales["CARTAS DENEGADAS"] || 0,
       "PROT. INTERNACIONAL": datosOriginales["PROT. INTERNACIONAL"] || 0,
-      "CITAS SUBDELEG":    datosOriginales["CITAS SUBDELEG"]    || 0,
-      "TARJET. SUBDELEG":  datosOriginales["TARJET. SUBDELEG"]  || 0,
+      "CITAS SUBDELEG": datosOriginales["CITAS SUBDELEG"] || 0,
+      "TARJET. SUBDELEG": datosOriginales["TARJET. SUBDELEG"] || 0,
       "NOTIFICACIONES CONCEDIDAS": datosOriginales["NOTIFICACIONES CONCEDIDAS"] || 0,
-      "NOTIFICACIONES DENEGADAS":  datosOriginales["NOTIFICACIONES DENEGADAS"]  || 0,
-      "PRESENTADOS":       datosOriginales["PRESENTADOS"]       || 0,
-      "CORREOS UCRANIA":   datosOriginales["CORREOS UCRANIA"]   || 0,
-      "TELE. FAVO":        datosOriginales["TELE. FAVO"]        || 0,
-      "TELE. DESFAV":      datosOriginales["TELE. DESFAV"]      || 0,
-      "CITAS TLFN ASILO":  datosOriginales["CITAS TLFN ASILO"]  || 0,
+      "NOTIFICACIONES DENEGADAS": datosOriginales["NOTIFICACIONES DENEGADAS"] || 0,
+      "PRESENTADOS": datosOriginales["PRESENTADOS"] || 0,
+      "CORREOS UCRANIA": datosOriginales["CORREOS UCRANIA"] || 0,
+      "TELE. FAVO": datosOriginales["TELE. FAVO"] || 0,
+      "TELE. DESFAV": datosOriginales["TELE. DESFAV"] || 0,
+      "CITAS TLFN ASILO": datosOriginales["CITAS TLFN ASILO"] || 0,
       "CITAS TLFN CARTAS": datosOriginales["CITAS TLFN CARTAS"] || 0,
-      "OFICIOS":           datosOriginales["OFICIOS"]           || 0,
-      "OBSERVACIONES":     datosOriginales["OBSERVACIONES"]     || "",
-      "fecha":             datosOriginales["fecha"]
+      "OFICIOS": datosOriginales["OFICIOS"] || 0,
+      "OBSERVACIONES": datosOriginales["OBSERVACIONES"] || "",
+      "fecha": datosOriginales["fecha"]
     };
   }
 
@@ -305,7 +306,9 @@ async function onConfirmSave() {
   for (const grupo in datosParaGuardar) {
     if (!collectionMap[grupo]) continue;
     const collectionName = collectionMap[grupo];
-    let datosDelGrupo = { ...datosParaGuardar[grupo], fecha: fechaFinal };
+    let datosDelGrupo = { ...datosParaGuardar[grupo],
+      fecha: fechaFinal
+    };
 
     // SOLO para el grupo de gestión: transformar claves para compatibilidad total
     if (grupo === GROUPGESTION || collectionName === "gestion_registros") {
@@ -313,60 +316,65 @@ async function onConfirmSave() {
     }
 
     try {
+      // 1. GUARDADO PRINCIPAL (SOBRESCRIBE EL PARTE DEL DÍA)
       const ref = db.collection(collectionName).doc(fechaFinal);
       const snapshot = await ref.get();
       if (snapshot.exists) {
         exitos.push(`Ya existía un parte para el día ${fechaFinal} en <b>${grupo.toUpperCase()}</b>. Se ha sobrescrito.`);
       }
-      await ref.set(datosDelGrupo, { merge: false }); // siempre sobrescribe
+      await ref.set(datosDelGrupo, {
+        merge: false
+      });
       exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
 
-       // --- Añadir actuaciones a cronología si es Grupo 2 ---
-// --- Añadir actuaciones a cronología si es Grupo 2 o Grupo 3 ---
-if ([GROUP2, GROUP3].includes(grupo) && Array.isArray(datosDelGrupo.actuaciones) && datosDelGrupo.actuaciones.length) {
-  await añadirActuacionesACronologia(grupo, datosDelGrupo.actuaciones, fechaFinal);
-}
-  
-          // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
-if ([GROUP2, GROUP3].includes(grupo)) {
-  const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+      // LÓGICA ADICIONAL SOLO PARA GRUPO 2 Y 3
+      if ([GROUP2, GROUP3].includes(grupo)) {
 
-  const registros = [
-    ...(datosDelGrupo.detenidos || []),
-    ...(datosDelGrupo.inspecciones || [])
-  ];
+        // 2. AÑADIR ACTUACIONES A LA CRONOLOGÍA DE LA OPERACIÓN (AÑADE, NO SOBRESCRIBE)
+        if (Array.isArray(datosDelGrupo.actuaciones) && datosDelGrupo.actuaciones.length) {
+          await añadirActuacionesACronologia(grupo, datosDelGrupo.actuaciones, fechaFinal);
+        }
 
-  for (const reg of registros) {
-    const nombreOperacion = normalizarOperacion(
-      reg.nombreOperacion ||
-      reg.nombre_operacion ||
-      reg.operacion ||
-      reg.OPERACION ||
-      reg.operación ||
-      ""
-    );
+        // 3. INDEXAR DETENIDOS E INSPECCIONES POR OPERACIÓN (SOBRESCRIBE POR FECHA)
+        const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+        const registros = [
+          ...(datosDelGrupo.detenidos || []),
+          ...(datosDelGrupo.inspecciones || [])
+        ];
 
-    if (nombreOperacion && nombreOperacion.length > 2) {
-      await db
-        .collection(coleccionOp)
-        .doc(nombreOperacion)
-        .collection("registros")
-        .doc(fechaFinal)
-        .set({ ...reg, fecha: fechaFinal }, { merge: true });
-    }
-  }
+        for (const reg of registros) {
+          const nombreOperacion = normalizarOperacion(
+            reg.nombreOperacion ||
+            reg.nombre_operacion ||
+            reg.operacion ||
+            reg.OPERACION ||
+            reg.operación ||
+            ""
+          );
 
- 
-
+          if (nombreOperacion && nombreOperacion.length > 2) {
+            await db
+              .collection(coleccionOp)
+              .doc(nombreOperacion)
+              .collection("registros")
+              .doc(fechaFinal)
+              .set({ ...reg,
+                fecha: fechaFinal
+              }, {
+                merge: true
+              });
+          }
+        }
+      }
     } catch (err) {
       errores.push(`Error al guardar ${grupo}: ${err.message}`);
     }
-  }
+  } // Fin del bucle for
 
   showSpinner(false);
 
-  if (exitos.length && exitos.length === Object.keys(datosParaGuardar).length) {
-    showStatus('Todos los grupos han sido guardados correctamente.', 'success');
+  if (exitos.length && errores.length === 0) {
+    showStatus('Todos los grupos han sido guardados y sincronizados correctamente.', 'success');
   } else {
     if (exitos.length) showStatus(exitos.join('<br>'), 'success');
     if (errores.length) showStatus(errores.join('<br>'), 'danger');
@@ -379,7 +387,6 @@ if ([GROUP2, GROUP3].includes(grupo)) {
     fechaEdicionDiv.style.display = "none";
   }
 }
-
 
 /* ========================= 📋 PARSERS POR GRUPO ========================= */
 
