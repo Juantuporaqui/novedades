@@ -230,7 +230,7 @@ async function onConfirmSave() {
     [GROUPCECOREX]: "cecorex_registros",
     [GROUPGESTION]: "gestion_registros",
     [GROUPCIE]:    "cie_registros",
-    [GROUP2]:      "grupo2_registros",
+    [GROUP2]:      "grupo2_registros",     
     [GROUP3]:      "grupo3_registros",
   };
   const errores = [];
@@ -285,6 +285,24 @@ async function onConfirmSave() {
       await ref.set(datosDelGrupo, { merge: false }); // siempre sobrescribe
       exitos.push(`¡Guardado con éxito para <b>${grupo.toUpperCase()}</b>!`);
 
+       // --- Añadir actuaciones a cronología si es Grupo 2 ---
+if (grupo === GROUP2 && datosDelGrupo.actuaciones.length) {
+  await añadirActuacionesAG2Cronologia(
+    datosDelGrupo.actuaciones[0]?.operacion || "",
+    datosDelGrupo.actuaciones,
+    fechaFinal
+  );
+}
+
+       // --- Añadir actuaciones a cronología si es Grupo 3 ---
+if (grupo === GROUP3 && datosDelGrupo.actuaciones.length) {
+  await añadirActuacionesAG3Cronologia(
+    datosDelGrupo.actuaciones[0]?.operacion || "",
+    datosDelGrupo.actuaciones,
+    fechaFinal
+  );
+}
+       
       // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
       // --- Guardado adicional: indexar Grupo 2 y Grupo 3 por operación ---
 if ([GROUP2, GROUP3].includes(grupo)) {
