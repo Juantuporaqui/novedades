@@ -25,6 +25,9 @@ const GROUPPUERTO  = "grupoPuerto";
 const GROUPCECOREX = "cecorex"; 
 const GROUPGESTION = "gestion"; 
 const GROUPCIE     = "grupoCIE";
+const GROUP2 = "grupo2";
+const GROUP3 = "grupo3";
+
 
 /* ============================  ELEMENTOS DOM  ============================= */
 const $ = id => document.getElementById(id);
@@ -139,6 +142,9 @@ async function handleDocxUpload(e){
     const rc   = parseGrupoCECOREX(html);
     const rgestion = parseGestion(html);
     const rcie = parseGrupoCIE(html);
+    const r2   = parseGrupo2(html);
+    const r3   = parseGrupo3(html);
+
 
     // === Recopilación de resultados ===
     const resultados = {};
@@ -148,6 +154,9 @@ async function handleDocxUpload(e){
     if (Object.keys(rc.datos).length)   resultados[GROUPCECOREX]= rc.datos;
     if (Object.keys(rgestion.datos).length) resultados[GROUPGESTION] = rgestion.datos;
     if (Object.keys(rcie.datos).length) resultados[GROUPCIE]    = rcie.datos;
+    if (Object.keys(r2.datos).length)   resultados[GROUP2]      = r2.datos;
+    if (Object.keys(r3.datos).length)   resultados[GROUP3]      = r3.datos;
+
 
     // Extrae la fecha más significativa
     const fecha = r1.fecha || r4.fecha || rp.fecha || rc.fecha || rcie.fecha || "";
@@ -210,6 +219,9 @@ async function onConfirmSave() {
     [GROUPCECOREX]: "cecorex_registros",
     [GROUPGESTION]: "gestion_registros",
     [GROUPCIE]:    "cie_registros"
+    [GROUP2]:      "grupo2_registros",
+    [GROUP3]:      "grupo3_registros",
+
   };
   const errores = [];
   const exitos = [];
@@ -849,6 +861,156 @@ function parseGrupoCIE(html) {
       };
     }
     // Busca fecha: DD-MM-AAAA (en tabla)
+    if (!fecha) {
+      let plain = tabla.innerText || tabla.textContent || "";
+      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+    }
+  }
+  return { datos, fecha };
+}
+
+   /* ----------- GRUPO 2 ----------- */
+function parseGrupo2(html) {
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  let fecha = '';
+  let datos = {
+    detenidos: [],
+    inspecciones: [],
+    actuaciones: []
+  };
+
+  for (const tabla of tablas) {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    if (!rows.length) continue;
+    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+    // ========== DETENIDOS G2 ==========
+    if (
+      header[0] === "DETENIDO G2" &&
+      header[1] === "MOTIVO G2" &&
+      header[2] === "NACIONALIDAD G2" &&
+      header[3] === "OBSERVACIONES G2"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+        datos.detenidos.push({
+          nombre: tds[0].textContent.trim(),
+          motivo: tds[1].textContent.trim(),
+          nacionalidad: tds[2].textContent.trim(),
+          observaciones: tds[3].textContent.trim()
+        });
+      }
+    }
+
+    // ========== INSPECCION G2 ==========
+    if (
+      header[0] === "INSPECCION G2" &&
+      header[1] === "LUGAR G2" &&
+      header[2] === "RESULTADO G2"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+        datos.inspecciones.push({
+          tipo: tds[0].textContent.trim(),
+          lugar: tds[1].textContent.trim(),
+          resultado: tds[2].textContent.trim()
+        });
+      }
+    }
+
+    // ========== ACTUACIONES (GESTIONES/CRONOLOGÍA) ==========
+    if (
+      header[0] === "ACTUACION G2"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length || !tds[0].textContent.trim()) continue;
+        datos.actuaciones.push({
+          descripcion: tds[0].textContent.trim()
+        });
+      }
+    }
+
+    // ========== FECHA (igual que en otros grupos) ==========
+    if (!fecha) {
+      let plain = tabla.innerText || tabla.textContent || "";
+      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+    }
+  }
+  return { datos, fecha };
+}
+
+/* ----------- GRUPO 3 ----------- */
+function parseGrupo3(html) {
+  const root = document.createElement('div'); root.innerHTML = html;
+  const tablas = Array.from(root.querySelectorAll('table'));
+  let fecha = '';
+  let datos = {
+    detenidos: [],
+    inspecciones: [],
+    actuaciones: []
+  };
+
+  for (const tabla of tablas) {
+    const rows = Array.from(tabla.querySelectorAll('tr'));
+    if (!rows.length) continue;
+    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+    // ========== DETENIDOS G3 ==========
+    if (
+      header[0] === "DETENIDO G3" &&
+      header[1] === "MOTIVO G3" &&
+      header[2] === "NACIONALIDAD G3" &&
+      header[3] === "OBSERVACIONES G3"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+        datos.detenidos.push({
+          nombre: tds[0].textContent.trim(),
+          motivo: tds[1].textContent.trim(),
+          nacionalidad: tds[2].textContent.trim(),
+          observaciones: tds[3].textContent.trim()
+        });
+      }
+    }
+
+    // ========== INSPECCION G3 ==========
+    if (
+      header[0] === "INSPECCION G3" &&
+      header[1] === "LUGAR G3" &&
+      header[2] === "RESULTADO G3"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+        datos.inspecciones.push({
+          tipo: tds[0].textContent.trim(),
+          lugar: tds[1].textContent.trim(),
+          resultado: tds[2].textContent.trim()
+        });
+      }
+    }
+
+    // ========== ACTUACIONES (GESTIONES/CRONOLOGÍA) ==========
+    if (
+      header[0] === "ACTUACION G3"
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length || !tds[0].textContent.trim()) continue;
+        datos.actuaciones.push({
+          descripcion: tds[0].textContent.trim()
+        });
+      }
+    }
+
+    // ========== FECHA (igual que en otros grupos) ==========
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
