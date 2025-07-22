@@ -986,9 +986,10 @@ function parseGrupoCIE(html) {
   return { datos, fecha };
 }
 
- /* ----------- GRUPO 2 ----------- */
+/* ----------- GRUPO 2 ----------- */
 function parseGrupo2(html) {
-  const root = document.createElement('div'); root.innerHTML = html;
+  const root = document.createElement('div'); 
+  root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
   let datos = {
@@ -1000,9 +1001,11 @@ function parseGrupo2(html) {
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // DETENIDOS G2 (con columnas opcionales)
+    const header = Array.from(rows[0].querySelectorAll('td,th'))
+      .map(td => td.textContent.trim().toUpperCase());
+
+    // ========== DETENIDOS ==========
     if (
       header.includes("DETENIDO G2") &&
       header.includes("MOTIVO G2") &&
@@ -1012,9 +1015,9 @@ function parseGrupo2(html) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 4) continue;
+
         let rowObj = {};
         header.forEach((col, idx) => {
-          // Extrae todos los posibles campos (incluso los opcionales)
           if (/^DETENIDO G2$/.test(col)) rowObj.detenido = tds[idx]?.textContent.trim() || "";
           if (/^MOTIVO G2$/.test(col)) rowObj.motivo = tds[idx]?.textContent.trim() || "";
           if (/^NACIONALIDAD G2$/.test(col)) rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
@@ -1023,12 +1026,11 @@ function parseGrupo2(html) {
           if (/^DELITO INVS\.? G2$/.test(col)) rowObj.delito_invs = tds[idx]?.textContent.trim() || "";
           if (/^OPERACIÓN G2$/.test(col)) rowObj.operacion = tds[idx]?.textContent.trim() || "";
         });
-        // Solo añade si tiene un detenido
         if (rowObj.detenido) datos.detenidos.push(rowObj);
       }
     }
 
-    // INSPECCION G2
+    // ========== INSPECCIONES ==========
     if (
       header.includes("INSPECCION G2") &&
       header.includes("LUGAR G2") &&
@@ -1037,6 +1039,7 @@ function parseGrupo2(html) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 3) continue;
+
         let rowObj = {};
         header.forEach((col, idx) => {
           if (/^INSPECCION G2$/.test(col)) rowObj.tipo = tds[idx]?.textContent.trim() || "";
@@ -1047,30 +1050,39 @@ function parseGrupo2(html) {
       }
     }
 
-    // ACTUACIONES (crono/gestiones)
+    // ========== ACTUACIONES CON OPERACIÓN ==========
     if (header.includes("ACTUACION G2")) {
+      const idxActuacion = header.findIndex(h => h === "ACTUACION G2");
+      const idxOperacion = idxActuacion - 2;
+
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length || !tds[0].textContent.trim()) continue;
+        if (!tds.length || !tds[idxActuacion]?.textContent.trim()) continue;
+
+        const operacionCruda = tds[idxOperacion]?.textContent.trim() || "";
         datos.actuaciones.push({
-          descripcion: tds[0].textContent.trim()
+          operacion: normalizarOperacion(operacionCruda),
+          descripcion: tds[idxActuacion].textContent.trim()
         });
       }
     }
 
-    // FECHA
+    // ========== FECHA ==========
     if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      const plain = tabla.innerText || tabla.textContent || "";
+      const m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
   return { datos, fecha };
 }
 
+   
+/* ----------- GRUPO 3 ----------- */
 /* ----------- GRUPO 3 ----------- */
 function parseGrupo3(html) {
-  const root = document.createElement('div'); root.innerHTML = html;
+  const root = document.createElement('div'); 
+  root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
   let fecha = '';
   let datos = {
@@ -1082,9 +1094,11 @@ function parseGrupo3(html) {
   for (const tabla of tablas) {
     const rows = Array.from(tabla.querySelectorAll('tr'));
     if (!rows.length) continue;
-    const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // DETENIDOS G3 (con columnas opcionales)
+    const header = Array.from(rows[0].querySelectorAll('td,th'))
+      .map(td => td.textContent.trim().toUpperCase());
+
+    // ========== DETENIDOS ==========
     if (
       header.includes("DETENIDO G3") &&
       header.includes("MOTIVO G3") &&
@@ -1094,6 +1108,7 @@ function parseGrupo3(html) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 4) continue;
+
         let rowObj = {};
         header.forEach((col, idx) => {
           if (/^DETENIDO G3$/.test(col)) rowObj.detenido = tds[idx]?.textContent.trim() || "";
@@ -1108,7 +1123,7 @@ function parseGrupo3(html) {
       }
     }
 
-    // INSPECCION G3
+    // ========== INSPECCIONES ==========
     if (
       header.includes("INSPECCION G3") &&
       header.includes("LUGAR G3") &&
@@ -1117,6 +1132,7 @@ function parseGrupo3(html) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (tds.length < 3) continue;
+
         let rowObj = {};
         header.forEach((col, idx) => {
           if (/^INSPECCION G3$/.test(col)) rowObj.tipo = tds[idx]?.textContent.trim() || "";
@@ -1127,26 +1143,33 @@ function parseGrupo3(html) {
       }
     }
 
-    // ACTUACIONES (crono/gestiones)
+    // ========== ACTUACIONES CON OPERACIÓN ==========
     if (header.includes("ACTUACION G3")) {
+      const idxActuacion = header.findIndex(h => h === "ACTUACION G3");
+      const idxOperacion = idxActuacion - 2;
+
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (!tds.length || !tds[0].textContent.trim()) continue;
+        if (!tds.length || !tds[idxActuacion]?.textContent.trim()) continue;
+
+        const operacionCruda = tds[idxOperacion]?.textContent.trim() || "";
         datos.actuaciones.push({
-          descripcion: tds[0].textContent.trim()
+          operacion: normalizarOperacion(operacionCruda),
+          descripcion: tds[idxActuacion].textContent.trim()
         });
       }
     }
 
-    // FECHA
+    // ========== FECHA ==========
     if (!fecha) {
-      let plain = tabla.innerText || tabla.textContent || "";
-      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      const plain = tabla.innerText || tabla.textContent || "";
+      const m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
       if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
   }
   return { datos, fecha };
 }
+
 
     
 
