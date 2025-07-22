@@ -12,6 +12,40 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+async function añadirActuacionesAG2Cronologia(nombreOperacion, actuaciones, fechaParte) {
+  if (!nombreOperacion || !actuaciones.length) return;
+
+  const normalizado = nombreOperacion
+    .toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/^[A-Z]\.\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const opRef = db.collection("grupo2_operaciones").doc(normalizado);
+  const doc = await opRef.get();
+
+  if (!doc.exists) {
+    console.warn(`No existe operación "${normalizado}", no se añaden actuaciones.`);
+    return;
+  }
+
+  const batch = db.batch();
+  actuaciones.forEach(act => {
+    const nuevaActuacion = {
+      descripcionCronologia: act.descripcion || "",
+      fecha: fechaParte,
+      ts: new Date().toISOString()
+    };
+    const cronRef = opRef.collection("cronologia").doc();
+    batch.set(cronRef, nuevaActuacion);
+  });
+
+  await batch.commit();
+  console.log(`Añadidas ${actuaciones.length} actuaciones a la cronología de ${normalizado}.`);
+}
+
+
 // ======= UTILIDADES GENERALES =======
 function showToast(msg, tipo="info") { alert(msg); }
 function limpiarFormulario(form) { if(form) form.reset(); }
