@@ -870,7 +870,7 @@ function parseGrupoCIE(html) {
   return { datos, fecha };
 }
 
-   /* ----------- GRUPO 2 ----------- */
+ /* ----------- GRUPO 2 ----------- */
 function parseGrupo2(html) {
   const root = document.createElement('div'); root.innerHTML = html;
   const tablas = Array.from(root.querySelectorAll('table'));
@@ -886,46 +886,53 @@ function parseGrupo2(html) {
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // ========== DETENIDOS G2 ==========
+    // DETENIDOS G2 (con columnas opcionales)
     if (
-      header[0] === "DETENIDO G2" &&
-      header[1] === "MOTIVO G2" &&
-      header[2] === "NACIONALIDAD G2" &&
-      header[3] === "OBSERVACIONES G2"
+      header.includes("DETENIDO G2") &&
+      header.includes("MOTIVO G2") &&
+      header.includes("NACIONALIDAD G2") &&
+      header.includes("OBSERVACIONES G2")
     ) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 4 || !tds[0].textContent.trim()) continue;
-        datos.detenidos.push({
-          nombre: tds[0].textContent.trim(),
-          motivo: tds[1].textContent.trim(),
-          nacionalidad: tds[2].textContent.trim(),
-          observaciones: tds[3].textContent.trim()
+        if (tds.length < 4) continue;
+        let rowObj = {};
+        header.forEach((col, idx) => {
+          // Extrae todos los posibles campos (incluso los opcionales)
+          if (/^DETENIDO G2$/.test(col)) rowObj.detenido = tds[idx]?.textContent.trim() || "";
+          if (/^MOTIVO G2$/.test(col)) rowObj.motivo = tds[idx]?.textContent.trim() || "";
+          if (/^NACIONALIDAD G2$/.test(col)) rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+          if (/^OBSERVACIONES G2$/.test(col)) rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          if (/^OPERACION D G2$/.test(col)) rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+          if (/^DELITO INVS\.? G2$/.test(col)) rowObj.delito_invs = tds[idx]?.textContent.trim() || "";
+          if (/^OPERACIÓN G2$/.test(col)) rowObj.operacion = tds[idx]?.textContent.trim() || "";
         });
+        // Solo añade si tiene un detenido
+        if (rowObj.detenido) datos.detenidos.push(rowObj);
       }
     }
 
-    // ========== INSPECCION G2 ==========
+    // INSPECCION G2
     if (
-      header[0] === "INSPECCION G2" &&
-      header[1] === "LUGAR G2" &&
-      header[2] === "RESULTADO G2"
+      header.includes("INSPECCION G2") &&
+      header.includes("LUGAR G2") &&
+      header.includes("RESULTADO G2")
     ) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 3 || !tds[0].textContent.trim()) continue;
-        datos.inspecciones.push({
-          tipo: tds[0].textContent.trim(),
-          lugar: tds[1].textContent.trim(),
-          resultado: tds[2].textContent.trim()
+        if (tds.length < 3) continue;
+        let rowObj = {};
+        header.forEach((col, idx) => {
+          if (/^INSPECCION G2$/.test(col)) rowObj.tipo = tds[idx]?.textContent.trim() || "";
+          if (/^LUGAR G2$/.test(col)) rowObj.lugar = tds[idx]?.textContent.trim() || "";
+          if (/^RESULTADO G2$/.test(col)) rowObj.resultado = tds[idx]?.textContent.trim() || "";
         });
+        if (rowObj.tipo) datos.inspecciones.push(rowObj);
       }
     }
 
-    // ========== ACTUACIONES (GESTIONES/CRONOLOGÍA) ==========
-    if (
-      header[0] === "ACTUACION G2"
-    ) {
+    // ACTUACIONES (crono/gestiones)
+    if (header.includes("ACTUACION G2")) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
         if (!tds.length || !tds[0].textContent.trim()) continue;
@@ -935,7 +942,7 @@ function parseGrupo2(html) {
       }
     }
 
-    // ========== FECHA (igual que en otros grupos) ==========
+    // FECHA
     if (!fecha) {
       let plain = tabla.innerText || tabla.textContent || "";
       let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
@@ -961,41 +968,69 @@ function parseGrupo3(html) {
     if (!rows.length) continue;
     const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-    // ========== DETENIDOS G3 ==========
+    // DETENIDOS G3 (con columnas opcionales)
     if (
-      header[0] === "DETENIDO G3" &&
-      header[1] === "MOTIVO G3" &&
-      header[2] === "NACIONALIDAD G3" &&
-      header[3] === "OBSERVACIONES G3"
+      header.includes("DETENIDO G3") &&
+      header.includes("MOTIVO G3") &&
+      header.includes("NACIONALIDAD G3") &&
+      header.includes("OBSERVACIONES G3")
     ) {
       for (let i = 1; i < rows.length; i++) {
         const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 4 || !tds[0].textContent.trim()) continue;
-        datos.detenidos.push({
-          nombre: tds[0].textContent.trim(),
-          motivo: tds[1].textContent.trim(),
-          nacionalidad: tds[2].textContent.trim(),
-          observaciones: tds[3].textContent.trim()
+        if (tds.length < 4) continue;
+        let rowObj = {};
+        header.forEach((col, idx) => {
+          if (/^DETENIDO G3$/.test(col)) rowObj.detenido = tds[idx]?.textContent.trim() || "";
+          if (/^MOTIVO G3$/.test(col)) rowObj.motivo = tds[idx]?.textContent.trim() || "";
+          if (/^NACIONALIDAD G3$/.test(col)) rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+          if (/^OBSERVACIONES G3$/.test(col)) rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          if (/^OPERACION D G3$/.test(col)) rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+          if (/^DELITO INVS\.? G3$/.test(col)) rowObj.delito_invs = tds[idx]?.textContent.trim() || "";
+          if (/^OPERACIÓN G3$/.test(col)) rowObj.operacion = tds[idx]?.textContent.trim() || "";
+        });
+        if (rowObj.detenido) datos.detenidos.push(rowObj);
+      }
+    }
+
+    // INSPECCION G3
+    if (
+      header.includes("INSPECCION G3") &&
+      header.includes("LUGAR G3") &&
+      header.includes("RESULTADO G3")
+    ) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (tds.length < 3) continue;
+        let rowObj = {};
+        header.forEach((col, idx) => {
+          if (/^INSPECCION G3$/.test(col)) rowObj.tipo = tds[idx]?.textContent.trim() || "";
+          if (/^LUGAR G3$/.test(col)) rowObj.lugar = tds[idx]?.textContent.trim() || "";
+          if (/^RESULTADO G3$/.test(col)) rowObj.resultado = tds[idx]?.textContent.trim() || "";
+        });
+        if (rowObj.tipo) datos.inspecciones.push(rowObj);
+      }
+    }
+
+    // ACTUACIONES (crono/gestiones)
+    if (header.includes("ACTUACION G3")) {
+      for (let i = 1; i < rows.length; i++) {
+        const tds = Array.from(rows[i].querySelectorAll('td'));
+        if (!tds.length || !tds[0].textContent.trim()) continue;
+        datos.actuaciones.push({
+          descripcion: tds[0].textContent.trim()
         });
       }
     }
 
-    // ========== INSPECCION G3 ==========
-    if (
-      header[0] === "INSPECCION G3" &&
-      header[1] === "LUGAR G3" &&
-      header[2] === "RESULTADO G3"
-    ) {
-      for (let i = 1; i < rows.length; i++) {
-        const tds = Array.from(rows[i].querySelectorAll('td'));
-        if (tds.length < 3 || !tds[0].textContent.trim()) continue;
-        datos.inspecciones.push({
-          tipo: tds[0].textContent.trim(),
-          lugar: tds[1].textContent.trim(),
-          resultado: tds[2].textContent.trim()
-        });
-      }
+    // FECHA
+    if (!fecha) {
+      let plain = tabla.innerText || tabla.textContent || "";
+      let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
     }
+  }
+  return { datos, fecha };
+}
 
     // ========== ACTUACIONES (GESTIONES/CRONOLOGÍA) ==========
     if (
