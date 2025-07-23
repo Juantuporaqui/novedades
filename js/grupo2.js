@@ -717,19 +717,136 @@ function cargarTodosLosListados() {
 // ======= INFORME AUTOMÁTICO =======
 document.getElementById('btnGenerarInforme').addEventListener('click', async () => {
     if (!idOperacionActual) return showToast("Carga una operación primero.");
-    const doc = await db.collection("grupo2_operaciones").doc(idOperacionActual).get();
-    if (!doc.exists) return showToast("No existe esa operación.");
-    const op = doc.data();
+    
+    showToast("Generando informe, por favor espera...", "info");
 
-    async function getSubcoleccion(nombre, orderByField = "ts", orderDirection = "desc") {
-        const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection(nombre).orderBy(orderByField, orderDirection).get();
-        let arr = [];
-        snap.forEach(d => arr.push({id: d.id, ...d.data()}));
-        return arr;
+    try {
+        const doc = await db.collection("grupo2_operaciones").doc(idOperacionActual).get();
+        if (!doc.exists) return showToast("No se encontró la operación para generar el informe.");
+        const op = doc.data();
+
+        async function getSubcoleccion(nombre, orderByField = "ts", orderDirection = "desc") {
+            try {
+                const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection(nombre).orderBy(orderByField, orderDirection).get();
+                let arr = [];
+                snap.forEach(d => arr.push({id: d.id, ...d.data()}));
+                return arr;
+            } catch (e) {
+                console.warn(`No se pudo obtener la subcolección '${nombre}' (puede que el campo de orden no exista):`, e.message);
+                // Intento sin ordenación si falla
+                const snap = await db.collection("grupo2_operaciones").doc(idOperacionActual).collection(nombre).get();
+                let arr = [];
+                snap.forEach(d => arr.push({id: d.id, ...d.data()}));
+                return arr;
+            }
+        }
+
+        const [
+            juzgados, inhibiciones, historicoJuzgados, intervenciones, solicitudesJudiciales, 
+            colaboraciones, cronologia, detenidos, detenidosPrevistos, otrasPersonas, 
+            documentos, observaciones, pendientes, inspecciones
+        ] = await Promise.all([
+            getSubcoleccion("juzgados"),
+            getSubcoleccion("inhibiciones", "fechaInhibicion", "desc"),
+            getSubcoleccion("historicoJuzgados", "fechaHistoricoJuzgado", "desc"),
+            getSubcoleccion("intervenciones"),
+            getSubcoleccion("solicitudesJudiciales"),
+            getSubcoleccion("colaboraciones", "fechaColaboracion", "desc"),
+            getSubcoleccion("cronologia", "fecha", "desc"),
+            getSubcoleccion("detenidos", "fechaDetenido", "desc"),
+            getSubcoleccion("detenidosPrevistos"),
+            getSubcoleccion("otrasPersonas"),
+            getSubcoleccion("documentos"),
+            getSubcoleccion("observaciones"),
+            getSubcoleccion("pendientes", "fechaPendiente", "desc"),
+            getSubcoleccion("inspecciones", "ts", "desc")
+        ]);
+
+        let html = `
+        <div id="informe-operacion" style="font-family: 'Segoe UI', Arial, sans-serif; color:#152045; max-width: 900px; margin:auto; background: #f6f8fb; border-radius:14px; box-shadow:0 2px 28px #143e8a22; padding:32px">
+            <div style="display:flex; align-items:center; margin-bottom:18px;">
+                <img src="../img/logo_cnp.png" alt="CNP" style="width:52px; height:52px; margin-right:20px;">
+                <div>
+                    <h2 style="margin:0; font-size:2rem; color:#14224b;">Informe de Operación</h2>
+                    <div style="font-size:1.05rem; color:#29497a;">Benito · UCRIF · Grupo 2</div>
+                </div>
+            </div>
+            <hr>
+            <h3 style="color:#182b4d;">Datos Generales</h3>
+            <table style="width:100%; margin-bottom:18px; font-size:1.02rem; border-collapse: collapse;">
+                ${idOperacionActual ? `<tr><th style="text-align:left; width: 25%; padding: 6px; border: 1px solid #ddd;">Código:</th><td style="padding: 6px; border: 1px solid #ddd;">${idOperacionActual}</td></tr>` : ''}
+                ${op.nombreOperacion ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Nombre:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.nombreOperacion}</td></tr>` : ''}
+                ${op.anioOperacion ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Año:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.anioOperacion}</td></tr>` : ''}
+                ${op.fechaInicio ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Fecha de Inicio:</th><td style="padding: 6px; border: 1px solid #ddd;">${formatoFecha(op.fechaInicio)}</td></tr>` : ''}
+                ${op.tipologiaDelictiva ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Tipología Delictiva:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.tipologiaDelictiva}</td></tr>` : ''}
+                ${op.origenInvestigacion ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Origen Investigación:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.origenInvestigacion}</td></tr>` : ''}
+                ${op.procedimientosJudiciales ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Proc. Judiciales:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.procedimientosJudiciales}</td></tr>` : ''}
+                ${op.descripcionBreve ? `<tr><th style="text-align:left; vertical-align: top; padding: 6px; border: 1px solid #ddd;">Resumen:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.descripcionBreve}</td></tr>` : ''}
+            </table>
+            
+            ${op.diligenciasPoliciales ? `
+                <h4 style="margin-top:20px; color:#39526b;">Diligencias Policiales Relevantes</h4>
+                <div style="background:#e9f0fb; border-radius:8px; padding:12px 15px; margin-bottom:14px; border-left:4px solid #29497a;">
+                    ${op.diligenciasPoliciales}
+                </div>` : ''}
+
+            ${cronologia.length > 0 ? `
+                <hr><h3 style="color:#39526b;">Cronología</h3>
+                <ol>${cronologia.map(e => `<li>${formatoFecha(e.fecha)} - ${e.descripcionCronologia || ""}</li>`).join("")}</ol>` : ''}
+            
+            ${juzgados.length > 0 || inhibiciones.length > 0 || historicoJuzgados.length > 0 ? `<hr><h3 style="color:#233f6a;">Juzgados</h3>` : ''}
+            ${juzgados.length > 0 ? `
+                <h4>Juzgado Inicial</h4>
+                <ul>${juzgados.map(j => `<li><b>${j.juzgado || "-"}</b> (${j.diligencias || "-"})</li>`).join("")}</ul>` : ''}
+            ${inhibiciones.length > 0 ? `
+                <h4>Inhibiciones</h4>
+                <ul>${inhibiciones.map(i => `<li>${formatoFecha(i.fechaInhibicion)} - ${i.juzgadoInhibido || "-"}</li>`).join("")}</ul>` : ''}
+            ${historicoJuzgados.length > 0 ? `
+                <h4>Histórico de Juzgados</h4>
+                <ul>${historicoJuzgados.map(h => `<li>${formatoFecha(h.fechaHistoricoJuzgado)} - <b>${h.juzgadoRelacionado || "-"}</b>: ${h.descripcionEventoJuzgado || "-"}</li>`).join("")}</ul>` : ''}
+
+            ${detenidos.length > 0 || detenidosPrevistos.length > 0 || otrasPersonas.length > 0 ? `<hr><h3 style="color:#253c5e;">Personas Vinculadas</h3>` : ''}
+            ${detenidos.length > 0 ? `
+                <h4>Detenidos</h4>
+                <ul>${detenidos.map(d => `<li><b>${d.nombreDetenido}</b> (${d.nacionalidadDetenido || 'N/A'}) - ${formatoFecha(d.fechaDetenido)}<br><small>Delito: ${d.delitoDetenido || '-'} | Ordinal: ${d.secuenciaDetenido || '-'}</small></li>`).join("")}</ul>` : ''}
+            ${detenidosPrevistos.length > 0 ? `
+                <h4>Detenidos Previstos</h4>
+                <ul>${detenidosPrevistos.map(d => `<li><b>${d.nombrePrevisto}</b> (${d.nacionalidadPrevisto || 'N/A'})<br><small>Delito: ${d.delitoPrevisto || '-'}</small></li>`).join("")}</ul>` : ''}
+            ${otrasPersonas.length > 0 ? `
+                <h4>Otras Personas</h4>
+                <ul>${otrasPersonas.map(p => `<li><b>${p.filiacionOtraPersona}</b> (${p.nacionalidadOtraPersona || ''}) - ${p.tipoVinculacion || ''}<br><small>Tel: ${p.telefonoOtraPersona || '-'}</small></li>`).join("")}</ul>` : ''}
+
+            ${inspecciones.length > 0 ? `
+                <hr><h3 style="color:#29366e;">Inspecciones en la Operación</h3>
+                <ul>${inspecciones.map(it => `<li><b>${it.casa}</b> - Filiadas: ${it.numFiliadas || 0}, Citadas: ${it.numCitadas || 0}, Nacionalidades: ${(it.nacionalidadesFiliadas || []).join(', ')}</li>`).join("")}</ul>` : ''}
+            
+            ${documentos.length > 0 ? `
+                <hr><h3 style="color:#38545e;">Documentación Adjunta</h3>
+                <ul>${documentos.map(docu => `<li><a href="${docu.url}" target="_blank">${docu.nombre}</a> (${(docu.size / 1024).toFixed(1)} KB)</li>`).join("")}</ul>` : ''}
+            
+            ${observaciones.length > 0 ? `
+                <hr><h3 style="color:#38715e;">Anotaciones / Observaciones</h3>
+                <ul>${observaciones.map(o => `<li>${o.comentariosObservaciones || ""} ${(o.relevanteObservacion ? "<b>[Relevante]</b>" : "")}${(o.confidencialObservacion ? " <b>[Confidencial]</b>" : "")}</li>`).join("")}</ul>` : ''}
+            
+            ${pendientes.length > 0 ? `
+                <hr><h3 style="color:#4f7a4f;">Elementos Pendientes</h3>
+                <ul>${pendientes.map(p => `<li>${p.descripcionPendiente || ""} (${formatoFecha(p.fechaPendiente)})</li>`).join("")}</ul>` : ''}
+            
+            <hr>
+            <div style="font-size:.9rem; color:#456; text-align:center; margin-top: 20px;">Informe generado automáticamente por Benito · UCRIF · ${formatoFecha(new Date())}</div>
+        </div>
+        <div style="text-align:center; margin:18px 0;" id="print-button-container">
+            <button onclick="window.print()" style="font-size:1.1rem; background:#ffd94a; color:#152045; border:none; border-radius:7px; padding:8px 22px; font-weight:bold; cursor:pointer;">Imprimir o Guardar PDF</button>
+        </div>
+        `;
+
+        let win = window.open("", "informe-operacion", "width=1100,height=900,scrollbars=yes");
+        win.document.write(`<html><head><title>Informe de Operación - ${op.nombreOperacion || idOperacionActual}</title><style>body{background:#eef4f9} @media print{ body{background:#fff !important} #informe-operacion{box-shadow:none !important; border:none;} #print-button-container{display:none;} } table, th, td{border: 1px solid #ddd; border-collapse: collapse;} th, td {padding: 8px;}</style></head><body>${html}</body></html>`);
+        win.document.close();
+    } catch (error) {
+        console.error("Error al generar el informe:", error);
+        showToast("Hubo un error al generar el informe: " + error.message, "error");
     }
-
-    // ... (resto de la lógica de generación de informes)
-
 });
 
 // ======= RESÚMENES SEMANALES =======
