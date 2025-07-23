@@ -1,4 +1,14 @@
-// ======= INICIALIZACIÓN FIREBASE =======
+// Import functions from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, 
+  orderBy, query, addDoc, writeBatch, arrayUnion, arrayRemove, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+// ======= CONFIGURACIÓN Y VARIABLES GLOBALES =======
 const firebaseConfig = {
   apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
   authDomain: "ucrif-5bb75.firebaseapp.com",
@@ -8,55 +18,18 @@ const firebaseConfig = {
   appId: "1:241698436443:web:1f333b3ae3f813b755167e",
   measurementId: "G-S2VPQNWZ21"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const storage = firebase.storage();
 
-// Nombre de la colección principal para las operaciones de este grupo
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
 const COLECCION_OPERACIONES = "grupo3_operaciones";
+let operacionActual = null;
+let idOperacionActual = null;
+let bsConfirmationModal; // Instancia del modal de Bootstrap
 
-// ======= UTILIDADES GENERALES =======
-function showToast(msg, tipo = "info") {
-    console.log(`[${tipo.toUpperCase()}] ${msg}`);
-    alert(msg); // Placeholder, puede ser reemplazado por una librería de notificaciones
-}
-
-function limpiarFormulario(form) {
-    if (form) form.reset();
-}
-
-function formatoFecha(fecha) {
-    if (!fecha) return "";
-    // Asegura que la fecha se interprete correctamente independientemente del formato
-    if (typeof fecha === 'string' && fecha.includes('-')) {
-        const parts = fecha.split('-');
-        if (parts.length === 3) {
-            const dateOnly = parts[2].substring(0, 2);
-            return `${dateOnly}/${parts[1]}/${parts[0]}`;
-        }
-    }
-    const f = new Date(fecha);
-    return `${f.getDate().toString().padStart(2, "0")}/${(f.getMonth() + 1).toString().padStart(2, "0")}/${f.getFullYear()}`;
-}
-
-function uniqueID() {
-    return '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function getFechaYYYYMMDD(date = new Date()) {
-    return date.toISOString().slice(0, 10);
-}
-
-// Actualiza el indicador visual de una sección para mostrar si tiene datos
-function actualizarIndicador(selector, tieneDatos) {
-    const indicador = document.querySelector(selector);
-    if (indicador) {
-        indicador.className = `data-indicator me-2 ${tieneDatos ? 'filled' : 'empty'}`;
-    }
-}
-
-
-// ======= REFERENCIAS DOM =======
+// ======= REFERENCIAS DOM (PRINCIPALES) =======
 const operacionSelect = document.getElementById('operacionSelect');
 const btnCargarOperacion = document.getElementById('btnCargarOperacion');
 const btnNuevaOperacion = document.getElementById('btnNuevaOperacion');
@@ -75,386 +48,441 @@ const tipologiaDelictiva = document.getElementById('tipologiaDelictiva');
 const procedimientosJudiciales = document.getElementById('procedimientosJudiciales');
 const diligenciasPoliciales = document.getElementById('diligenciasPoliciales');
 
+// ======= UTILIDADES GENERALES =======
+function showToast(msg, tipo = "info") {
+  const toastContainer = document.getElementById('toast-container');
+  const toastId = 'toast-' + Date.now();
+  const bgClass = {
+      success: 'bg-success',
+      error: 'bg-danger',
+      info: 'bg-info',
+      warning: 'bg-warning'
+  }[tipo] || 'bg-secondary';
 
-// ======= ESTADO DE OPERACIÓN ACTUAL =======
-let operacionActual = null;
-let idOperacionActual = null;
-
-// ======= 1. BÚSQUEDA Y CARGA DE OPERACIONES EXISTENTES =======
-async function cargarOperacionesEnSelect() {
-    operacionSelect.innerHTML = `<option value="">-- Selecciona una operación --</option>`;
-    const snapshot = await db.collection(COLECCION_OPERACIONES).get();
-    let operaciones = [];
-    snapshot.forEach(doc => {
-        operaciones.push({ id: doc.id, ...doc.data() });
-    });
-
-    // Ordenar alfabéticamente por nombre de operación
-    operaciones.sort((a, b) => {
-        const nameA = a.nombreOperacion ? a.nombreOperacion.toLowerCase() : '';
-        const nameB = b.nombreOperacion ? b.nombreOperacion.toLowerCase() : '';
-        return nameA.localeCompare(nameB);
-    });
-
-    operaciones.forEach(op => {
-        operacionSelect.innerHTML += `<option value="${op.id}">${op.nombreOperacion} (${op.id})</option>`;
-    });
+  const toastHTML = `
+    <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>`;
+  toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+  toast.show();
+  toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
 
-
-// ======= 2. NUEVA OPERACIÓN =======
-btnNuevaOperacion.addEventListener('click', () => {
-    formOperacion.reset();
-    operacionActual = null;
-    idOperacionActual = null;
-    codigoOperacion.value = "";
-    anioOperacion.value = new Date().getFullYear();
-    fechaInicio.value = getFechaYYYYMMDD();
-    limpiarTodosLosListados();
-    setTimeout(() => { codigoOperacion.focus() }, 150);
-    btnGuardarOperacion.disabled = false;
-    codigoWarning.classList.add("d-none");
-    btnEliminarOperacion.classList.add('d-none');
-    btnGenerarInforme.classList.add('d-none');
-});
-
-// ======= 3. CARGAR UNA OPERACIÓN POR NOMBRE =======
-btnCargarOperacion.addEventListener('click', async () => {
-    const codigo = operacionSelect.value;
-    if (!codigo) return showToast("Selecciona una operación.");
-    const doc = await db.collection(COLECCION_OPERACIONES).doc(codigo).get();
-    if (!doc.exists) return showToast("No existe esa operación.");
-
-    operacionActual = doc.data();
-    idOperacionActual = codigo;
-
-    // Rellenar formulario principal
-    codigoOperacion.value = idOperacionActual;
-    anioOperacion.value = operacionActual.anioOperacion || "";
-    fechaInicio.value = operacionActual.fechaInicio || "";
-    nombreOperacion.value = operacionActual.nombreOperacion || "";
-    descripcionBreve.value = operacionActual.descripcionBreve || "";
-    origenInvestigacion.value = operacionActual.origenInvestigacion || "";
-    tipologiaDelictiva.value = operacionActual.tipologiaDelictiva || "";
-    procedimientosJudiciales.value = operacionActual.procedimientosJudiciales || "";
-    diligenciasPoliciales.value = operacionActual.diligenciasPoliciales || "";
-
-    // Habilitar y mostrar botones
-    btnGuardarOperacion.disabled = false;
-    codigoWarning.classList.add("d-none");
-    btnEliminarOperacion.classList.remove('d-none');
-    btnGenerarInforme.classList.remove('d-none');
+function showConfirmationModal({ title, body, confirmText = 'Confirmar', onConfirm, isDanger = false }) {
+    document.getElementById('confirmationModalLabel').textContent = title;
+    document.getElementById('confirmationModalBody').innerHTML = body;
+    const confirmBtn = document.getElementById('confirmationModalConfirm');
+    confirmBtn.textContent = confirmText;
     
-    cargarTodosLosListados();
-});
-
-// ======= 4. VALIDAR UNICIDAD DE CÓDIGO =======
-codigoOperacion.addEventListener('blur', async () => {
-    const code = codigoOperacion.value.trim();
-    if (!code) {
-        codigoWarning.classList.add("d-none");
-        btnGuardarOperacion.disabled = false;
-        return;
-    }
-    // Solo se valida si el código ha cambiado o es una operación nueva
-    if (idOperacionActual && code === idOperacionActual) {
-      codigoWarning.classList.add("d-none");
-      btnGuardarOperacion.disabled = false;
-      return;
-    }
-    const doc = await db.collection(COLECCION_OPERACIONES).doc(code).get();
-    if (doc.exists) {
-        codigoWarning.classList.remove("d-none");
-        btnGuardarOperacion.disabled = true;
+    const header = document.getElementById('confirmationModalHeader');
+    confirmBtn.className = 'btn'; // Reset classes
+    if (isDanger) {
+        header.className = 'modal-header modal-header-danger';
+        confirmBtn.classList.add('btn-danger');
     } else {
-        codigoWarning.classList.add("d-none");
-        btnGuardarOperacion.disabled = false;
+        header.className = 'modal-header';
+        confirmBtn.classList.add('btn-primary');
     }
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener('click', () => {
+        onConfirm();
+        bsConfirmationModal.hide();
+    });
+    bsConfirmationModal.show();
+}
+
+function formatoFecha(fechaStr) {
+  if (!fechaStr) return "N/A";
+  try {
+    const date = new Date(fechaStr + 'T00:00:00');
+    if (isNaN(date.getTime())) return fechaStr;
+    return date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  } catch (e) {
+    return fechaStr;
+  }
+}
+function getFechaYYYYMMDD(date = new Date()) { return date.toISOString().slice(0, 10); }
+function uniqueID() { return '_' + Math.random().toString(36).substring(2, 9); }
+function actualizarIndicador(selector, tieneDatos) {
+  const indicador = document.querySelector(selector);
+  if (indicador) indicador.className = `data-indicator me-2 ${tieneDatos ? 'filled' : 'empty'}`;
+}
+
+// ======= LÓGICA PRINCIPAL DE OPERACIONES =======
+async function cargarOperacionesEnSelect() {
+  operacionSelect.innerHTML = `<option value="">-- Selecciona una operación --</option>`;
+  const q = query(collection(db, COLECCION_OPERACIONES), orderBy("nombreOperacion", "asc"));
+  const snapshot = await getDocs(q);
+  snapshot.forEach(doc => {
+    const op = doc.data();
+    operacionSelect.innerHTML += `<option value="${doc.id}">${op.nombreOperacion} (${doc.id})</option>`;
+  });
+}
+
+function resetearUI() {
+  formOperacion.reset();
+  operacionActual = null;
+  idOperacionActual = null;
+  codigoOperacion.value = "";
+  anioOperacion.value = new Date().getFullYear();
+  fechaInicio.value = getFechaYYYYMMDD();
+  limpiarTodosLosListados();
+  setTimeout(() => { codigoOperacion.focus() }, 150);
+  btnGuardarOperacion.disabled = false;
+  codigoWarning.classList.add("d-none");
+  btnEliminarOperacion.classList.add('d-none');
+  btnGenerarInforme.classList.add('d-none');
+  operacionSelect.value = "";
+}
+
+btnNuevaOperacion.addEventListener('click', resetearUI);
+
+btnCargarOperacion.addEventListener('click', async () => {
+  const codigo = operacionSelect.value;
+  if (!codigo) return showToast("Selecciona una operación para cargar.", "warning");
+  
+  const docRef = doc(db, COLECCION_OPERACIONES, codigo);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) return showToast("Error: No se encontró la operación.", "error");
+
+  operacionActual = docSnap.data();
+  idOperacionActual = codigo;
+
+  codigoOperacion.value = idOperacionActual;
+  anioOperacion.value = operacionActual.anioOperacion || "";
+  fechaInicio.value = operacionActual.fechaInicio || "";
+  nombreOperacion.value = operacionActual.nombreOperacion || "";
+  descripcionBreve.value = operacionActual.descripcionBreve || "";
+  origenInvestigacion.value = operacionActual.origenInvestigacion || "";
+  tipologiaDelictiva.value = operacionActual.tipologiaDelictiva || "";
+  procedimientosJudiciales.value = operacionActual.procedimientosJudiciales || "";
+  diligenciasPoliciales.value = operacionActual.diligenciasPoliciales || "";
+
+  btnGuardarOperacion.disabled = false;
+  codigoWarning.classList.add("d-none");
+  btnEliminarOperacion.classList.remove('d-none');
+  btnGenerarInforme.classList.remove('d-none');
+  
+  cargarTodosLosListados();
+  showToast(`Operación "${operacionActual.nombreOperacion}" cargada.`, "success");
 });
 
+codigoOperacion.addEventListener('blur', async () => {
+  const code = codigoOperacion.value.trim();
+  if (!code) {
+    codigoWarning.classList.add("d-none");
+    btnGuardarOperacion.disabled = false;
+    return;
+  }
+  if (idOperacionActual && code === idOperacionActual) return;
 
-// ======= 5. GUARDAR/ACTUALIZAR OPERACIÓN PRINCIPAL =======
+  const docRef = doc(db, COLECCION_OPERACIONES, code);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    codigoWarning.classList.remove("d-none");
+    btnGuardarOperacion.disabled = true;
+  } else {
+    codigoWarning.classList.add("d-none");
+    btnGuardarOperacion.disabled = false;
+  }
+});
+
 formOperacion.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = codigoOperacion.value.trim();
-    if (!code) return showToast("El Código operativo es obligatorio.");
-    const datos = {
-        anioOperacion: anioOperacion.value,
-        fechaInicio: fechaInicio.value,
-        nombreOperacion: nombreOperacion.value.trim(),
-        descripcionBreve: descripcionBreve.value.trim(),
-        origenInvestigacion: origenInvestigacion.value.trim(),
-        tipologiaDelictiva: tipologiaDelictiva.value.trim(),
-        procedimientosJudiciales: procedimientosJudiciales.value.trim(),
-        diligenciasPoliciales: diligenciasPoliciales.value.trim(),
-        actualizado: new Date().toISOString()
-    };
-    await db.collection(COLECCION_OPERACIONES).doc(code).set(datos, { merge: true });
+  e.preventDefault();
+  const code = codigoOperacion.value.trim();
+  if (!code) return showToast("El Código operativo es obligatorio.", "error");
+
+  const datos = {
+    anioOperacion: anioOperacion.value,
+    fechaInicio: fechaInicio.value,
+    nombreOperacion: nombreOperacion.value.trim(),
+    descripcionBreve: descripcionBreve.value.trim(),
+    origenInvestigacion: origenInvestigacion.value.trim(),
+    tipologiaDelictiva: tipologiaDelictiva.value.trim(),
+    procedimientosJudiciales: procedimientosJudiciales.value.trim(),
+    diligenciasPoliciales: diligenciasPoliciales.value.trim(),
+    actualizado: new Date().toISOString()
+  };
+
+  try {
+    await setDoc(doc(db, COLECCION_OPERACIONES, code), datos, { merge: true });
     showToast("Operación guardada correctamente.", "success");
     operacionActual = datos;
     idOperacionActual = code;
-    cargarOperacionesEnSelect(); // Actualizar la lista desplegable
-    operacionSelect.value = code; // Mantener la selección
+    await cargarOperacionesEnSelect();
+    operacionSelect.value = code;
     btnGuardarOperacion.disabled = false;
     btnEliminarOperacion.classList.remove('d-none');
     btnGenerarInforme.classList.remove('d-none');
     codigoWarning.classList.add("d-none");
+  } catch (error) {
+      console.error("Error guardando operación:", error);
+      showToast(`Error al guardar: ${error.message}`, "error");
+  }
 });
 
-// ======= 6. ELIMINACIÓN EN CASCADA DE UNA OPERACIÓN =======
-if (btnEliminarOperacion) {
-    btnEliminarOperacion.addEventListener('click', async () => {
-        if (!idOperacionActual) return showToast("No hay ninguna operación cargada para eliminar.");
-
-        const confirmacion = prompt(`ATENCIÓN: Esta acción es irreversible.\nSe borrará la operación "${nombreOperacion.value}" y TODOS sus datos asociados (juzgados, detenidos, documentos, etc.).\n\nEscribe "ELIMINAR" para confirmar.`);
-        if (confirmacion !== "ELIMINAR") {
-            showToast("Borrado cancelado.");
-            return;
-        }
-
-        try {
-            showToast("Borrando operación y todos sus datos... Este proceso puede tardar un momento.", "info");
-            await eliminarOperacionCompleta(idOperacionActual);
-            showToast("Operación eliminada con éxito.", "success");
-            
-            // Limpiar la interfaz
-            formOperacion.reset();
-            operacionActual = null;
-            idOperacionActual = null;
-            limpiarTodosLosListados();
-            cargarOperacionesEnSelect();
-            btnEliminarOperacion.classList.add('d-none');
-            btnGenerarInforme.classList.add('d-none');
-
-        } catch (error) {
-            console.error("Error en el borrado en cascada:", error);
-            showToast(`Error al eliminar la operación: ${error.message}`, "error");
-        }
-    });
-}
+btnEliminarOperacion.addEventListener('click', () => {
+  if (!idOperacionActual) return;
+  showConfirmationModal({
+      title: 'Confirmar Eliminación',
+      body: `ATENCIÓN: Esta acción es irreversible.<br>Se borrará la operación "<b>${nombreOperacion.value}</b>" y <b>TODOS</b> sus datos asociados.<br><br>¿Estás completamente seguro?`,
+      confirmText: 'Sí, Eliminar Todo',
+      isDanger: true,
+      onConfirm: async () => {
+          showToast("Borrando operación y todos sus datos...", "info");
+          try {
+              await eliminarOperacionCompleta(idOperacionActual);
+              showToast("Operación eliminada con éxito.", "success");
+              resetearUI();
+              await cargarOperacionesEnSelect();
+          } catch (error) {
+              console.error("Error en el borrado en cascada:", error);
+              showToast(`Error al eliminar la operación: ${error.message}`, "error");
+          }
+      }
+  });
+});
 
 async function eliminarOperacionCompleta(idOperacion) {
-    console.log(`Iniciando borrado en cascada para la operación: ${idOperacion}`);
-    const subcolecciones = [
-        "juzgados", "inhibiciones", "inspecciones", "historicoJuzgados",
-        "intervenciones", "cronologia", "solicitudesJudiciales", "colaboraciones",
-        "detenidos", "detenidosPrevistos", "otrasPersonas", "observaciones", "pendientes", "documentos"
-    ];
+  const subcolecciones = [
+    "juzgados", "inhibiciones", "historicoJuzgados", "intervenciones", "solicitudesJudiciales",
+    "colaboraciones", "cronologia", "detenidos", "detenidosPrevistos", "otrasPersonas", 
+    "inspecciones", "documentos", "observaciones", "pendientes"
+  ];
 
-    for (const sub of subcolecciones) {
-        const snap = await db.collection(COLECCION_OPERACIONES).doc(idOperacion).collection(sub).get();
-        if (snap.empty) continue;
+  const docsSnap = await getDocs(collection(db, COLECCION_OPERACIONES, idOperacion, 'documentos'));
+  for (const docSnap of docsSnap.docs) {
+      const docData = docSnap.data();
+      if (docData.path) {
+          const fileRef = ref(storage, docData.path);
+          try { await deleteObject(fileRef); } 
+          catch (e) { console.warn(`No se pudo eliminar el archivo ${docData.path}: ${e.message}`); }
+      }
+  }
 
-        console.log(`Borrando ${snap.size} documentos de la subcolección ${sub}...`);
-        const batch = db.batch();
-        for (const doc of snap.docs) {
-            const docData = doc.data();
-            // Si es la colección de documentos, borrar también el archivo de Storage
-            if (sub === 'documentos' && docData.path) {
-                const fileRef = storage.ref(docData.path);
-                try {
-                    await fileRef.delete();
-                    console.log(`Archivo ${docData.nombre} eliminado de Storage.`);
-                } catch (e) {
-                    console.warn(`No se pudo eliminar el archivo ${docData.path} de Storage (puede que ya no exista): ${e.message}`);
-                }
-            }
-            // Si es un detenido o un evento de cronología, eliminarlo del resumen
-            if (sub === 'detenidos') {
-                await eliminarDeResumen('resumen_detenidos', docData.fechaDetenido, doc.id);
-            }
-            if (sub === 'cronologia') {
-                await eliminarDeResumen('resumen_cronologia', docData.fecha, doc.id);
-            }
-            batch.delete(doc.ref);
-        }
-        await batch.commit();
-    }
-
-    console.log(`Borrando documento principal de la operación ${idOperacion}...`);
-    await db.collection(COLECCION_OPERACIONES).doc(idOperacion).delete();
-    console.log("Borrado en cascada completado.");
+  const batch = writeBatch(db);
+  for (const sub of subcolecciones) {
+      const subCollectionRef = collection(db, COLECCION_OPERACIONES, idOperacion, sub);
+      const snapshot = await getDocs(subCollectionRef);
+      snapshot.forEach(doc => batch.delete(doc.ref));
+  }
+  batch.delete(doc(db, COLECCION_OPERACIONES, idOperacion));
+  await batch.commit();
 }
 
-// ======= FUNCIÓN GENÉRICA PARA BORRAR SUBDOCUMENTOS =======
-window.eliminarSubdocumento = async (subcoleccion, docid, callback) => {
-    if (!idOperacionActual) return;
-    if (!confirm("¿Seguro que quieres eliminar este elemento?")) return;
-    await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection(subcoleccion).doc(docid).delete();
+// ======= GESTIÓN DE SUBCOLECCIONES =======
+async function addSubdocument(subcoleccion, data, formElement, callback) {
+    if (!idOperacionActual) return showToast("Guarda la operación antes.", "warning");
+    await addDoc(collection(db, COLECCION_OPERACIONES, idOperacionActual, subcoleccion), data);
+    if (formElement) formElement.reset();
     if (callback) callback();
-};
+}
 
-// ======= CRONOLOGÍA (CON RESÚMENES) =======
-const btnAñadirEventoCronologia = document.getElementById('btnAñadirEventoCronologia');
-const descripcionCronologia = document.getElementById('descripcionCronologia');
-const fechaCronologia = document.getElementById('fechaCronologia');
+async function loadSubdocumentList(subcoleccion, listadoEl, indicatorSelector, renderFunction, orderByField = "ts", orderByDir = "desc") {
+    if (!idOperacionActual) {
+        listadoEl.innerHTML = "";
+        return actualizarIndicador(indicatorSelector, false);
+    }
+    const q = query(collection(db, COLECCION_OPERACIONES, idOperacionActual, subcoleccion), orderBy(orderByField, orderByDir));
+    const snap = await getDocs(q);
+    listadoEl.innerHTML = snap.docs.map(doc => renderFunction(doc.id, doc.data())).join('');
+    actualizarIndicador(indicatorSelector, !snap.empty);
+    return snap; // Devuelve el snapshot para comprobaciones adicionales
+}
 
-btnAñadirEventoCronologia.addEventListener('click', async () => {
-    if (!idOperacionActual) return showToast("Guarda la operación antes.");
-    const data = {
-        descripcionCronologia: descripcionCronologia.value.trim(),
-        fecha: fechaCronologia.value,
-        ts: new Date().toISOString()
-    };
-    if (!data.descripcionCronologia || !data.fecha) return showToast("Completa los campos.");
-
-    const docRef = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("cronologia").add(data);
-    
-    // Añadir al resumen de cronología
-    const fechaDocId = data.fecha;
-    const resumenRef = db.collection('resumen_cronologia').doc(fechaDocId);
-    const resumenData = {
-        ...data,
-        idOperacion: idOperacionActual,
-        nombreOperacion: nombreOperacion.value.trim(),
-        idEntrada: docRef.id
-    };
-    await resumenRef.set({
-        actuaciones: firebase.firestore.FieldValue.arrayUnion(resumenData)
-    }, { merge: true });
-
-    document.getElementById('formCronologia').reset();
-    cargarListadoCronologia();
+// --- Juzgados ---
+document.getElementById('btnAñadirJuzgado').addEventListener('click', () => {
+    const data = { juzgado: document.getElementById('juzgadoInicial').value.trim(), diligencias: document.getElementById('diligenciasPreviasJuzgado').value.trim(), ts: new Date().toISOString() };
+    if (!data.juzgado && !data.diligencias) return showToast("Completa al menos un campo.", "warning");
+    addSubdocument('juzgados', data, document.getElementById('formJuzgados'), cargarListadoJuzgados);
 });
+async function cargarListadoJuzgados() {
+    await loadSubdocumentList('juzgados', document.getElementById('listadoJuzgados'), '#headingJuzgados .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.juzgado}</b> (${d.diligencias})</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('juzgados', '${id}', cargarListadoJuzgados)"><i class="bi bi-trash"></i></button>
+        </div>`);
+}
 
-window.eliminarCronologia = async (docid, fecha) => {
-    if (!idOperacionActual) return;
-    if (!confirm("¿Seguro que quieres eliminar este evento?")) return;
-    await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("cronologia").doc(docid).delete();
-    await eliminarDeResumen('resumen_cronologia', fecha, docid);
-    cargarListadoCronologia();
-};
+// --- Inhibiciones ---
+document.getElementById('btnAñadirInhibicion').addEventListener('click', () => {
+    const data = { juzgado: document.getElementById('juzgadoInhibido').value.trim(), fecha: document.getElementById('fechaInhibicion').value, ts: new Date().toISOString() };
+    if (!data.juzgado || !data.fecha) return showToast("Completa todos los campos.", "warning");
+    addSubdocument('inhibiciones', data, document.getElementById('formInhibiciones'), cargarListadoInhibiciones);
+});
+async function cargarListadoInhibiciones() {
+    await loadSubdocumentList('inhibiciones', document.getElementById('listadoInhibiciones'), '#headingJuzgados .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.juzgado}</b> (${formatoFecha(d.fecha)})</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('inhibiciones', '${id}', cargarListadoInhibiciones)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fecha');
+}
 
+// --- Histórico Juzgados ---
+document.getElementById('btnAñadirHistoricoJuzgado').addEventListener('click', () => {
+    const data = { fecha: document.getElementById('fechaHistoricoJuzgado').value, juzgadoRelacionado: document.getElementById('juzgadoRelacionado').value.trim(), descripcionEventoJuzgado: document.getElementById('descripcionEventoJuzgado').value.trim(), ts: new Date().toISOString() };
+    if (!data.fecha || !data.descripcionEventoJuzgado) return showToast("La fecha y la descripción son obligatorias.", "warning");
+    addSubdocument('historicoJuzgados', data, document.getElementById('formHistoricoJuzgados'), cargarListadoHistoricoJuzgados);
+});
+async function cargarListadoHistoricoJuzgados() {
+    await loadSubdocumentList('historicoJuzgados', document.getElementById('listadoHistoricoJuzgados'), '#headingJuzgados .data-indicator', (id, h) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${formatoFecha(h.fecha)}</b> - ${h.juzgadoRelacionado}: ${h.descripcionEventoJuzgado}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('historicoJuzgados', '${id}', cargarListadoHistoricoJuzgados)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fecha');
+}
+
+// --- Intervenciones ---
+document.getElementById('btnAñadirIntervencion').addEventListener('click', () => {
+    const data = { intervencionTelefonica: document.getElementById('intervencionTelefonica').value.trim(), entradaRegistro: document.getElementById('entradaRegistro').value.trim(), ts: new Date().toISOString() };
+    if (!data.intervencionTelefonica && !data.entradaRegistro) return showToast("Completa al menos un campo.", "warning");
+    addSubdocument('intervenciones', data, document.getElementById('formIntervenciones'), cargarListadoIntervenciones);
+});
+async function cargarListadoIntervenciones() {
+    await loadSubdocumentList('intervenciones', document.getElementById('listadoIntervenciones'), '#headingIntervenciones .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span>Tel: ${d.intervencionTelefonica || 'N/A'} | Reg: ${d.entradaRegistro || 'N/A'}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('intervenciones', '${id}', cargarListadoIntervenciones)"><i class="bi bi-trash"></i></button>
+        </div>`);
+}
+
+// --- Solicitudes Judiciales ---
+document.getElementById('btnAñadirSolicitudJudicial').addEventListener('click', () => {
+    const data = { solicitudJudicial: document.getElementById('solicitudJudicial').value.trim(), descripcionSolicitudJudicial: document.getElementById('descripcionSolicitudJudicial').value.trim(), ts: new Date().toISOString() };
+    if (!data.solicitudJudicial) return showToast("El tipo de solicitud es obligatorio.", "warning");
+    addSubdocument('solicitudesJudiciales', data, document.getElementById('formSolicitudes'), cargarListadoSolicitudesJudiciales);
+});
+async function cargarListadoSolicitudesJudiciales() {
+    await loadSubdocumentList('solicitudesJudiciales', document.getElementById('listadoSolicitudesJudiciales'), '#headingIntervenciones .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.solicitudJudicial}</b>: ${d.descripcionSolicitudJudicial}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('solicitudesJudiciales', '${id}', cargarListadoSolicitudesJudiciales)"><i class="bi bi-trash"></i></button>
+        </div>`);
+}
+
+// --- Colaboraciones ---
+document.getElementById('btnAñadirColaboracion').addEventListener('click', () => {
+    const data = { fechaColaboracion: document.getElementById('fechaColaboracion').value, grupoColaboracion: document.getElementById('grupoColaboracion').value.trim(), tipoColaboracion: document.getElementById('tipoColaboracion').value.trim(), ts: new Date().toISOString() };
+    if (!data.fechaColaboracion || !data.grupoColaboracion) return showToast("La fecha y el grupo son obligatorios.", "warning");
+    addSubdocument('colaboraciones', data, document.getElementById('formColaboraciones'), cargarListadoColaboraciones);
+});
+async function cargarListadoColaboraciones() {
+    await loadSubdocumentList('colaboraciones', document.getElementById('listadoColaboraciones'), '#headingIntervenciones .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span>${formatoFecha(d.fechaColaboracion)} - <b>${d.grupoColaboracion}</b>: ${d.tipoColaboracion}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('colaboraciones', '${id}', cargarListadoColaboraciones)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fechaColaboracion');
+}
+
+// --- Cronología ---
+document.getElementById('btnAñadirEventoCronologia').addEventListener('click', async () => {
+    const data = { descripcionCronologia: document.getElementById('descripcionCronologia').value.trim(), fecha: document.getElementById('fechaCronologia').value, ts: new Date().toISOString() };
+    if (!data.descripcionCronologia || !data.fecha) return showToast("Completa los campos.", "warning");
+    await addSubdocument('cronologia', data, document.getElementById('formCronologia'), cargarListadoCronologia);
+});
 async function cargarListadoCronologia() {
-    const listadoEl = document.getElementById('listadoCronologia');
-    if (!idOperacionActual) {
-        listadoEl.innerHTML = "";
-        return actualizarIndicador('#headingCronologia .data-indicator', false);
-    }
-    const snap = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("cronologia").orderBy("fecha", "desc").get();
-    listadoEl.innerHTML = "";
-    snap.forEach(doc => {
-        const c = doc.data();
-        listadoEl.innerHTML += `<div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center"><span>${formatoFecha(c.fecha)} - ${c.descripcionCronologia || ""}</span>
-      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarCronologia('${doc.id}', '${c.fecha}')"><i class="bi bi-trash"></i></button></div>`;
-    });
-    actualizarIndicador('#headingCronologia .data-indicator', !snap.empty);
+    await loadSubdocumentList('cronologia', document.getElementById('listadoCronologia'), '#headingCronologia .data-indicator', (id, c) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span>${formatoFecha(c.fecha)} - ${c.descripcionCronologia || ""}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('cronologia', '${id}', cargarListadoCronologia)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fecha');
 }
 
-// ======= DETENIDOS Y PREVISTOS (CON RESÚMENES) =======
-const btnAñadirDetenido = document.getElementById('btnAñadirDetenido');
-
-btnAñadirDetenido.addEventListener('click', async () => {
-    if (!idOperacionActual) return showToast("Guarda la operación antes.");
+// --- Detenidos ---
+document.getElementById('btnAñadirDetenido').addEventListener('click', async () => {
     const data = {
-        nombreDetenido: document.getElementById('nombreDetenido').value.trim(),
-        fechaDetenido: document.getElementById('fechaDetenido').value,
-        delitoDetenido: document.getElementById('delitoDetenido').value.trim(),
-        nacionalidadDetenido: document.getElementById('nacionalidadDetenido').value.trim(),
-        secuenciaDetenido: document.getElementById('secuenciaDetenido').value.trim(),
-        ts: new Date().toISOString()
+      nombreDetenido: document.getElementById('nombreDetenido').value.trim(),
+      fechaDetenido: document.getElementById('fechaDetenido').value,
+      delitoDetenido: document.getElementById('delitoDetenido').value.trim(),
+      nacionalidadDetenido: document.getElementById('nacionalidadDetenido').value.trim(),
+      secuenciaDetenido: document.getElementById('secuenciaDetenido').value.trim(),
+      ts: new Date().toISOString()
     };
-    if (!data.nombreDetenido || !data.fechaDetenido) return showToast("Nombre y fecha son obligatorios.");
-
-    const docRef = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("detenidos").add(data);
-    
-    // Añadir al resumen de detenidos
-    const fechaDocId = data.fechaDetenido;
-    const resumenRef = db.collection('resumen_detenidos').doc(fechaDocId);
-    const resumenData = {
-        ...data,
-        idOperacion: idOperacionActual,
-        nombreOperacion: nombreOperacion.value.trim(),
-        idEntrada: docRef.id
-    };
-    await resumenRef.set({
-        detenciones: firebase.firestore.FieldValue.arrayUnion(resumenData)
-    }, { merge: true });
-
-    document.getElementById('formDetenidos').reset();
-    cargarListadoDetenidos();
+    if (!data.nombreDetenido || !data.fechaDetenido) return showToast("Nombre y fecha son obligatorios.", "warning");
+    await addSubdocument('detenidos', data, document.getElementById('formDetenidos'), cargarListadoDetenidos);
 });
-
-window.eliminarDetenido = async (docid, fecha) => {
-    if (!idOperacionActual) return;
-    if (!confirm("¿Seguro que quieres eliminar este detenido?")) return;
-    await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("detenidos").doc(docid).delete();
-    await eliminarDeResumen('resumen_detenidos', fecha, docid);
-    cargarListadoDetenidos();
-};
-
 async function cargarListadoDetenidos() {
-    const listadoEl = document.getElementById('listadoDetenidos');
-    if (!idOperacionActual) {
-        listadoEl.innerHTML = "";
-        return actualizarIndicador('#headingDetenidos .data-indicator', false);
-    }
-
-    const snapDetenidos = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("detenidos").orderBy("fechaDetenido", "desc").get();
-    listadoEl.innerHTML = "";
-    snapDetenidos.forEach(doc => {
-        const d = doc.data();
-        listadoEl.innerHTML += `<div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center"><span>
-      <b>${d.nombreDetenido || ""}</b> - ${formatoFecha(d.fechaDetenido)}<br>
-      <small>Delito: ${d.delitoDetenido || ""} | Nac: ${d.nacionalidadDetenido || ""} | Ord: ${d.secuenciaDetenido || ""}</small>
-      </span>
-      <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarDetenido('${doc.id}', '${d.fechaDetenido}')"><i class="bi bi-trash"></i></button></div>`;
-    });
-    
-    const snapPrevistos = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("detenidosPrevistos").orderBy("ts", "desc").get();
-    cargarListadoDetenidosPrevistos(snapPrevistos);
-
-    actualizarIndicador('#headingDetenidos .data-indicator', !snapDetenidos.empty || !snapPrevistos.empty);
+    const snap = await loadSubdocumentList('detenidos', document.getElementById('listadoDetenidos'), '#headingDetenidos .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.nombreDetenido}</b> - ${formatoFecha(d.fechaDetenido)}<br><small>Delito: ${d.delitoDetenido} | Nac: ${d.nacionalidadDetenido}</small></span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('detenidos', '${id}', cargarListadoDetenidos)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fechaDetenido');
+    const snapPrevistos = await getDocs(collection(db, COLECCION_OPERACIONES, idOperacionActual, "detenidosPrevistos"));
+    actualizarIndicador('#headingDetenidos .data-indicator', !snap.empty || !snapPrevistos.empty);
 }
 
-// (El resto de funciones como `cargarListadoDetenidosPrevistos`, `btnAñadirPrevisto`, etc., se mantienen como en los ficheros originales,
-// ya que su lógica es sencilla y no entra en conflicto. Se omiten aquí por brevedad, pero deben estar en el fichero final).
+// --- Detenidos Previstos ---
+document.getElementById('btnAñadirPrevisto').addEventListener('click', async () => {
+    const data = { nombrePrevisto: document.getElementById('nombrePrevisto').value.trim(), nacionalidadPrevisto: document.getElementById('nacionalidadPrevisto').value.trim(), delitoPrevisto: document.getElementById('delitoPrevisto').value.trim(), ts: new Date().toISOString() };
+    if (!data.nombrePrevisto) return showToast("El nombre es obligatorio.", "warning");
+    await addSubdocument('detenidosPrevistos', data, document.getElementById('formDetenidosPrevistos'), cargarListadoDetenidosPrevistos);
+});
+async function cargarListadoDetenidosPrevistos() {
+    const snap = await loadSubdocumentList('detenidosPrevistos', document.getElementById('listadoDetenidosPrevistos'), '#headingDetenidos .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.nombrePrevisto}</b> | Nac: ${d.nacionalidadPrevisto} | Delito: ${d.delitoPrevisto}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('detenidosPrevistos', '${id}', cargarListadoDetenidosPrevistos)"><i class="bi bi-trash"></i></button>
+        </div>`);
+    const snapDetenidos = await getDocs(collection(db, COLECCION_OPERACIONES, idOperacionActual, "detenidos"));
+    actualizarIndicador('#headingDetenidos .data-indicator', !snap.empty || !snapDetenidos.empty);
+}
 
-// ======= INSPECCIONES (CON LÓGICA MEJORADA) =======
+// --- Otras Personas ---
+document.getElementById('btnAñadirOtraPersona').addEventListener('click', async () => {
+    const data = { filiacionOtraPersona: document.getElementById('filiacionOtraPersona').value.trim(), tipoVinculacion: document.getElementById('tipoVinculacion').value.trim(), nacionalidadOtraPersona: document.getElementById('nacionalidadOtraPersona').value.trim(), telefonoOtraPersona: document.getElementById('telefonoOtraPersona').value.trim(), ts: new Date().toISOString() };
+    if (!data.filiacionOtraPersona) return showToast("El nombre es obligatorio.", "warning");
+    await addSubdocument('otrasPersonas', data, document.getElementById('formOtrasPersonas'), cargarListadoOtrasPersonas);
+});
+async function cargarListadoOtrasPersonas() {
+    await loadSubdocumentList('otrasPersonas', document.getElementById('listadoOtrasPersonas'), '#headingPersonasVinculadas .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><b>${d.filiacionOtraPersona}</b> (${d.tipoVinculacion}) | Nac: ${d.nacionalidadOtraPersona} | Tel: ${d.telefonoOtraPersona}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('otrasPersonas', '${id}', cargarListadoOtrasPersonas)"><i class="bi bi-trash"></i></button>
+        </div>`);
+}
+
+// --- Inspecciones ---
 const checkSinOperacion = document.getElementById('checkSinOperacion');
 const fechaInspeccionRutinaria = document.getElementById('fechaInspeccionRutinaria');
-
-if (checkSinOperacion) {
-    checkSinOperacion.addEventListener('change', () => {
-        fechaInspeccionRutinaria.disabled = !checkSinOperacion.checked;
-        if (checkSinOperacion.checked) {
-            fechaInspeccionRutinaria.value = getFechaYYYYMMDD();
-        }
-        cargarListadoInspecciones(); 
-    });
-}
+checkSinOperacion.addEventListener('change', () => {
+    fechaInspeccionRutinaria.disabled = !checkSinOperacion.checked;
+    if (checkSinOperacion.checked) {
+        fechaInspeccionRutinaria.value = getFechaYYYYMMDD();
+    }
+    cargarListadoInspecciones();
+});
 
 document.getElementById('btnAñadirInspeccion').addEventListener('click', async () => {
     const casa = document.getElementById('nombreCasa').value.trim();
     const num = parseInt(document.getElementById('numFiliadas').value, 10) || 0;
     const numCit = parseInt(document.getElementById('numCitadas').value, 10) || 0;
     const nacs = document.getElementById('nacionalidadesFiliadas').value.split(',').map(n => n.trim()).filter(Boolean);
-    const idEntrada = uniqueID();
+    if (!casa) return showToast("El nombre de la casa es obligatorio.", "warning");
 
-    if (!casa) return showToast("El nombre de la casa es obligatorio.");
-
-    if (checkSinOperacion && checkSinOperacion.checked) {
+    if (checkSinOperacion.checked) {
         const fecha = fechaInspeccionRutinaria.value;
-        if (!fecha) return showToast("La fecha es obligatoria para inspecciones sin operación.");
-        
-        const data = { casa, numFiliadas: num, numCitadas: numCit, nacionalidadesFiliadas: nacs, ts: new Date().toISOString(), idEntrada };
-        const docRef = db.collection('control_casas_citas').doc(fecha);
-        await docRef.set({ datos: firebase.firestore.FieldValue.arrayUnion(data) }, { merge: true });
+        if (!fecha) return showToast("La fecha es obligatoria para inspecciones sin operación.", "warning");
+        const data = { casa, numFiliadas: num, numCitadas: numCit, nacionalidadesFiliadas: nacs, ts: new Date().toISOString(), idEntrada: uniqueID() };
+        const docRef = doc(db, 'control_casas_citas', fecha);
+        await setDoc(docRef, { datos: arrayUnion(data) }, { merge: true });
         showToast("Inspección rutinaria añadida.", "success");
     } else {
-        if (!idOperacionActual) return showToast("Guarda la operación antes de añadir una inspección asociada.");
+        if (!idOperacionActual) return showToast("Guarda la operación antes.", "warning");
         const data = { casa, numFiliadas: num, numCitadas: numCit, nacionalidadesFiliadas: nacs, fechaInspeccion: fechaInicio.value, ts: new Date().toISOString() };
-        await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("inspecciones").add(data);
+        await addDoc(collection(db, COLECCION_OPERACIONES, idOperacionActual, "inspecciones"), data);
         showToast("Inspección añadida a la operación.", "success");
     }
-    
     document.getElementById('formInspecciones').reset();
-    document.getElementById('numCitadas').value = "";
-    if (checkSinOperacion) {
-        checkSinOperacion.checked = checkSinOperacion.checked;
-        fechaInspeccionRutinaria.disabled = !checkSinOperacion.checked;
-    }
-    cargarListadoInspecciones();
+    checkSinOperacion.dispatchEvent(new Event('change')); // Recargar lista
 });
 
 async function cargarListadoInspecciones() {
@@ -462,208 +490,212 @@ async function cargarListadoInspecciones() {
     listadoEl.innerHTML = "";
     let tieneDatos = false;
 
-    if (checkSinOperacion && checkSinOperacion.checked) {
+    if (checkSinOperacion.checked) {
         const fecha = fechaInspeccionRutinaria.value;
         if (!fecha) return actualizarIndicador('#headingInspecciones .data-indicator', false);
-
-        const doc = await db.collection("control_casas_citas").doc(fecha).get();
-        if (doc.exists) {
-            const inspecciones = doc.data().datos || [];
+        const docSnap = await getDoc(doc(db, "control_casas_citas", fecha));
+        if (docSnap.exists()) {
+            const inspecciones = docSnap.data().datos || [];
             tieneDatos = inspecciones.length > 0;
-            inspecciones.forEach(d => {
-                listadoEl.innerHTML += `<div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center"><span>
-                    <b>${d.casa || ""}</b><br>
-                    <small>Filiadas: <b>${d.numFiliadas || 0}</b>, Citadas: <b>${d.numCitadas || 0}</b>. Nac: ${(d.nacionalidadesFiliadas || []).join(', ') || "N/A"}</small>
-                </span>
-                <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumentoInspeccion(null, '${d.idEntrada}', '${fecha}')"><i class="bi bi-trash"></i></button></div>`;
-            });
+            listadoEl.innerHTML = inspecciones.map(d => `
+                <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+                    <span><b>${d.casa}</b><br><small>Filiadas: ${d.numFiliadas}, Citadas: ${d.numCitadas}. Nac: ${d.nacionalidadesFiliadas.join(', ')}</small></span>
+                    <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarInspeccion(null, '${d.idEntrada}', '${fecha}')"><i class="bi bi-trash"></i></button>
+                </div>`).join('');
         }
     } else {
         if (!idOperacionActual) return actualizarIndicador('#headingInspecciones .data-indicator', false);
-        const snap = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("inspecciones").orderBy("ts", "desc").get();
+        const snap = await getDocs(query(collection(db, COLECCION_OPERACIONES, idOperacionActual, "inspecciones"), orderBy("ts", "desc")));
         tieneDatos = !snap.empty;
-        snap.forEach(doc => {
+        listadoEl.innerHTML = snap.docs.map(doc => {
             const d = doc.data();
-            listadoEl.innerHTML += `<div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center"><span>
-                <b>${d.casa || ""}</b> - ${formatoFecha(d.fechaInspeccion)}<br>
-                <small>Filiadas: <b>${d.numFiliadas || 0}</b>, Citadas: <b>${d.numCitadas || 0}</b>. Nac: ${(d.nacionalidadesFiliadas || []).join(', ') || "N/A"}</small>
-            </span>
-            <button class="btn btn-sm btn-danger ms-2" title="Eliminar" onclick="eliminarSubdocumentoInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button></div>`;
-        });
+            return `
+                <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+                    <span><b>${d.casa}</b> - ${formatoFecha(d.fechaInspeccion)}<br><small>Filiadas: ${d.numFiliadas}, Citadas: ${d.numCitadas}. Nac: ${d.nacionalidadesFiliadas.join(', ')}</small></span>
+                    <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarInspeccion('${doc.id}')"><i class="bi bi-trash"></i></button>
+                </div>`;
+        }).join('');
     }
     actualizarIndicador('#headingInspecciones .data-indicator', tieneDatos);
 }
 
-window.eliminarSubdocumentoInspeccion = async function(docid, idEntrada = null, fechaDoc = null) {
-    if (!confirm("¿Seguro que quieres eliminar esta inspección?")) return;
-    if (checkSinOperacion && checkSinOperacion.checked && idEntrada && fechaDoc) {
-        const docRef = db.collection("control_casas_citas").doc(fechaDoc);
-        const doc = await docRef.get();
-        if (doc.exists) {
-            let datos = doc.data().datos || [];
-            const datosFiltrados = datos.filter(item => item.idEntrada !== idEntrada);
-            if (datosFiltrados.length === 0) {
-                await docRef.delete();
-            } else {
-                await docRef.update({ datos: datosFiltrados });
-            }
-        }
-    } else if (docid && idOperacionActual) {
-        await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection("inspecciones").doc(docid).delete();
-    }
-    cargarListadoInspecciones();
-};
-
-
-// ======= INFORME AUTOMÁTICO (VERSIÓN MEJORADA) =======
-if (btnGenerarInforme) {
-    btnGenerarInforme.addEventListener('click', async () => {
-        if (!idOperacionActual) return showToast("Carga una operación primero.");
-        
-        showToast("Generando informe, por favor espera...", "info");
-
-        try {
-            const doc = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).get();
-            if (!doc.exists) return showToast("No se encontró la operación para generar el informe.");
-            const op = doc.data();
-
-            async function getSubcoleccion(nombre, orderByField = "ts", orderDirection = "desc") {
-                try {
-                    const snap = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection(nombre).orderBy(orderByField, orderDirection).get();
-                    let arr = [];
-                    snap.forEach(d => arr.push({id: d.id, ...d.data()}));
-                    return arr;
-                } catch (e) {
-                    console.warn(`No se pudo obtener la subcolección '${nombre}' ordenada. Intentando sin ordenar.`);
-                    const snap = await db.collection(COLECCION_OPERACIONES).doc(idOperacionActual).collection(nombre).get();
-                    let arr = [];
-                    snap.forEach(d => arr.push({id: d.id, ...d.data()}));
-                    return arr;
+window.eliminarInspeccion = (docid, idEntrada = null, fechaDoc = null) => {
+    showConfirmationModal({
+        title: 'Eliminar Inspección', body: '¿Seguro que quieres eliminar esta inspección?', isDanger: true,
+        onConfirm: async () => {
+            if (checkSinOperacion.checked && idEntrada && fechaDoc) {
+                const docRef = doc(db, "control_casas_citas", fechaDoc);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const datosFiltrados = (docSnap.data().datos || []).filter(item => item.idEntrada !== idEntrada);
+                    if (datosFiltrados.length === 0) await deleteDoc(docRef);
+                    else await updateDoc(docRef, { datos: datosFiltrados });
                 }
+            } else if (docid && idOperacionActual) {
+                await deleteDoc(doc(db, COLECCION_OPERACIONES, idOperacionActual, "inspecciones", docid));
             }
-
-            const [
-                juzgados, inhibiciones, historicoJuzgados, cronologia, detenidos, 
-                detenidosPrevistos, otrasPersonas, documentos, observaciones, pendientes, inspecciones
-            ] = await Promise.all([
-                getSubcoleccion("juzgados"),
-                getSubcoleccion("inhibiciones", "fechaInhibicion", "desc"),
-                getSubcoleccion("historicoJuzgados", "fechaHistoricoJuzgado", "desc"),
-                getSubcoleccion("cronologia", "fecha", "desc"),
-                getSubcoleccion("detenidos", "fechaDetenido", "desc"),
-                getSubcoleccion("detenidosPrevistos"),
-                getSubcoleccion("otrasPersonas"),
-                getSubcoleccion("documentos"),
-                getSubcoleccion("observaciones"),
-                getSubcoleccion("pendientes", "fechaPendiente", "desc"),
-                getSubcoleccion("inspecciones", "ts", "desc")
-            ]);
-
-            let html = `
-            <div id="informe-operacion" style="font-family: 'Segoe UI', Arial, sans-serif; color:#152045; max-width: 900px; margin:auto; background: #f6f8fb; border-radius:14px; box-shadow:0 2px 28px #143e8a22; padding:32px">
-                <div style="display:flex; align-items:center; margin-bottom:18px;">
-                    <img src="../img/logo_cnp.png" alt="CNP" style="width:52px; height:52px; margin-right:20px;">
-                    <div>
-                        <h2 style="margin:0; font-size:2rem; color:#14224b;">Informe de Operación</h2>
-                        <div style="font-size:1.05rem; color:#29497a;">Benito · UCRIF · Grupo 3</div>
-                    </div>
-                </div>
-                <hr>
-                <h3 style="color:#182b4d;">Datos Generales</h3>
-                <table style="width:100%; margin-bottom:18px; font-size:1.02rem; border-collapse: collapse;">
-                    ${idOperacionActual ? `<tr><th style="text-align:left; width: 25%; padding: 6px; border: 1px solid #ddd;">Código:</th><td style="padding: 6px; border: 1px solid #ddd;">${idOperacionActual}</td></tr>` : ''}
-                    ${op.nombreOperacion ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Nombre:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.nombreOperacion}</td></tr>` : ''}
-                    ${op.fechaInicio ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Fecha de Inicio:</th><td style="padding: 6px; border: 1px solid #ddd;">${formatoFecha(op.fechaInicio)}</td></tr>` : ''}
-                    ${op.tipologiaDelictiva ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Tipología Delictiva:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.tipologiaDelictiva}</td></tr>` : ''}
-                    ${op.origenInvestigacion ? `<tr><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Origen Investigación:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.origenInvestigacion}</td></tr>` : ''}
-                    ${op.descripcionBreve ? `<tr style="vertical-align: top;"><th style="text-align:left; padding: 6px; border: 1px solid #ddd;">Resumen:</th><td style="padding: 6px; border: 1px solid #ddd;">${op.descripcionBreve}</td></tr>` : ''}
-                </table>
-                
-                ${cronologia.length > 0 ? `<hr><h3 style="color:#39526b;">Cronología</h3><ol>${cronologia.map(e => `<li>${formatoFecha(e.fecha)} - ${e.descripcionCronologia || ""}</li>`).join("")}</ol>` : ''}
-                
-                ${detenidos.length > 0 || detenidosPrevistos.length > 0 ? `<hr><h3 style="color:#253c5e;">Personas Vinculadas</h3>` : ''}
-                ${detenidos.length > 0 ? `<h4>Detenidos</h4><ul>${detenidos.map(d => `<li><b>${d.nombreDetenido}</b> (${d.nacionalidadDetenido || 'N/A'}) - ${formatoFecha(d.fechaDetenido)}<br><small>Delito: ${d.delitoDetenido || '-'}</small></li>`).join("")}</ul>` : ''}
-                ${detenidosPrevistos.length > 0 ? `<h4>Detenidos Previstos</h4><ul>${detenidosPrevistos.map(d => `<li><b>${d.nombrePrevisto}</b> (${d.nacionalidadPrevisto || 'N/A'})<br><small>Delito: ${d.delitoPrevisto || '-'}</small></li>`).join("")}</ul>` : ''}
-
-                ${documentos.length > 0 ? `<hr><h3 style="color:#38545e;">Documentación Adjunta</h3><ul>${documentos.map(docu => `<li><a href="${docu.url}" target="_blank">${docu.nombre}</a> (${(docu.size / 1024).toFixed(1)} KB)</li>`).join("")}</ul>` : ''}
-                
-                <hr>
-                <div style="font-size:.9rem; color:#456; text-align:center; margin-top: 20px;">Informe generado automáticamente por Benito · UCRIF · ${formatoFecha(new Date())}</div>
-            </div>
-            <div style="text-align:center; margin:18px 0;" id="print-button-container">
-                <button onclick="window.print()" style="font-size:1.1rem; background:#ffd94a; color:#152045; border:none; border-radius:7px; padding:8px 22px; font-weight:bold; cursor:pointer;">Imprimir o Guardar PDF</button>
-            </div>
-            `;
-
-            let win = window.open("", "informe-operacion", "width=1100,height=900,scrollbars=yes");
-            win.document.write(`<html><head><title>Informe - ${op.nombreOperacion || idOperacionActual}</title><style>body{background:#eef4f9} @media print{ body{background:#fff !important} #informe-operacion{box-shadow:none !important; border:none;} #print-button-container{display:none;} } table, th, td{border: 1px solid #ddd; border-collapse: collapse;} th, td {padding: 8px;}</style></head><body>${html}</body></html>`);
-            win.document.close();
-        } catch (error) {
-            console.error("Error al generar el informe:", error);
-            showToast("Hubo un error al generar el informe: " + error.message, "error");
+            cargarListadoInspecciones();
         }
     });
+};
+
+// --- Observaciones ---
+document.getElementById('btnAñadirObservacion').addEventListener('click', async () => {
+    const data = { comentariosObservaciones: document.getElementById('comentariosObservaciones').value.trim(), relevanteObservacion: document.getElementById('relevanteObservacion').checked, confidencialObservacion: document.getElementById('confidencialObservacion').checked, ts: new Date().toISOString() };
+    if (!data.comentariosObservaciones) return showToast("Escribe un comentario.", "warning");
+    await addSubdocument('observaciones', data, document.getElementById('formObservaciones'), cargarListadoObservaciones);
+});
+async function cargarListadoObservaciones() {
+    await loadSubdocumentList('observaciones', document.getElementById('listadoObservaciones'), '#headingObservaciones .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span>${d.comentariosObservaciones} ${d.relevanteObservacion ? '<b>[R]</b>' : ''} ${d.confidencialObservacion ? '<b>[C]</b>' : ''}</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('observaciones', '${id}', cargarListadoObservaciones)"><i class="bi bi-trash"></i></button>
+        </div>`);
 }
 
+// --- Pendientes ---
+document.getElementById('btnAñadirPendiente').addEventListener('click', async () => {
+    const data = { descripcionPendiente: document.getElementById('descripcionPendiente').value.trim(), fechaPendiente: document.getElementById('fechaPendiente').value, ts: new Date().toISOString() };
+    if (!data.descripcionPendiente) return showToast("La descripción es obligatoria.", "warning");
+    await addSubdocument('pendientes', data, document.getElementById('formPendientes'), cargarListadoPendientes);
+});
+async function cargarListadoPendientes() {
+    await loadSubdocumentList('pendientes', document.getElementById('listadoPendientes'), '#headingPendientes .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span>${d.descripcionPendiente} (${formatoFecha(d.fechaPendiente)})</span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarSubdocumento('pendientes', '${id}', cargarListadoPendientes)"><i class="bi bi-trash"></i></button>
+        </div>`, 'fechaPendiente');
+}
+
+// --- Lógica para Documentos con subida a Storage ---
+document.getElementById('btnAñadirDocumento').addEventListener('click', () => {
+    if (!idOperacionActual) return showToast("Guarda la operación antes de subir archivos.", "warning");
+    const files = document.getElementById('adjuntosDoc').files;
+    if (files.length === 0) return showToast("Selecciona al menos un archivo.", "warning");
+
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressBar = progressContainer.querySelector('.progress-bar');
+    
+    Array.from(files).forEach(file => {
+        const filePath = `${COLECCION_OPERACIONES}/${idOperacionActual}/${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, filePath);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        progressContainer.classList.remove('d-none');
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressBar.style.width = progress + '%';
+            }, 
+            (error) => {
+                console.error("Error subiendo archivo:", error);
+                showToast(`Error al subir ${file.name}: ${error.code}`, "error");
+                progressContainer.classList.add('d-none');
+            }, 
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                const docData = { nombre: file.name, url: downloadURL, path: filePath, size: file.size, type: file.type, ts: new Date().toISOString() };
+                await addDoc(collection(db, COLECCION_OPERACIONES, idOperacionActual, "documentos"), docData);
+                showToast(`Archivo "${file.name}" subido.`, "success");
+                cargarListadoDocumentos();
+                progressContainer.classList.add('d-none');
+                document.getElementById('formDocumentacion').reset();
+            }
+        );
+    });
+});
+
+async function cargarListadoDocumentos() {
+    await loadSubdocumentList('documentos', document.getElementById('listadoDocumentos'), '#headingDocumentacion .data-indicator', (id, d) => `
+        <div class="dato-item border-bottom py-1 d-flex justify-content-between align-items-center">
+            <span><a href="${d.url}" target="_blank"><i class="bi bi-file-earmark-arrow-down"></i> ${d.nombre}</a> <small class="text-muted">(${(d.size / 1024).toFixed(1)} KB)</small></span>
+            <button class="btn btn-sm btn-outline-danger ms-2" title="Eliminar" onclick="window.eliminarDocumento('${id}', '${d.path}')"><i class="bi bi-trash"></i></button>
+        </div>`);
+}
+
+window.eliminarDocumento = (docId, filePath) => {
+    showConfirmationModal({
+        title: 'Eliminar Documento',
+        body: 'Se borrará de la base de datos y del almacenamiento.',
+        isDanger: true,
+        onConfirm: async () => {
+            if (!idOperacionActual) return;
+            try {
+                await deleteDoc(doc(db, COLECCION_OPERACIONES, idOperacionActual, "documentos", docId));
+                await deleteObject(ref(storage, filePath));
+                showToast("Documento eliminado.", "success");
+                cargarListadoDocumentos();
+            } catch (error) {
+                console.error("Error eliminando documento:", error);
+                showToast(`Error al eliminar: ${error.message}`, "error");
+            }
+        }
+    });
+};
 
 // ======= FUNCIONES GLOBALES DE GESTIÓN =======
 function limpiarTodosLosListados() {
-    const listados = document.querySelectorAll('.listado-dinamico');
-    listados.forEach(listado => listado.innerHTML = "");
+    document.querySelectorAll('.listado-dinamico').forEach(listado => listado.innerHTML = "");
     document.querySelectorAll('.data-indicator').forEach(el => el.className = 'data-indicator me-2 empty');
 }
 
 function cargarTodosLosListados() {
+    if (!idOperacionActual) return;
+    cargarListadoJuzgados();
+    cargarListadoInhibiciones();
+    cargarListadoHistoricoJuzgados();
+    cargarListadoIntervenciones();
+    cargarListadoSolicitudesJudiciales();
+    cargarListadoColaboraciones();
     cargarListadoCronologia();
-    // cargarListadoJuzgados(); // Se asume que existen funciones similares para cada sección
     cargarListadoDetenidos();
-    // cargarListadoOtrasPersonas();
+    cargarListadoDetenidosPrevistos();
+    cargarListadoOtrasPersonas();
     cargarListadoInspecciones();
-    // cargarListadoIntervenciones();
-    // cargarListadoDocumentos();
-    // cargarListadoObservaciones();
-    // cargarListadoPendientes();
+    cargarListadoDocumentos();
+    cargarListadoObservaciones();
+    cargarListadoPendientes();
 }
 
-async function eliminarDeResumen(coleccionResumen, fechaDocId, idEntradaAEliminar) {
-    if(!fechaDocId || !idEntradaAEliminar) return;
-
-    const resumenRef = db.collection(coleccionResumen).doc(fechaDocId);
-    const doc = await resumenRef.get();
-
-    if (doc.exists) {
-        const key = coleccionResumen === 'resumen_detenidos' ? 'detenciones' : 'actuaciones';
-        let items = doc.data()[key] || [];
-        const itemsFiltrados = items.filter(item => item.idEntrada !== idEntradaAEliminar);
-        
-        if (itemsFiltrados.length === 0) {
-            await resumenRef.delete();
-        } else {
-            await resumenRef.update({ [key]: itemsFiltrados });
+window.eliminarSubdocumento = (subcoleccion, docid, callback) => {
+    showConfirmationModal({
+        title: 'Confirmar Eliminación',
+        body: '¿Seguro que quieres eliminar este elemento?',
+        isDanger: true,
+        onConfirm: async () => {
+            if (!idOperacionActual) return;
+            await deleteDoc(doc(db, COLECCION_OPERACIONES, idOperacionActual, subcoleccion, docid));
+            if (callback) callback();
+            showToast("Elemento eliminado.", "success");
         }
-    }
-}
+    });
+};
 
-// ======= AUTOINICIALIZACIÓN DE LA APLICACIÓN =======
-window.addEventListener('DOMContentLoaded', () => {
-    anioOperacion.value = new Date().getFullYear();
-    fechaInicio.value = getFechaYYYYMMDD();
-    cargarOperacionesEnSelect();
-    btnGuardarOperacion.disabled = false;
-    codigoWarning.classList.add("d-none");
-    if(btnEliminarOperacion) btnEliminarOperacion.classList.add('d-none');
-    if(btnGenerarInforme) btnGenerarInforme.classList.add('d-none');
-    
-    if(checkSinOperacion) {
-        checkSinOperacion.checked = false;
-        fechaInspeccionRutinaria.disabled = true;
-    }
-
-    limpiarTodosLosListados();
+// ======= INFORME AUTOMÁTICO =======
+btnGenerarInforme.addEventListener('click', async () => {
+    if (!idOperacionActual) return showToast("Carga una operación primero.", "warning");
+    showToast("Generando informe...", "info");
+    // Lógica del informe...
 });
 
-// NOTA: Para que este código funcione completamente, el HTML debe contener los IDs
-// y clases referenciados, como los 'headings' con los 'data-indicator' y los
-// formularios y listados de cada sección. Las funciones de carga y eliminación de
-// las secciones no mostradas explícitamente (juzgados, otras personas, etc.)
-// deben ser añadidas siguiendo el patrón del resto.
+// ======= INICIALIZACIÓN DE LA APLICACIÓN =======
+document.addEventListener('DOMContentLoaded', () => {
+  bsConfirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+  
+  anioOperacion.value = new Date().getFullYear();
+  fechaInicio.value = getFechaYYYYMMDD();
+  document.getElementById('fechaHistoricoJuzgado').value = getFechaYYYYMMDD();
+  document.getElementById('fechaInhibicion').value = getFechaYYYYMMDD();
+  document.getElementById('fechaColaboracion').value = getFechaYYYYMMDD();
+  document.getElementById('fechaCronologia').value = getFechaYYYYMMDD();
+  document.getElementById('fechaDetenido').value = getFechaYYYYMMDD();
+  document.getElementById('fechaPendiente').value = getFechaYYYYMMDD();
+  
+  cargarOperacionesEnSelect();
+  btnGuardarOperacion.disabled = false;
+  codigoWarning.classList.add("d-none");
+  btnEliminarOperacion.classList.add('d-none');
+  btnGenerarInforme.classList.add('d-none');
+  limpiarTodosLosListados();
+});
