@@ -3,16 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Grupo 3 · Investigación - Benito UCRIF">
-  <title>Grupo 3 · Investigación · Benito</title>
+  <meta name="description" content="grupo 3 · Investigación - UCRIF">
+  <title>grupo 3 · Investigación · </title>
   <link rel="icon" type="image/png" href="../favicon.png">
-  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Estilos institucionales comunes -->
   <link rel="stylesheet" href="../css/style.css">
-  <!-- Estilo específico de grupo 3 -->
   <link rel="stylesheet" href="../css/grupo3.css">
 </head>
 <body class="bg-police">
@@ -20,7 +16,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-police-blue shadow-sm mb-4">
   <div class="container">
     <img src="../img/logo_cnp.png" alt="CNP" width="50" height="50" class="me-3 d-none d-md-block">
-    <span class="navbar-brand fs-3 fw-bold">Grupo 3 · Investigación <span class="fs-5">· Benito · UCRIF</span></span>
+    <span class="navbar-brand fs-3 fw-bold">grupo 3 · Investigación <span class="fs-5">· Benito · UCRIF</span></span>
     <a href="../index.html" class="btn btn-outline-light ms-auto d-none d-md-block"><i class="bi bi-house-door"></i> Menú principal</a>
   </div>
 </nav>
@@ -31,15 +27,13 @@
 <div class="container mb-5">
   <div class="row justify-content-center">
     <div class="col-xl-10 col-lg-11">
-      <!-- Búsqueda/Creación de operación -->
       <div class="card shadow-lg p-4 mb-4 bg-police-dark text-white border-0">
         <div class="row align-items-end g-3">
           <div class="col-md-6">
             <label for="operacionSelect" class="form-label fw-bold">Buscar operación existente</label>
             <select id="operacionSelect" class="form-select form-select-lg" autocomplete="off">
               <option value="">-- Selecciona una operación --</option>
-              <!-- Operaciones se cargan dinámicamente -->
-            </select>
+              </select>
           </div>
           <div class="col-md-3 d-grid">
             <button id="btnCargarOperacion" class="btn btn-primary btn-lg" type="button"><i class="bi bi-search"></i> Cargar</button>
@@ -50,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Formulario de operación principal -->
       <div class="card shadow-lg p-4 mb-4">
         <form id="formOperacion" autocomplete="off">
           <div class="row g-3">
@@ -92,26 +85,53 @@
               <textarea id="diligenciasPoliciales" class="form-control" maxlength="320" rows="2" placeholder="Principales diligencias policiales..."></textarea>
             </div>
           </div>
-          <div class="text-end mt-3 d-flex justify-content-end gap-2">
-            <button type="button" id="btnEliminarOperacion" class="btn btn-danger btn-lg px-4 d-none"><i class="bi bi-trash"></i> Eliminar</button>
-            <button type="submit" id="btnGuardarOperacion" class="btn btn-success btn-lg px-5"><i class="bi bi-save"></i> Guardar Operación</button>
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <button type="button" id="btnGenerarInforme" class="btn btn-police-yellow btn-lg d-none"><i class="bi bi-printer"></i> Generar Informe</button>
+            <div>
+                <button type="button" id="btnEliminarOperacion" class="btn btn-danger me-2 d-none"><i class="bi bi-trash"></i> Eliminar</button>
+                <button type="submit" id="btnGuardarOperacion" class="btn btn-success btn-lg px-5"><i class="bi bi-save"></i> Guardar</button>
+            </div>
           </div>
         </form>
       </div>
 
-      <!-- Secciones desplegables -->
       <div class="accordion mb-4" id="accordionOperacion">
-        <!-- Juzgados -->
+
         <div class="accordion-item">
-          <h2 class="accordion-header" id="headingJuzgados">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseJuzgados" aria-expanded="true" aria-controls="collapseJuzgados">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-folder-fill text-warning me-2"></i> Juzgados
+          <h2 class="accordion-header" id="headingCronologia">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCronologia" aria-expanded="true" aria-controls="collapseCronologia">
+              <span class="data-indicator empty me-2"></span><i class="bi bi-calendar-range text-brown me-2"></i> Cronología
             </button>
           </h2>
-          <div id="collapseJuzgados" class="accordion-collapse collapse show" aria-labelledby="headingJuzgados" data-bs-parent="#accordionOperacion">
+          <div id="collapseCronologia" class="accordion-collapse collapse show" aria-labelledby="headingCronologia" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <form id="formJuzgados" class="row g-2 mb-3 align-items-end">
+              <form id="formCronologia" class="row g-2 mb-3">
+                <div class="col-md-8">
+                  <label class="form-label">Descripción Evento</label>
+                  <input type="text" id="descripcionCronologia" class="form-control" maxlength="200" placeholder="Descripción del evento">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Fecha del Evento</label>
+                  <input type="date" id="fechaCronologia" class="form-control">
+                </div>
+                <div class="col-md-12 d-grid">
+                  <button type="button" id="btnAñadirEventoCronologia" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Evento</button>
+                </div>
+              </form>
+              <div id="listadoCronologia" class="ventana-datos listado-dinamico"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingJuzgados">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseJuzgados" aria-expanded="false" aria-controls="collapseJuzgados">
+              <span class="data-indicator empty me-2"></span><i class="bi bi-folder-fill text-warning me-2"></i> Juzgados
+            </button>
+          </h2>
+          <div id="collapseJuzgados" class="accordion-collapse collapse" aria-labelledby="headingJuzgados" data-bs-parent="#accordionOperacion">
+            <div class="accordion-body">
+              <form id="formJuzgados" class="row g-2 mb-3">
                 <div class="col-md-5">
                   <label class="form-label">Juzgado Inicial</label>
                   <input type="text" id="juzgadoInicial" class="form-control" maxlength="60">
@@ -124,9 +144,9 @@
                   <button type="button" id="btnAñadirJuzgado" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
                 </div>
               </form>
-              <div id="listadoJuzgados" class="listado-dinamico"></div>
+              <div id="listadoJuzgados" class="ventana-datos listado-dinamico"></div>
               <hr>
-              <form id="formInhibiciones" class="row g-2 mb-3 align-items-end">
+              <form id="formInhibiciones" class="row g-2 mb-3">
                 <div class="col-md-5">
                   <label class="form-label">Juzgado Inhibido</label>
                   <input type="text" id="juzgadoInhibido" class="form-control" maxlength="60">
@@ -139,10 +159,10 @@
                   <button type="button" id="btnAñadirInhibicion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
                 </div>
               </form>
-              <div id="listadoInhibiciones" class="listado-dinamico"></div>
+              <div id="listadoInhibiciones" class="ventana-datos listado-dinamico"></div>
               <hr>
-              <form id="formHistoricoJuzgados" class="row g-2 mb-3 align-items-end">
-                <div class="col-md-3">
+              <form id="formHistoricoJuzgados" class="row g-2 mb-3">
+                <div class="col-md-4">
                   <label class="form-label">Fecha Evento</label>
                   <input type="date" id="fechaHistoricoJuzgado" class="form-control">
                 </div>
@@ -150,125 +170,35 @@
                   <label class="form-label">Juzgado Relacionado</label>
                   <input type="text" id="juzgadoRelacionado" class="form-control" maxlength="60">
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
                   <label class="form-label">Descripción Evento</label>
                   <input type="text" id="descripcionEventoJuzgado" class="form-control" maxlength="100">
                 </div>
                 <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirHistoricoJuzgado" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Evento Histórico</button>
+                  <button type="button" id="btnAñadirHistoricoJuzgado" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
                 </div>
               </form>
-              <div id="listadoHistoricoJuzgados" class="listado-dinamico"></div>
+              <div id="listadoHistoricoJuzgados" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Intervenciones / Medidas -->
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingIntervenciones">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIntervenciones" aria-expanded="false" aria-controls="collapseIntervenciones">
-                <div class="data-indicator me-2 empty"></div>
-                <i class="bi bi-telephone-forward text-danger me-2"></i> Intervenciones / Medidas
-            </button>
-          </h2>
-          <div id="collapseIntervenciones" class="accordion-collapse collapse" aria-labelledby="headingIntervenciones" data-bs-parent="#accordionOperacion">
-            <div class="accordion-body">
-              <form id="formIntervenciones" class="row g-2 mb-3 align-items-end">
-                <div class="col-md-6">
-                  <label class="form-label">Intervenciones Telefónicas</label>
-                  <input type="text" id="intervencionTelefonica" class="form-control" maxlength="100" placeholder="Descripción">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Entradas y Registros</label>
-                  <input type="text" id="entradaRegistro" class="form-control" maxlength="100" placeholder="Descripción">
-                </div>
-                 <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirIntervencion" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Intervención/Registro</button>
-                </div>
-              </form>
-              <div id="listadoIntervenciones" class="listado-dinamico"></div>
-              <hr>
-              <form id="formSolicitudes" class="row g-2 mb-3 align-items-end">
-                 <div class="col-md-5">
-                  <label class="form-label">Solicitudes Judiciales</label>
-                  <input type="text" id="solicitudJudicial" class="form-control" maxlength="100" placeholder="Tipo de solicitud">
-                </div>
-                <div class="col-md-7">
-                  <label class="form-label">Descripción Solicitud</label>
-                  <input type="text" id="descripcionSolicitudJudicial" class="form-control" maxlength="100" placeholder="Detalles de la solicitud">
-                </div>
-                <div class="col-md-12 d-grid">
-                   <button type="button" id="btnAñadirSolicitudJudicial" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Solicitud</button>
-                </div>
-              </form>
-               <div id="listadoSolicitudesJudiciales" class="listado-dinamico"></div>
-              <hr>
-              <form id="formColaboraciones" class="row g-2 mb-3 align-items-end">
-                <div class="col-md-4">
-                  <label class="form-label">Fecha Colaboración</label>
-                  <input type="date" id="fechaColaboracion" class="form-control">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Grupo/Institución</label>
-                  <input type="text" id="grupoColaboracion" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Tipo Colaboración</label>
-                  <input type="text" id="tipoColaboracion" class="form-control" maxlength="60">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirColaboracion" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Colaboración</button>
-                </div>
-              </form>
-              <div id="listadoColaboraciones" class="listado-dinamico"></div>
-            </div>
-          </div>
-        </div>
-        <!-- Cronología -->
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingCronologia">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCronologia" aria-expanded="false" aria-controls="collapseCronologia">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-calendar-range text-brown me-2"></i> Cronología
-            </button>
-          </h2>
-          <div id="collapseCronologia" class="accordion-collapse collapse" aria-labelledby="headingCronologia" data-bs-parent="#accordionOperacion">
-            <div class="accordion-body">
-              <form id="formCronologia" class="row g-2 mb-3 align-items-end">
-                <div class="col-md-9">
-                  <label class="form-label">Descripción Evento</label>
-                  <input type="text" id="descripcionCronologia" class="form-control" maxlength="200" placeholder="Descripción del evento">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Fecha</label>
-                  <input type="date" id="fechaCronologia" class="form-control">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirEventoCronologia" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Evento</button>
-                </div>
-              </form>
-              <div id="listadoCronologia" class="listado-dinamico"></div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- ACORDEÓN: DETENIDOS Y DETENIDOS PREVISTOS -->
+
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingDetenidos">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDetenidos" aria-expanded="false" aria-controls="collapseDetenidos">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-person-bounding-box text-danger me-2"></i> Detenidos y Previstos
+              <span class="data-indicator empty me-2"></span><i class="bi bi-person-bounding-box text-danger me-2"></i> Detenidos y Previstos
             </button>
           </h2>
           <div id="collapseDetenidos" class="accordion-collapse collapse" aria-labelledby="headingDetenidos" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <h5>Detenidos</h5>
-              <form id="formDetenidos" class="row g-2 mb-3 align-items-end">
+              <h5 class="text-danger">Detenidos</h5>
+              <form id="formDetenidos" class="row g-2 mb-3">
                 <div class="col-md-3">
                   <label class="form-label">Nombre</label>
                   <input type="text" id="nombreDetenido" class="form-control" maxlength="60">
                 </div>
                 <div class="col-md-2">
-                  <label class="form-label">Fecha</label>
+                  <label class="form-label">Fecha Detención</label>
                   <input type="date" id="fechaDetenido" class="form-control">
                 </div>
                 <div class="col-md-3">
@@ -287,10 +217,10 @@
                   <button type="button" id="btnAñadirDetenido" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Detenido</button>
                 </div>
               </form>
-              <div id="listadoDetenidos" class="listado-dinamico"></div>
+              <div id="listadoDetenidos" class="ventana-datos listado-dinamico"></div>
               <hr>
-              <h5>Detenidos Previstos</h5>
-              <form id="formDetenidosPrevistos" class="row g-2 mb-3 mt-4 align-items-end">
+              <h5 class="text-secondary">Detenidos Previstos</h5>
+              <form id="formDetenidosPrevistos" class="row g-2 mb-3 mt-4">
                 <div class="col-md-4">
                   <label class="form-label">Nombre</label>
                   <input type="text" id="nombrePrevisto" class="form-control" maxlength="60">
@@ -307,22 +237,20 @@
                   <button type="button" id="btnAñadirPrevisto" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Previsto</button>
                 </div>
               </form>
-              <div id="listadoDetenidosPrevistos" class="listado-dinamico"></div>
+              <div id="listadoDetenidosPrevistos" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-
-        <!-- ACORDEÓN: PERSONAS VINCULADAS (sólo otras personas) -->
+        
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingPersonasVinculadas">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePersonasVinculadas" aria-expanded="false" aria-controls="collapsePersonasVinculadas">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-people-fill text-primary me-2"></i> Personas vinculadas (no detenidas)
+              <span class="data-indicator empty me-2"></span><i class="bi bi-people-fill text-primary me-2"></i> Otras Personas Vinculadas
             </button>
           </h2>
           <div id="collapsePersonasVinculadas" class="accordion-collapse collapse" aria-labelledby="headingPersonasVinculadas" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <form id="formOtrasPersonas" class="row g-2 mb-3 align-items-end">
+              <form id="formOtrasPersonas" class="row g-2 mb-3">
                 <div class="col-md-4">
                   <label class="form-label">Nombre</label>
                   <input type="text" id="filiacionOtraPersona" class="form-control" maxlength="60">
@@ -343,88 +271,147 @@
                   <button type="button" id="btnAñadirOtraPersona" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Persona</button>
                 </div>
               </form>
-              <div id="listadoOtrasPersonas" class="listado-dinamico"></div>
+              <div id="listadoOtrasPersonas" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Inspecciones en casas de citas -->
+
         <div class="accordion-item">
-          <h2 class="accordion-header" id="headingInspecciones">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInspecciones" aria-expanded="false" aria-controls="collapseInspecciones">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-house-door-fill text-brown me-2"></i> Inspecciones en Casas de Citas
+            <h2 class="accordion-header" id="headingInspecciones">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInspecciones" aria-expanded="false" aria-controls="collapseInspecciones">
+                    <span class="data-indicator empty me-2"></span><i class="bi bi-house-door-fill text-brown me-2"></i> Inspecciones en Casas de Citas
+                </button>
+            </h2>
+            <div id="collapseInspecciones" class="accordion-collapse collapse" aria-labelledby="headingInspecciones" data-bs-parent="#accordionOperacion">
+                <div class="accordion-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="checkSinOperacion">
+                        <label class="form-check-label" for="checkSinOperacion"><strong>Inspección rutinaria (sin operación asociada)</strong></label>
+                    </div>
+                    <form id="formInspecciones" class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Casa de citas</label>
+                            <input type="text" id="nombreCasa" class="form-control" maxlength="60" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Inspección Rutinaria</label>
+                            <input type="date" id="fechaInspeccionRutinaria" class="form-control" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nº Filiadas</label>
+                            <input type="number" id="numFiliadas" class="form-control" min="0" max="100">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nº Citadas</label>
+                            <input type="number" id="numCitadas" class="form-control" min="0">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Nacionalidades (separadas por coma)</label>
+                            <input type="text" id="nacionalidadesFiliadas" class="form-control" maxlength="200">
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button type="button" id="btnAñadirInspeccion" class="btn btn-police-blue mt-2">
+                                <i class="bi bi-plus"></i> Añadir Inspección
+                            </button>
+                        </div>
+                    </form>
+                    <div id="listadoInspecciones" class="ventana-datos listado-dinamico"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingIntervenciones">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIntervenciones" aria-expanded="false" aria-controls="collapseIntervenciones">
+              <span class="data-indicator empty me-2"></span><i class="bi bi-telephone-forward text-danger me-2"></i> Intervenciones y Medidas
             </button>
           </h2>
-          <div id="collapseInspecciones" class="accordion-collapse collapse" aria-labelledby="headingInspecciones" data-bs-parent="#accordionOperacion">
+          <div id="collapseIntervenciones" class="accordion-collapse collapse" aria-labelledby="headingIntervenciones" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="checkSinOperacion">
-                    <label class="form-check-label" for="checkSinOperacion">Inspección rutinaria (sin operación asociada)</label>
-                </div>
-              <form id="formInspecciones" class="row g-2 mb-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label">Fecha Inspección Rutinaria</label>
-                    <input type="date" id="fechaInspeccionRutinaria" class="form-control" disabled>
+              <form id="formIntervenciones" class="row g-2 mb-3">
+                <div class="col-md-5">
+                  <label class="form-label">Intervenciones Telefónicas</label>
+                  <input type="text" id="intervencionTelefonica" class="form-control" maxlength="100" placeholder="Descripción">
                 </div>
                 <div class="col-md-5">
-                  <label class="form-label">Casa de citas</label>
-                  <input type="text" id="nombreCasa" class="form-control" maxlength="60" required>
+                  <label class="form-label">Entradas y Registros</label>
+                  <input type="text" id="entradaRegistro" class="form-control" maxlength="100" placeholder="Descripción">
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label">Nº Filiadas</label>
-                  <input type="number" id="numFiliadas" class="form-control" min="0" value="0">
-                </div>
-                 <div class="col-md-3">
-                  <label class="form-label">Nº Citadas</label>
-                  <input type="number" id="numCitadas" class="form-control" min="0" value="0">
-                </div>
-                <div class="col-md-9">
-                  <label class="form-label">Nacionalidades (separadas por coma)</label>
-                  <input type="text" id="nacionalidadesFiliadas" class="form-control" placeholder="Colombiana, Rumana, Española">
-                </div>
-                <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirInspeccion" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Inspección</button>
+                <div class="col-md-2 d-grid">
+                  <button type="button" id="btnAñadirIntervencion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
                 </div>
               </form>
-              <div id="listadoInspecciones" class="listado-dinamico"></div>
+              <div id="listadoIntervenciones" class="ventana-datos listado-dinamico"></div>
+              <hr>
+              <form id="formSolicitudes" class="row g-2 mb-3">
+                 <div class="col-md-4">
+                  <label class="form-label">Solicitudes Judiciales</label>
+                  <input type="text" id="solicitudJudicial" class="form-control" maxlength="100" placeholder="Tipo">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Descripción Solicitud</label>
+                  <input type="text" id="descripcionSolicitudJudicial" class="form-control" maxlength="100" placeholder="Descripción">
+                </div>
+                <div class="col-md-3 d-grid">
+                  <button type="button" id="btnAñadirSolicitudJudicial" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+              </form>
+              <div id="listadoSolicitudesJudiciales" class="ventana-datos listado-dinamico"></div>
+              <hr>
+              <form id="formColaboraciones" class="row g-2 mb-3">
+                <div class="col-md-3">
+                  <label class="form-label">Fecha Colaboración</label>
+                  <input type="date" id="fechaColaboracion" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Grupo/Institución</label>
+                  <input type="text" id="grupoColaboracion" class="form-control" maxlength="60">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo Colaboración</label>
+                  <input type="text" id="tipoColaboracion" class="form-control" maxlength="60">
+                </div>
+                <div class="col-md-2 d-grid">
+                  <button type="button" id="btnAñadirColaboracion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
+                </div>
+              </form>
+              <div id="listadoColaboraciones" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Documentación (con adjuntos) -->
+       
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingDocumentacion">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDocumentacion" aria-expanded="false" aria-controls="collapseDocumentacion">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-file-earmark-text text-pink me-2"></i> Documentación
+              <span class="data-indicator empty me-2"></span><i class="bi bi-file-earmark-text text-pink me-2"></i> Documentación Adjunta
             </button>
           </h2>
           <div id="collapseDocumentacion" class="accordion-collapse collapse" aria-labelledby="headingDocumentacion" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <form id="formDocumentacion" class="row g-2 mb-3 align-items-end">
+              <form id="formDocumentacion" class="row g-2 mb-3">
                 <div class="col-12">
-                  <label class="form-label">Documentos Adjuntos (PDF, DOC, JPG, PNG, máx 10 MB)</label>
+                  <label class="form-label">Seleccionar archivos (PDF, DOC, JPG, PNG, máx 10 MB)</label>
                   <input type="file" id="adjuntosDoc" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                 </div>
                 <div class="col-12 d-grid">
                   <button type="button" id="btnAñadirDocumento" class="btn btn-police-blue mt-2"><i class="bi bi-upload"></i> Subir Documentos</button>
                 </div>
               </form>
-              <div id="listadoDocumentos" class="listado-dinamico"></div>
+              <div id="listadoDocumentos" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Observaciones -->
+
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingObservaciones">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObservaciones" aria-expanded="false" aria-controls="collapseObservaciones">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-asterisk text-success me-2"></i> Anotaciones / Observaciones
+              <span class="data-indicator empty me-2"></span><i class="bi bi-asterisk text-success me-2"></i> Anotaciones / Observaciones
             </button>
           </h2>
           <div id="collapseObservaciones" class="accordion-collapse collapse" aria-labelledby="headingObservaciones" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
               <form id="formObservaciones" class="mb-3">
-                <label class="form-label">Comentarios Internos</label>
+                <label class="form-label">Comentarios</label>
                 <textarea id="comentariosObservaciones" class="form-control" rows="3" maxlength="320"></textarea>
                 <div class="form-check form-check-inline mt-2">
                   <input class="form-check-input" type="checkbox" id="relevanteObservacion">
@@ -435,71 +422,59 @@
                   <label class="form-check-label" for="confidencialObservacion">Marcar como Confidencial</label>
                 </div>
                 <div class="d-grid mt-2">
-                  <button type="button" id="btnAñadirObservacion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir</button>
+                  <button type="button" id="btnAñadirObservacion" class="btn btn-police-blue"><i class="bi bi-plus"></i> Añadir Anotación</button>
                 </div>
               </form>
-              <div id="listadoObservaciones" class="listado-dinamico"></div>
+              <div id="listadoObservaciones" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Elementos pendientes -->
+
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingPendientes">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePendientes" aria-expanded="false" aria-controls="collapsePendientes">
-              <div class="data-indicator me-2 empty"></div>
-              <i class="bi bi-check2-square text-success me-2"></i> Elementos Pendientes
+              <span class="data-indicator empty me-2"></span><i class="bi bi-check2-square text-success me-2"></i> Tareas Pendientes
             </button>
           </h2>
           <div id="collapsePendientes" class="accordion-collapse collapse" aria-labelledby="headingPendientes" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <form id="formPendientes" class="row g-2 mb-3 align-items-end">
+              <form id="formPendientes" class="row g-2 mb-3">
                 <div class="col-md-9">
-                  <label class="form-label">Descripción</label>
+                  <label class="form-label">Descripción de la tarea</label>
                   <input type="text" id="descripcionPendiente" class="form-control" maxlength="100">
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Fecha prevista</label>
+                  <label class="form-label">Fecha Límite</label>
                   <input type="date" id="fechaPendiente" class="form-control">
                 </div>
                 <div class="col-md-12 d-grid">
-                  <button type="button" id="btnAñadirPendiente" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir</button>
+                  <button type="button" id="btnAñadirPendiente" class="btn btn-police-blue mt-2"><i class="bi bi-plus"></i> Añadir Tarea</button>
                 </div>
               </form>
-              <div id="listadoPendientes" class="listado-dinamico"></div>
+              <div id="listadoPendientes" class="ventana-datos listado-dinamico"></div>
             </div>
           </div>
         </div>
-        <!-- Funciones adicionales -->
+
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingFunciones">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFunciones" aria-expanded="false" aria-controls="collapseFunciones">
-              <i class="bi bi-three-dots text-primary me-2"></i> Funciones Adicionales
+              <span class="data-indicator empty me-2"></span><i class="bi bi-gear-wide-connected text-primary me-2"></i> Funciones Adicionales
             </button>
           </h2>
           <div id="collapseFunciones" class="accordion-collapse collapse" aria-labelledby="headingFunciones" data-bs-parent="#accordionOperacion">
             <div class="accordion-body">
-              <div class="row g-2">
-                <div class="col-md-12 d-grid mb-2">
-                  <button id="btnGenerarInforme" class="btn btn-police-yellow btn-lg"><i class="bi bi-printer"></i> Generar Informe Automático</button>
-                </div>
-                <!-- Botones para futuras funcionalidades -->
-                <div class="col-md-6 d-grid mb-2">
-                  <button id="btnExportarCSV" class="btn btn-outline-secondary btn-lg" disabled><i class="bi bi-file-earmark-spreadsheet"></i> Exportar a CSV</button>
-                </div>
-                <div class="col-md-6 d-grid">
-                  <button id="btnDuplicarOperacion" class="btn btn-outline-primary btn-lg" disabled><i class="bi bi-files"></i> Duplicar Operación</button>
-                </div>
+              <p class="text-center">Aquí se añadirán futuras funcionalidades como exportaciones, duplicados o historial de cambios.</p>
+              <div class="d-grid gap-2">
+                
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-    </div>
+        
+      </div> </div>
   </div>
 </div>
-
-<!-- ... resto del archivo sin cambios ... -->
 
 <footer class="footer bg-police-blue text-white text-center py-3 mt-5">
   <small>
@@ -507,16 +482,11 @@
   </small>
 </footer>
 
-<!-- Bootstrap y dependencias -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Firebase compat y Storage para adjuntos -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage-compat.js"></script>
-<!-- Lógica específica -->
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-<!-- CAMBIAR A LA RUTA CORRECTA -->
-<script src="../js/grupo3.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<script src="../js/grupo3.js"></script>
+
 </body>
 </html>
-
