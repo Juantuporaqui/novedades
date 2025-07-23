@@ -220,7 +220,7 @@ async function eliminarOperacionCompleta(idOperacion) {
             if (sub === 'documentos') {
                 const docData = doc.data();
                 if (docData.nombre) {
-                    const fileRef = storage.ref().child(`grupo2/${idOperacion}/${docData.nombre}`);
+                    const fileRef = storage.ref().child(`grupo3/${idOperacion}/${docData.nombre}`);
                     try {
                         await fileRef.delete();
                         console.log(`Archivo ${docData.nombre} eliminado de Storage.`);
@@ -768,7 +768,7 @@ document.getElementById('btnGenerarInforme').addEventListener('click', async () 
                 <img src="../img/logo_cnp.png" alt="CNP" style="width:52px; height:52px; margin-right:20px;">
                 <div>
                     <h2 style="margin:0; font-size:2rem; color:#14224b;">Informe de Operación</h2>
-                    <div style="font-size:1.05rem; color:#29497a;">Benito · UCRIF · Grupo 2</div>
+                    <div style="font-size:1.05rem; color:#29497a;">Benito · UCRIF · grupo 3</div>
                 </div>
             </div>
             <hr>
