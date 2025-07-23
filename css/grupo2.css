@@ -161,6 +161,24 @@ footer.footer.bg-police-blue {
 input[type="file"].form-control {
   background: #f5f9fd !important;
 }
+.data-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+  vertical-align: middle;
+}
+
+.data-indicator.empty {
+  background-color: #d0d0d0; /* Gris para vacío */
+  border: 1px solid #b0b0b0;
+}
+
+.data-indicator.filled {
+  background-color: #28a745; /* Verde para lleno */
+  border: 1px solid #1f8336;
+}
 
 @media (max-width: 991px) {
   .card { padding: 1.2em 1em !important; }
