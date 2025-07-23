@@ -1,191 +1,153 @@
+/* ====================  GLOBAL  ==================== */
 body {
-  background: #eef1f6;
-  font-family: 'Inter', Segoe UI, Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
+  background: #F5F7FA;
+  color: #23272F;
   margin: 0;
   padding: 0;
 }
 
+/* ====================  HEADER  ==================== */
 .sirex-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2.2rem 0 1.1rem 0;
-  user-select: none;
+  padding: 36px 0 18px 0;
+  background: #fff;
+  border-bottom: 1px solid #e6e9f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  margin-bottom: 16px;
 }
-
 .sirex-title {
-  font-size: 4.2rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-  color: #1a2c64;
-  line-height: 1.0;
-  text-shadow: 0 2px 22px #00d4ff18, 0 1.5px 0 #ffd94a77;
-  margin-bottom: .18rem;
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin-bottom: 0.2em;
 }
-
 .sirex-desc {
-  font-size: 1.15rem;
-  font-weight: 400;
-  color: #245c7c;
-  letter-spacing: .5px;
-  opacity: 0.87;
-  margin-bottom: 0;
-  margin-top: 0.1rem;
-  text-align: center;
+  font-size: 1.2rem;
+  color: #0070f3;
+  margin-bottom: 0.5em;
 }
 
+/* ====================  MENÚ DE GRUPOS  ==================== */
 .grupos-menu {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 2.1rem 0 2.2rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2.5rem 2.1rem;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 32px;
+  max-width: 900px;
+  margin: 36px auto;
 }
-
 .grupo-btn {
-  width: 185px;
-  height: 200px; /* Aumentado para ilustración más grande */
-  border-radius: 2.3rem;
-  background: linear-gradient(135deg, #fff 60%, #e6edfa 100%);
-  box-shadow: 0 7px 24px #202d5122, 0 1px 1.5px #fff inset;
-  border: none;
-  outline: none;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  padding: 28px 0 18px 0;
+  text-align: center;
+  text-decoration: none;
+  transition: box-shadow .18s, transform .18s;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 0 18px 0;
-  position: relative;
-  transition: box-shadow .18s, transform .18s;
-  cursor: pointer;
-  overflow: hidden;
-  text-decoration: none;
 }
-
-.grupo-btn:hover, .grupo-btn:focus {
-  box-shadow: 0 16px 36px #1a2c6444, 0 3px 12px #ffd94a33;
-  transform: translateY(-6px) scale(1.04) rotate(-1.7deg);
-  text-decoration: none;
-  color: #182246;
+.grupo-btn:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,0.16);
+  transform: translateY(-4px) scale(1.03);
 }
-
 .grupo-ico {
-  width: 110px;   /* Antes: 90px */
-  height: 110px;  /* Antes: 90px */
-  margin-bottom: 0.5rem;
+  background: #f1f7fe;
+  border-radius: 50%;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-
 .grupo-ico img {
-  width: 108px;   /* Antes: 88px */
-  height: 108px;  /* Antes: 88px */
-  object-fit: contain;
-  border-radius: 17px;
-  box-shadow: 0 1px 8px #24305e18;
-  background: #fafdff;
-  transition: transform .13s;
+  width: 52px; height: 52px; object-fit: contain;
 }
-
-/* Botones 3D para menú principal */
-.grupo-card {
-  box-shadow: 0 6px 24px #075aaf33, 0 1.5px 2.5px #fff9 inset;
-  border-radius: 2rem;
-  background: linear-gradient(120deg, #eaf3fc 70%, #dbedfa 100%);
-  transition: box-shadow .16s, transform .12s;
-  border: 2px solid #0459ad15;
-  min-height: 170px;
-}
-.grupo-card:hover {
-  box-shadow: 0 16px 40px #156be430, 0 2px 8px #fff9 inset;
-  transform: scale(1.04) translateY(-5px);
-  background: linear-gradient(120deg, #eaf6ff 0%, #c3e1ff 100%);
-  border-color: #0b59bb60;
-}
-.grupo-card .display-4 {
-  font-size: 3.7rem;
-  margin-bottom: 0.5rem;
-  filter: drop-shadow(0 4px 8px #3c8be860);
-}
-
-.grupo-btn:hover .grupo-ico img, .grupo-btn:focus .grupo-ico img {
-  transform: scale(1.1) rotate(-2deg);
-}
-
 .grupo-label {
-  font-size: 1.16rem;
-  font-weight: 700;
-  color: #24305e;
-  margin-bottom: 0;
-  letter-spacing: .5px;
-  text-shadow: 0 1px 0 #fff;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: #23272F;
 }
 
-.btn-consulta {
-  display: inline-block;
-  font-size: 1.12rem;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(90deg, #1a2c64 60%, #00c3ff 100%);
+/* ====================  BOTONES GLOBALES  ==================== */
+.global-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.btn-global {
   border: none;
-  border-radius: 1.2rem;
-  padding: 12px 36px;
-  margin-top: 0.6rem;
-  box-shadow: 0 4px 24px #24305e28;
+  padding: 14px 36px;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: background 0.16s, transform 0.12s;
+  cursor: pointer;
+  margin: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   text-decoration: none;
-  letter-spacing: .6px;
-  transition: box-shadow .16s, transform .13s, background .13s;
 }
-.btn-consulta:hover, .btn-consulta:focus {
-  background: linear-gradient(90deg, #17305e 70%, #00e2fa 100%);
-  box-shadow: 0 7px 32px #143e8a32;
-  transform: scale(1.04);
+.btn-novedades {
+  background: #198754;
   color: #fff;
-  text-decoration: none;
+}
+.btn-consulta {
+  background: #0d6efd;
+  color: #fff;
+}
+.btn-global:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1.04);
 }
 
-.footer {
-  background: #1a2c64;
-  color: #fff;
-  font-size: 1.02rem;
+/* ====================  LOGIN ==================== */
+#login-container {
+  max-width: 350px;
+  margin: 80px auto 0;
+  display: none;
   text-align: center;
-  padding: 18px 0 12px 0;
-  letter-spacing: .6px;
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  margin-top: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px #1876d112;
+  padding: 30px 18px 20px 18px;
+}
+#login-container input { margin: 7px 0; width: 90%; padding: 8px; border-radius: 5px; border: 1px solid #aaa; }
+#login-container button { margin: 10px 0; border-radius: 5px; border: none; padding: 8px 16px; font-weight: bold;}
+#btn-login { background: #198754; color: #fff;}
+#btn-logout { float: right; margin-top: 15px;}
+
+/* ====================  FOOTER  ==================== */
+.footer {
+  background: #1a2340;
+  color: #fff;
+  font-size: 1rem;
+  text-align: center;
+  padding: 16px 0;
+  width: 100vw;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+  box-shadow: 0 -1px 4px rgba(0,0,0,0.08);
 }
 
-/* Aumenta tamaño logos en móvil */
-@media (max-width: 650px) {
-  .grupo-card .display-4 {
-    font-size: 4.7rem;
-    margin-bottom: 0.6rem;
+/* ====================  RESPONSIVE  ==================== */
+@media (max-width: 700px) {
+  .grupos-menu {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    max-width: 98vw;
   }
-  .grupo-card {
-    min-height: 130px;
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
+  .sirex-header {
+    padding: 26px 0 10px 0;
   }
-  .grupo-ico {
-    width: 80vw;
-    height: 80vw;
-    max-width: 135px;
-    max-height: 135px;
-  }
-  .grupo-ico img {
-    width: 100%;
-    height: 100%;
-  }
-  .grupo-btn {
-    width: 98vw;
-    max-width: 180px;
-    height: auto;
-    min-height: 160px;
+  .footer {
+    font-size: 0.92rem;
+    padding: 11px 0;
   }
 }
