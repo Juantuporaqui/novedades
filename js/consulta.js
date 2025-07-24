@@ -562,4 +562,4 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.fechaHasta.value = today;
 
 });
-�
+
