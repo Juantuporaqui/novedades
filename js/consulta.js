@@ -282,13 +282,36 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
     // CABECERA: frase apertura, formato integrado
     html += `<div class="mb-2" style="font-size:1.06rem; color:#1177bb;">${fraseUcrif('apertura')}</div>`;
 
-    // Totales
+    // --- FRASE NARRATIVA ---
+    let fraseNarrativa = `Durante el periodo, `;
+    // Detenidos ILE
+    fraseNarrativa += (ucrif.detenidosILE > 0) 
+        ? `se han realizado <b>${ucrif.detenidosILE}</b> detenciones por ILE`
+        : "no se han producido detenciones por ILE";
+    // Filiados
+    fraseNarrativa += (ucrif.filiadosVarios > 0)
+        ? `, se ha procedido a la identificación de <b>${ucrif.filiadosVarios}</b> personas de diversas nacionalidades`
+        : ", no se ha realizado ninguna identificación en vía pública";
+    // Traslados
+    fraseNarrativa += (ucrif.traslados > 0)
+        ? `, se han efectuado <b>${ucrif.traslados}</b> traslados a efectos de identificación`
+        : ", no se han efectuado traslados a efectos de identificación";
+    // Citados CECOREX
+    fraseNarrativa += (ucrif.citadosCecorex > 0)
+        ? ` y se ha citado a <b>${ucrif.citadosCecorex}</b> personas en CECOREX.`
+        : " y no se ha citado a ninguna persona en CECOREX.";
+    html += `<div class="mb-2" style="font-size:1.08rem;">${fraseNarrativa}</div>`;
+
+    // --- BADGES VISUALES ---
     html += `<div class="d-flex flex-wrap gap-2 mb-3">`;
     html += `<span class="badge bg-primary fs-6">${ucrif.detenidosILE || 0} ILE</span>`;
     html += `<span class="badge bg-info text-dark fs-6">${ucrif.filiadosVarios || 0} filiados</span>`;
     html += `<span class="badge bg-warning text-dark fs-6">${ucrif.traslados || 0} traslados</span>`;
     html += `<span class="badge bg-primary fs-6">${ucrif.citadosCecorex || 0} citados CECOREX</span>`;
     html += `</div>`;
+
+    // ...resto del código como ya lo tienes...
+
 
     // INSPECCIONES
     if (ucrif.inspecciones && ucrif.inspecciones.length > 0) {
