@@ -1,77 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>SIREX · Consulta Global / Resúmenes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg+xml" href="img/logo_cnp.svg">
-  <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-</head>
-<body>
-    <header class="sirex-header d-flex align-items-center justify-content-between">
-  <a href="index.html" class="btn btn-link p-0" title="Volver al menú principal" style="font-size:2rem;">
-    <i class="bi bi-house-door-fill"></i>
-  </a>
-  <div>
-    <div class="sirex-title">SIREX</div>
-    <div class="sirex-desc">Consulta Global / Resúmenes</div>
-  </div>
-</header>
-     </header>
-  <main>
-    <div class="container my-5">
-      <div class="row justify-content-center">
-        <div class="col-lg-11">
-          <div class="card shadow p-4">
-            <h2 class="mb-4 text-police-blue">
-              <i class="bi bi-globe2"></i> Consulta Global / Resúmenes
-            </h2>
-            <form id="consultaForm" class="row g-3 align-items-end">
-              <div class="col-12 col-md-5">
-                <label for="fechaDesde" class="form-label fw-bold">Desde</label>
-                <input type="date" id="fechaDesde" class="form-control" required>
-              </div>
-              <div class="col-12 col-md-5">
-                <label for="fechaHasta" class="form-label fw-bold">Hasta</label>
-                <input type="date" id="fechaHasta" class="form-control" required>
-              </div>
-              <div class="col-12 col-md-2 d-grid">
-                <button type="submit" class="btn btn-primary w-100">
-                  <i class="bi bi-search"></i> Consultar
-                </button>
-              </div>
-            </form>
-            <div id="spinner" class="text-center mt-4 d-none">
-              <div class="spinner-border text-primary"></div>
-              <div>Cargando resumen...</div>
-            </div>
-            <div id="exportBtns" class="export-btns d-flex flex-wrap gap-2 mt-4 d-none">
-              <button id="btnExportarPDF" class="btn btn-police-yellow" type="button">
-                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
-              </button>
-              <button id="btnWhatsapp" class="btn btn-police-blue" type="button">
-                <i class="bi bi-whatsapp"></i> WhatsApp
-              </button>
-            </div>
-            <div id="resumenVentana" class="ventana-datos mt-4"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-  <footer class="footer">
-    &copy; 2025 SIREX · UCRIF · CNP
-  </footer>
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIREX · Consulta Global</title>
+    
+    <!-- 1. ESTILOS (Bootstrap y Google Fonts) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 2. LIBRERÍAS JAVASCRIPT (ORDEN MUY IMPORTANTE) -->
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <!-- jsPDF (Librería principal primero) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.autotable.min.js"></script>
-    
-<script src="js/consulta.js"></script>    
+    <!-- jsPDF-AutoTable (Plugin después de la principal) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* Estilos del Canvas anterior para que se vea bien */
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .container { max-width: 960px; }
+        .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card-header { border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+        .card-header h4 { margin: 0; font-size: 1.2rem; }
+        .form-control, .btn { border-radius: 0.5rem; }
+        .spinner-border { width: 3rem; height: 3rem; }
+        .narrative-intro, .narrative-outro { font-style: italic; color: #5a6268; border-left: 3px solid #0d6efd; padding-left: 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container mt-4 mb-5">
+        <div class="text-center mb-4">
+            <h1 class="h3 fw-bold">🛡️ SIREX · Consulta Global de Resúmenes</h1>
+            <p class="text-muted">Selecciona un rango de fechas para generar un informe consolidado.</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body p-4">
+                <form id="consultaForm">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md">
+                            <label for="fechaDesde" class="form-label fw-bold">Fecha de Inicio</label>
+                            <input type="date" id="fechaDesde" class="form-control" required>
+                        </div>
+                        <div class="col-md">
+                            <label for="fechaHasta" class="form-label fw-bold">Fecha de Fin</label>
+                            <input type="date" id="fechaHasta" class="form-control" required>
+                        </div>
+                        <div class="col-md-auto">
+                            <button type="submit" class="btn btn-primary w-100 py-2">Generar Resumen</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="spinner" class="text-center my-5 d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Consultando bases de datos...</p>
+        </div>
+        
+        <div id="resumenVentana"></div>
+
+        <div id="exportBtns" class="text-center mt-4 d-none">
+            <div class="d-flex gap-3 justify-content-center">
+                <button id="btnWhatsapp" class="btn btn-success">Exportar a WhatsApp</button>
+                <button id="btnExportarPDF" class="btn btn-danger">Exportar a PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TU SCRIPT PERSONALIZADO (AL FINAL DEL BODY) -->
+    <!-- Asegúrate de que el nombre del archivo coincida con el tuyo -->
+    <script src="js/consulta.js"></script>
+
 </body>
 </html>
