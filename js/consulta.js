@@ -223,10 +223,10 @@ function renderizarResumenGlobalHTML(resumen, desde, hasta) {
         <span class="fs-6">Periodo: <b>${desde}</b> a <b>${hasta}</b></span>
     </div>`;
 
-    if (resumen.ucrif && resumen.ucrif.inspecciones.length + resumen.ucrif.detenidosDelito.length + resumen.ucrif.detenidosILE > 0) {
+    if (resumen.ucrif && (resumen.ucrif.inspecciones.length + resumen.ucrif.detenidosDelito.length + resumen.ucrif.detenidosILE > 0)) {
         html += renderizarResumenDetalladoUCRIF(resumen.ucrif);
     }
-    if (resumen.grupo1 && resumen.grupo1.detenidos.length + resumen.grupo1.expulsados.length > 0) {
+    if (resumen.grupo1 && (resumen.grupo1.detenidos.length + resumen.grupo1.expulsados.length + resumen.grupo1.frustradas.length > 0)) {
         html += renderizarResumenDetalladoGrupo1(resumen.grupo1);
     }
     if (resumen.puerto && Object.keys(resumen.puerto).length > 1) {
@@ -258,7 +258,7 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
     if (ucrif.inspecciones.length > 0) {
         html += `<h5 class="mt-3">Inspecciones</h5><ul class="list-group">`;
         ucrif.inspecciones.forEach(insp => {
-            html += `<li class="list-group-item">${insp.lugar}: ${insp.identificadas} filiadas (${insp.nacionalidades}), ${insp.citadas} citadas.</li>`;
+            html += `<li class="list-group-item">${insp.lugar || 'Lugar no especificado'}: ${insp.identificadas || 0} filiadas (${insp.nacionalidades || 'N/A'}), ${insp.citadas || 0} citadas.</li>`;
         });
         html += `</ul>`;
     }
@@ -271,6 +271,14 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
         html += `</ul>`;
     }
     
+    if (ucrif.colaboraciones.length > 0) {
+        html += `<h5 class="mt-3">Colaboraciones</h5><ul class="list-group">`;
+        ucrif.colaboraciones.forEach(c => {
+            html += `<li class="list-group-item">Con <b>${c.colaboracionUnidad || 'N/A'}</b>: ${c.colaboracionDesc} (Resultado: ${c.colaboracionResultado})</li>`;
+        });
+        html += `</ul>`;
+    }
+
     html += `</div></div>`;
     return html;
 }
@@ -340,19 +348,42 @@ function generarTextoWhatsapp(resumen, desde, hasta) {
     // UCRIF
     if (resumen.ucrif) {
         const ucrif = resumen.ucrif;
-        if (ucrif.inspecciones.length + ucrif.detenidosDelito.length + ucrif.detenidosILE > 0) {
-            msg += `\n*${GRUPOS_CONFIG.ucrif.icon} Novedades UCRIF*\n`;
-            msg += `_Totales:_ ${ucrif.detenidosILE} ILE, ${ucrif.filiadosVarios} filiados, ${ucrif.traslados} traslados, ${ucrif.citadosCecorex} citados\n`;
+        const tieneActividad = ucrif.inspecciones.length + ucrif.detenidosDelito.length + ucrif.detenidosILE + ucrif.colaboraciones.length > 0;
+        
+        if (tieneActividad) {
+            msg += `\n*${GRUPOS_CONFIG.ucrif.icon} NOVEDADES UCRIF*\n`;
+            msg += `Balance: *${ucrif.detenidosILE}* detenidos por ILE, *${ucrif.filiadosVarios}* filiados en vía pública, *${ucrif.traslados}* traslados y *${ucrif.citadosCecorex}* citados a CECOREX.\n`;
+            
+            if (ucrif.inspecciones.length > 0) {
+                msg += `\n*Inspecciones Relevantes:*\n`;
+                ucrif.inspecciones.forEach(i => {
+                    msg += ` • En *${i.lugar || 'lugar no especificado'}*: ${i.identificadas || 0} filiadas (${i.nacionalidades || 'N/A'}) y ${i.citadas || 0} citadas.\n`;
+                });
+                const totalFiliadas = ucrif.inspecciones.reduce((sum, i) => sum + (Number(i.identificadas) || 0), 0);
+                const totalCitadas = ucrif.inspecciones.reduce((sum, i) => sum + (Number(i.citadas) || 0), 0);
+                msg += `_*En total son ${ucrif.inspecciones.length} inspecciones con ${totalFiliadas} filiadas y ${totalCitadas} citadas.*_\n`;
+            }
+
             if (ucrif.detenidosDelito.length > 0) {
                 msg += `\n*Detenidos por Delito:*\n`;
                 ucrif.detenidosDelito.forEach(d => {
-                    msg += ` • 1 por *${d.motivo}* (${d.descripcion})\n`;
+                    msg += ` • 1 por *${d.motivo}* (${d.descripcion}).\n`;
                 });
+                msg += `_*En total son ${ucrif.detenidosDelito.length} detenidos por delitos específicos.*_\n`;
             }
-            if (ucrif.inspecciones.length > 0) {
-                msg += `\n*Inspecciones:*\n`;
-                ucrif.inspecciones.forEach(i => {
-                    msg += ` • ${i.lugar}: ${i.identificadas} filiados, ${i.citadas} citados\n`;
+
+            const dispositivosRailpol = ucrif.dispositivos.filter(d => d.operacion?.toUpperCase().includes('RAILPOL'));
+            if(dispositivosRailpol.length > 0){
+                msg += `\n*Resultados Dispositivo Railpol:*\n`;
+                // NOTA: Los datos de partes no desglosan los totales por dispositivo. Esto es una simulación del formato.
+                // Para datos reales, el parte de origen necesitaría más estructura.
+                msg += `Se participó en el dispositivo con resultados incluidos en los totales generales.\n`
+            }
+
+            if (ucrif.colaboraciones.length > 0) {
+                msg += `\n*Colaboraciones con otras unidades:*\n`;
+                ucrif.colaboraciones.forEach(c => {
+                    msg += ` • Con *${c.colaboracionUnidad || 'N/A'}*: ${c.colaboracionDesc}.\n`;
                 });
             }
         }
@@ -365,19 +396,19 @@ function generarTextoWhatsapp(resumen, desde, hasta) {
             msg += `\n*${GRUPOS_CONFIG.grupo1.icon} Expulsiones*\n`;
             if(g1.detenidos.length > 0) {
                 msg += `\n*Detenidos (${g1.detenidos.length}):*\n`;
-                g1.detenidos.forEach(d => msg += ` • ${d.detenidos_g1} (${d.nacionalidad_g1}) por ${d.motivo_g1}\n`);
+                g1.detenidos.forEach(d => msg += ` • ${d.detenidos_g1} (${d.nacionalidad_g1}) por ${d.motivo_g1}.\n`);
             }
             if(g1.expulsados.length > 0) {
                 msg += `\n*Expulsados (${g1.expulsados.length}):*\n`;
-                g1.expulsados.forEach(e => msg += ` • ${e.expulsados_g1} (${e.nacionalidad_eg1})\n`);
+                g1.expulsados.forEach(e => msg += ` • ${e.expulsados_g1} (${e.nacionalidad_eg1}).\n`);
             }
             if(g1.frustradas.length > 0) {
                 msg += `\n*Frustradas (${g1.frustradas.length}):*\n`;
-                g1.frustradas.forEach(f => msg += ` • ${f.exp_frustradas_g1} (${f.nacionalidad_fg1}) - ${f.motivo_fg1}\n`);
+                g1.frustradas.forEach(f => msg += ` • ${f.exp_frustradas_g1} (${f.nacionalidad_fg1}) - ${f.motivo_fg1}.\n`);
             }
              if(g1.fletados.length > 0) {
                 msg += `\n*Vuelos Fletados:*\n`;
-                g1.fletados.forEach(f => msg += ` • ${f.fletados_g1} a ${f.destino_flg1} (${f.pax_flg1} PAX)\n`);
+                g1.fletados.forEach(f => msg += ` • ${f.fletados_g1} a ${f.destino_flg1} (${f.pax_flg1} PAX).\n`);
             }
         }
     }
