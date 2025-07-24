@@ -241,137 +241,120 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
 
 // ------------------- Grupo 1 Expulsiones (Narrativo) -------------------
 function renderizarResumenDetalladoGrupo1(g1) {
-    // NORMALIZAR todas las estructuras posibles
-    function normalizarDetenidos(arr) {
-        if (!Array.isArray(arr)) return [];
-        // Antiguo parser DOCX
-        if (arr.length && arr[0].detenidos_g1 !== undefined) {
-            return arr.map(x => ({
-                numero: x.detenidos_g1 || x.numero || "-",
-                motivo: x.motivo_g1 || x.motivo || "-",
-                nacionalidad: x.nacionalidad_g1 || x.nacionalidad || "-",
-                diligencias: x.diligencias_g1 || x.diligencias || "",
-                observaciones: x.observaciones_g1 || x.observaciones || ""
-            }));
-        }
-        // Manual o normalizado (campos nuevos)
-        return arr.map(x => ({
-            numero: x.numero || "-",
-            motivo: x.motivo || "-",
-            nacionalidad: x.nacionalidad || "-",
-            diligencias: x.diligencias || "",
-            observaciones: x.observaciones || ""
-        }));
+    function clean(text) {
+        if (text === undefined || text === null) return "";
+        return ("" + text).trim();
     }
-    function normalizarExpulsados(arr) {
-        if (!Array.isArray(arr)) return [];
-        if (arr.length && arr[0].expulsados_g1 !== undefined) {
-            return arr.map(x => ({
-                nombre: x.expulsados_g1 || x.nombre || "-",
-                nacionalidad: x.nacionalidad_eg1 || x.nacionalidad || "-",
-                diligencias: x.diligencias_eg1 || x.diligencias || "",
-                nConduccionesPos: x.conduc_pos_eg1 || x.nConduccionesPos || "",
-                nConduccionesNeg: x.conduc_neg_eg1 || x.nConduccionesNeg || "",
-                observaciones: x.observaciones_eg1 || x.observaciones || ""
-            }));
-        }
-        return arr.map(x => ({
-            nombre: x.nombre || "-",
-            nacionalidad: x.nacionalidad || "-",
-            diligencias: x.diligencias || "",
-            nConduccionesPos: x.nConduccionesPos || "",
-            nConduccionesNeg: x.nConduccionesNeg || "",
-            observaciones: x.observaciones || ""
-        }));
+    function isNonEmptyDetenido(d) {
+        return clean(d.numero) || clean(d.detenidos_g1) || clean(d.nombre);
     }
-    function normalizarFrustradas(arr) {
-        if (!Array.isArray(arr)) return [];
-        if (arr.length && arr[0].exp_frustradas_g1 !== undefined) {
-            return arr.map(x => ({
-                nombre: x.exp_frustradas_g1 || x.nombre || "-",
-                nacionalidad: x.nacionalidad_fg1 || x.nacionalidad || "-",
-                motivo: x.motivo_fg1 || x.motivo || "-",
-                diligencias: x.diligencias_fg1 || x.diligencias || ""
-            }));
-        }
-        return arr.map(x => ({
-            nombre: x.nombre || "-",
-            nacionalidad: x.nacionalidad || "-",
-            motivo: x.motivo || "-",
-            diligencias: x.diligencias || ""
-        }));
+    function isNonEmptyExpulsado(e) {
+        return clean(e.nombre) || clean(e.expulsados_g1);
     }
-    function normalizarFletados(arr) {
-        if (!Array.isArray(arr)) return [];
-        if (arr.length && arr[0].fletados_g1 !== undefined) {
-            return arr.map(x => ({
-                destino: x.destino_flg1 || x.destino || "-",
-                pax: x.pax_flg1 || x.pax || "-",
-                fecha: x.fecha || "",
-                observaciones: x.observaciones_flg1 || x.observaciones || "",
-                nombre: x.fletados_g1 || x.nombre || ""
-            }));
-        }
-        return arr.map(x => ({
-            destino: x.destino || "-",
-            pax: x.pax || "-",
-            fecha: x.fecha || "",
-            observaciones: x.observaciones || "",
-            nombre: x.nombre || ""
-        }));
+    function isNonEmptyFrustrada(f) {
+        return clean(f.nombre) || clean(f.exp_frustradas_g1);
     }
-    // RECUPERA arrays siempre: busca primero *_g1 y si no, los campos normales
-    const detenidos = normalizarDetenidos(g1.detenidos_g1 || g1.detenidos || []);
-    const expulsados = normalizarExpulsados(g1.expulsados_g1 || g1.expulsados || []);
-    const frustradas = normalizarFrustradas(g1.exp_frustradas_g1 || g1.frustradas || []);
-    const fletados = normalizarFletados(g1.fletados_g1 || g1.fletados || []);
+    function isNonEmptyFletado(f) {
+        return clean(f.destino) || clean(f.destino_flg1) || clean(f.pax) || clean(f.pax_flg1);
+    }
+    const detenidos = (g1.detenidos || g1.detenidos_g1 || []).filter(isNonEmptyDetenido);
+    const expulsados = (g1.expulsados || g1.expulsados_g1 || []).filter(isNonEmptyExpulsado);
+    const frustradas = (g1.frustradas || g1.exp_frustradas_g1 || []).filter(isNonEmptyFrustrada);
+    const fletados = (g1.fletados || g1.fletados_g1 || []).filter(isNonEmptyFletado);
 
-    // RENDER HTML
     let html = `<div class="card border-primary mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white"><h4>🚔 Expulsiones</h4></div>
+    <div class="card-header bg-primary text-white"><h4>${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}</h4></div>
     <div class="card-body p-3">`;
 
+    // Detenidos
     if (detenidos.length > 0) {
         html += `<h5>Detenidos (${detenidos.length})</h5><ul class="list-group mb-3">`;
         detenidos.forEach(d => {
-            html += `<li class="list-group-item">
-                Nº <b>${d.numero}</b> — <b>${d.motivo}</b> (<b>${d.nacionalidad}</b>)${d.diligencias ? ` · [${d.diligencias}]` : ""}${d.observaciones ? ` · ${d.observaciones}` : ""}
-            </li>`;
+            const nombre = clean(d.numero) || clean(d.detenidos_g1) || clean(d.nombre);
+            const motivo = clean(d.motivo) || clean(d.motivo_g1);
+            const nacionalidad = clean(d.nacionalidad) || clean(d.nacionalidad_g1);
+            const diligencias = clean(d.diligencias) || clean(d.diligencias_g1);
+            const observaciones = clean(d.observaciones) || clean(d.observaciones_g1);
+
+            let linea = "";
+            if (nombre) linea += `Nº <b>${nombre}</b>`;
+            if (motivo) linea += ` — <b>${motivo}</b>`;
+            if (nacionalidad) linea += ` (<b>${nacionalidad}</b>)`;
+            if (diligencias) linea += ` · [${diligencias}]`;
+            if (observaciones) linea += ` · ${observaciones}`;
+
+            html += `<li class="list-group-item">${linea}</li>`;
         });
         html += `</ul>`;
     }
+
+    // Expulsados
     if (expulsados.length > 0) {
         html += `<h5>Expulsados (${expulsados.length})</h5><ul class="list-group mb-3">`;
         expulsados.forEach(e => {
-            html += `<li class="list-group-item">
-                <b>${e.nombre}</b> (<b>${e.nacionalidad}</b>)${e.diligencias ? ` · [${e.diligencias}]` : ""}${e.nConduccionesPos ? ` · Conducciones positivas: ${e.nConduccionesPos}` : ""}${e.nConduccionesNeg ? ` · Conducciones negativas: ${e.nConduccionesNeg}` : ""}${e.observaciones ? ` · ${e.observaciones}` : ""}
-            </li>`;
+            const nombre = clean(e.nombre) || clean(e.expulsados_g1);
+            const nacionalidad = clean(e.nacionalidad) || clean(e.nacionalidad_eg1);
+            const diligencias = clean(e.diligencias) || clean(e.diligencias_eg1);
+            const nConduccionesPos = clean(e.nConduccionesPos) || clean(e.conduc_pos_eg1);
+            const nConduccionesNeg = clean(e.nConduccionesNeg) || clean(e.conduc_neg_eg1);
+            const observaciones = clean(e.observaciones) || clean(e.observaciones_eg1);
+
+            let linea = "";
+            if (nombre) linea += `<b>${nombre}</b>`;
+            if (nacionalidad) linea += ` (<b>${nacionalidad}</b>)`;
+            if (diligencias) linea += ` · [${diligencias}]`;
+            if (nConduccionesPos) linea += ` · Conducciones positivas: ${nConduccionesPos}`;
+            if (nConduccionesNeg) linea += ` · Conducciones negativas: ${nConduccionesNeg}`;
+            if (observaciones) linea += ` · ${observaciones}`;
+
+            html += `<li class="list-group-item">${linea}</li>`;
         });
         html += `</ul>`;
     }
+
+    // Frustradas
     if (frustradas.length > 0) {
         html += `<h5>Frustradas (${frustradas.length})</h5><ul class="list-group mb-3">`;
         frustradas.forEach(f => {
-            html += `<li class="list-group-item">
-                <b>${f.nombre}</b> (<b>${f.nacionalidad}</b>) — Motivo: <b>${f.motivo}</b>${f.diligencias ? ` · [${f.diligencias}]` : ""}
-            </li>`;
+            const nombre = clean(f.nombre) || clean(f.exp_frustradas_g1);
+            const nacionalidad = clean(f.nacionalidad) || clean(f.nacionalidad_fg1);
+            const motivo = clean(f.motivo) || clean(f.motivo_fg1);
+            const diligencias = clean(f.diligencias) || clean(f.diligencias_fg1);
+
+            let linea = "";
+            if (nombre) linea += `<b>${nombre}</b>`;
+            if (nacionalidad) linea += ` (<b>${nacionalidad}</b>)`;
+            if (motivo) linea += ` — Motivo: <b>${motivo}</b>`;
+            if (diligencias) linea += ` · [${diligencias}]`;
+
+            html += `<li class="list-group-item">${linea}</li>`;
         });
         html += `</ul>`;
     }
+
+    // Fletados
     if (fletados.length > 0) {
         html += `<h5>Vuelos Fletados (${fletados.length})</h5><ul class="list-group mb-3">`;
         fletados.forEach(f => {
-            html += `<li class="list-group-item">
-                <b>${f.destino}</b> — ${f.pax} pax${f.fecha ? ` · ${f.fecha}` : ""}${f.observaciones ? ` · ${f.observaciones}` : ""}
-            </li>`;
+            const destino = clean(f.destino) || clean(f.destino_flg1);
+            const pax = clean(f.pax) || clean(f.pax_flg1);
+            const fecha = clean(f.fecha);
+            const observaciones = clean(f.observaciones) || clean(f.observaciones_flg1);
+
+            let linea = "";
+            if (destino) linea += `<b>${destino}</b>`;
+            if (pax) linea += ` — ${pax} pax`;
+            if (fecha) linea += ` · ${formatoFecha(fecha)}`;
+            if (observaciones) linea += ` · ${observaciones}`;
+
+            html += `<li class="list-group-item">${linea}</li>`;
         });
         html += `</ul>`;
     }
+
     html += `</div></div>`;
     return html;
 }
-
-
 
 // ------------------- Puerto (Narrativo) -------------------
 function renderizarResumenDetalladoPuerto(puerto) {
