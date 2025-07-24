@@ -626,5 +626,5 @@ document.getElementById('btnExportarPDF').addEventListener('click', () => {
         finalY += 8;
     }
 
-    doc.save(`SIREX-Resumen-Operativo_${desde}_a_${hasta}.pdf`);
-}
+      doc.save(`SIREX-Resumen-Operativo_${desde}_a_${hasta}.pdf`);
+});
