@@ -209,20 +209,21 @@ function renderizarResumenGlobalHTML(resumen, desde, hasta) {
 }
 
 // ------------------- UCRIF (Narrativo) -------------------
+// ------------------- UCRIF (Narrativo) -------------------
 const FRASES_UCRIF = {
     apertura: [
-        "Durante el presente periodo, los grupos UCRIF desplegaron una intensa labor operativa, consolidando el control en los ámbitos de inmigración y lucha contra la trata.",
-        "En la jornada reseñada, la coordinación de los grupos UCRIF permitió desarrollar actuaciones de alto impacto policial en los principales puntos de control.",
-        "La acción conjunta de los grupos UCRIF ha marcado la jornada con importantes resultados en la prevención y persecución de delitos vinculados a la extranjería.",
-        "Los efectivos UCRIF han realizado una labor esencial, consolidando el control migratorio y la seguridad con actuaciones destacadas y coordinadas.",
-        "Bajo la dirección de UCRIF, la operativa ha alcanzado los objetivos planteados, reforzando la seguridad y el cumplimiento de la legalidad vigente."
+        "Durante el periodo indicado, los grupos UCRIF han desplegado actuaciones operativas clave, reforzando la vigilancia y el control en materia de extranjería y trata.",
+        "A lo largo de la jornada, las unidades UCRIF han desarrollado dispositivos dirigidos a la prevención, control y actuación contra la delincuencia vinculada a la inmigración.",
+        "Los equipos UCRIF han consolidado la intervención en los principales focos de riesgo, con resultados notables y actuaciones coordinadas.",
+        "Se han ejecutado múltiples dispositivos bajo el liderazgo de UCRIF, incidiendo en la protección de derechos y el mantenimiento del orden legal.",
+        "La operativa UCRIF ha marcado el ritmo de la jornada, reflejando el compromiso de los equipos en el ámbito migratorio y de seguridad."
     ],
     cierre: [
-        "Todas las actuaciones contribuyen a reforzar la seguridad ciudadana y consolidar el trabajo de los grupos UCRIF.",
-        "La jornada concluye sin incidencias extraordinarias, con la satisfacción del deber cumplido y la vigilancia continuada.",
-        "El balance operativo refleja el compromiso permanente de los equipos UCRIF con la legalidad y la protección de los derechos.",
-        "Se mantiene la atención en los dispositivos clave, garantizando la eficacia y el seguimiento de las actuaciones.",
-        "El operativo se da por finalizado, reafirmando la eficacia de la intervención conjunta de los equipos UCRIF."
+        "El conjunto de actuaciones refuerza la seguridad ciudadana y consolida el trabajo de los grupos UCRIF.",
+        "El servicio se cierra sin incidencias extraordinarias y con pleno cumplimiento de los objetivos establecidos.",
+        "La jornada deja constancia del compromiso permanente de las unidades UCRIF con la protección de la legalidad.",
+        "Se mantiene la atención en los dispositivos clave y el seguimiento de las actuaciones.",
+        "Parte cerrado con balance positivo para la operativa UCRIF."
     ]
 };
 function fraseUcrif(tipo) {
@@ -261,8 +262,8 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
     </div>
     <div class="card-body p-3">`;
 
-    // CABECERA: frase apertura, con misma tipografía y sin resaltar en exceso
-    html += `<div class="mb-2" style="font-size:1.05rem;color:#1177bb;">${fraseUcrif('apertura')}</div>`;
+    // CABECERA: frase apertura, formato integrado
+    html += `<div class="mb-2" style="font-size:1.06rem; color:#1177bb;">${fraseUcrif('apertura')}</div>`;
 
     // Totales
     html += `<div class="d-flex flex-wrap gap-2 mb-3">`;
@@ -313,43 +314,14 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
         html += `<div class="alert alert-secondary mt-2"><b>Observaciones:</b><br>${ucrif.observaciones.filter(o => o && o.trim()).map(o => `<div>${o}</div>`).join("")}</div>`;
     }
 
-    // PIE: frase de cierre con la misma fuente que el cuerpo
-    html += `<div class="mt-3" style="font-size:1.02rem; color:#1177bb;">${fraseUcrif('cierre')}</div>`;
+    // PIE: frase cierre, mismo formato que la cabecera
+    html += `<div class="mt-3" style="font-size:1.03rem; color:#1177bb;">${fraseUcrif('cierre')}</div>`;
 
     html += `</div></div>`;
     return html;
 }
 
-    // DETENIDOS POR DELITO
-    if (ucrif.detenidosDelito && ucrif.detenidosDelito.length > 0) {
-        html += `<h5 class="mt-3 mb-1">Detenidos por Delito</h5><ul class="list-group mb-3">`;
-        ucrif.detenidosDelito.forEach(d => {
-            html += `<li class="list-group-item">${d.descripcion} por ${d.motivo}</li>`;
-        });
-        html += `</ul>`;
-    }
-
-    // COLABORACIONES
-    if (ucrif.colaboraciones && ucrif.colaboraciones.length > 0) {
-        html += `<h5 class="mt-3 mb-1">Colaboraciones y Apoyos a Otros Servicios</h5><ul class="list-group mb-3">`;
-        ucrif.colaboraciones.forEach(c => {
-            html += `<li class="list-group-item">${typeof c === 'string' ? c : (c.colaboracionDesc || '[Colaboración]')}</li>`;
-        });
-        html += `</ul>`;
-    }
-
-    // OBSERVACIONES FINALES
-    if (ucrif.observaciones && ucrif.observaciones.length > 0) {
-        html += `<div class="alert alert-secondary mt-2"><b>Observaciones:</b><br>${ucrif.observaciones.filter(o => o && o.trim()).map(o => `<div>${o}</div>`).join("")}</div>`;
-    }
-
-    // Frase cierre aleatoria
-    html += `<div class="mt-2 text-muted"><i>${fraseUcrif('cierre')}</i></div>`;
-
-    html += `</div></div>`;
-    return html;
-}
-
+  
 // ------------------- Grupo 1 Expulsiones (Narrativo) -------------------
 function renderizarResumenDetalladoGrupo1(g1) {
     function clean(text) {
