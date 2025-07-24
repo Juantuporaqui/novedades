@@ -1,8 +1,9 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.1
+// SIREX · Consulta Global / Resúmenes v2.2
 // Autor: Gemini
 // Descripción: Lógica de la aplicación para la consulta y exportación de resúmenes.
 // Este archivo debe ser enlazado desde un archivo HTML que contenga la estructura y los IDs correspondientes.
+// CORRECCIÓN: Solucionado ReferenceError 'Field is not defined' en getPuertoDetalles.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grupo1: { label: 'Expulsiones', icon: '✈️', color: '#0d6efd', theme: 'primary' },
             puerto: { label: 'Puerto', icon: '⚓', color: '#198754', theme: 'success' },
             cecorex: { label: 'CECOREX', icon: '📡', color: '#ffc107', theme: 'warning' },
-            gestion: { label: 'Gestión', icon: '�', color: '#6c757d', theme: 'secondary' },
+            gestion: { label: 'Gestión', icon: '📋', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
         frasesNarrativas: {
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
         getPuertoDetalles: async (desde, hasta) => {
-            const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(Field.documentId(), '<=', hasta).get();
+            const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
             let res = { ferrys: [], incidencias: [], ctrlMarinos: 0, marinosArgos: 0 };
             snap.forEach(doc => {
                 const data = doc.data();
@@ -562,4 +563,3 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.fechaHasta.value = today;
 
 });
-
