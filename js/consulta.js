@@ -191,6 +191,23 @@ function normalizarFletado(obj) {
     };
 }
 
+// Añade esta función junto a las otras de "normalizar"
+function normalizarFrustrada(obj) {
+    return {
+        nombre: obj.exp_frustradas_g1 || obj.nombre || "-",
+        nacionalidad: obj.nacionalidad_fg1 || obj.nacionalidad || "-",
+        motivo: obj.motivo_fg1 || obj.motivo || "-",
+        diligencias: obj.diligencias_fg1 || obj.diligencias || ""
+    };
+}
+
+// Añade esta función de utilidad en alguna parte de tu script
+function formatoFecha(fechaStr) {
+    if (!fechaStr) return "";
+    // Asume que la fecha viene en formato YYYY-MM-DD
+    const [year, month, day] = fechaStr.split('-');
+    return `${day}/${month}/${year}`;
+}
 
 // --- 5. RENDERIZADORES POR GRUPO: PROFESIONALES Y NARRATIVOS ---
 
