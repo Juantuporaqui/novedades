@@ -210,34 +210,97 @@ function renderizarResumenGlobalHTML(resumen, desde, hasta) {
 
 // ------------------- UCRIF (Narrativo) -------------------
 function renderizarResumenDetalladoUCRIF(ucrif) {
+    // LITERATURA ÉPICA DE CABECERA
     let html = `<div class="card border-info mb-4 shadow-sm">
-    <div class="card-header bg-info text-white"><h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4></div>
+    <div class="card-header bg-info text-white">
+        <h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4>
+    </div>
     <div class="card-body p-3">`;
-    html += `<p><b>Totales:</b> ${ucrif.detenidosILE} ILE, ${ucrif.filiadosVarios} filiados, ${ucrif.traslados} traslados, ${ucrif.citadosCecorex} citados.</p>`;
-    if (ucrif.inspecciones.length > 0) {
-        html += `<h5 class="mt-3">Inspecciones</h5><ul class="list-group">`;
-        ucrif.inspecciones.forEach(insp => {
-            html += `<li class="list-group-item">${insp.lugar || 'Lugar no especificado'}: ${insp.identificadas || 0} filiadas (${insp.nacionalidades || 'N/A'}), ${insp.citadas || 0} citadas.</li>`;
+
+    // Frase épica contextual
+    html += `<div class="mb-2 fst-italic text-info-emphasis" style="font-size:1.1em;">
+        "Resultados notables tras la intervención coordinada de los grupos UCRIF..."
+    </div>`;
+
+    // Totales generales
+    html += `<p class="mb-2"><b>Totales:</b> 
+        <span class="badge bg-info text-dark ms-2">${ucrif.detenidosILE} ILE</span> 
+        <span class="badge bg-secondary ms-2">${ucrif.filiadosVarios} filiados</span> 
+        <span class="badge bg-warning text-dark ms-2">${ucrif.traslados} traslados</span> 
+        <span class="badge bg-primary ms-2">${ucrif.citadosCecorex} citados CECOREX</span>
+    </p>`;
+
+    // Inspecciones
+    if (ucrif.inspecciones?.length) {
+        html += `<h5 class="mt-3">Inspecciones en casas de citas y establecimientos</h5>
+        <ul class="list-group mb-3">`;
+        ucrif.inspecciones.forEach(ins => {
+            let linea = [];
+            if (ins.lugar) linea.push(`<b>${ins.lugar}</b>`);
+            if (ins.tipo) linea.push(`(${ins.tipo})`);
+            if (ins.identificadas) linea.push(`<b>${ins.identificadas}</b> filiadas`);
+            if (ins.nacionalidades) linea.push(`(${ins.nacionalidades})`);
+            if (ins.citadas) linea.push(`${ins.citadas} citadas`);
+            if (ins.detenciones) linea.push(`${ins.detenciones} detenidas`);
+            if (ins.incautaciones) linea.push(`Incautaciones: ${ins.incautaciones}`);
+            if (ins.observaciones) linea.push(`<i>${ins.observaciones}</i>`);
+            html += `<li class="list-group-item">${linea.join(' · ')}</li>`;
         });
         html += `</ul>`;
     }
-    if (ucrif.detenidosDelito.length > 0) {
-        html += `<h5 class="mt-3">Detenidos por Delito</h5><ul class="list-group">`;
-        ucrif.detenidosDelito.forEach(d => {
-            html += `<li class="list-group-item">${d.descripcion} por ${d.motivo}</li>`;
+
+    // Detenidos por delito (no ILE)
+    if (ucrif.detenidosDelito?.length) {
+        html += `<h5 class="mt-3">Detenidos por Delito</h5>
+        <ul class="list-group mb-3">`;
+        ucrif.detenidosDelito.forEach(det => {
+            let linea = [];
+            if (det.descripcion) linea.push(det.descripcion);
+            if (det.motivo) linea.push(`<span class="text-danger">(${det.motivo})</span>`);
+            if (det.observaciones) linea.push(`<i>${det.observaciones}</i>`);
+            html += `<li class="list-group-item">${linea.join(' - ')}</li>`;
         });
         html += `</ul>`;
     }
-    if (ucrif.colaboraciones.length > 0) {
-        html += `<h5 class="mt-3">Colaboraciones</h5><ul class="list-group">`;
+
+    // Dispositivos y actuaciones especiales
+    if (ucrif.dispositivos?.length) {
+        html += `<h5 class="mt-3">Dispositivos Operativos Destacados</h5>
+        <ul class="list-group mb-3">`;
+        ucrif.dispositivos.forEach(act => {
+            if (act) html += `<li class="list-group-item">${act}</li>`;
+        });
+        html += `</ul>`;
+    }
+
+    // Colaboraciones institucionales
+    if (ucrif.colaboraciones?.length) {
+        html += `<h5 class="mt-3">Colaboraciones institucionales</h5>
+        <ul class="list-group mb-3">`;
         ucrif.colaboraciones.forEach(c => {
-            html += `<li class="list-group-item">${typeof c === 'string' ? c : (c.colaboracionDesc || 'N/A')}</li>`;
+            if (c) html += `<li class="list-group-item">${typeof c === 'string' ? c : (c.colaboracionDesc || JSON.stringify(c))}</li>`;
         });
         html += `</ul>`;
     }
+
+    // Observaciones
+    if (ucrif.observaciones?.length) {
+        html += `<h5 class="mt-3">Notas y Observaciones</h5>
+        <ul class="list-group mb-3">`;
+        ucrif.observaciones.forEach(o => {
+            if (o) html += `<li class="list-group-item"><i>${o}</i></li>`;
+        });
+        html += `</ul>`;
+    }
+
+    // Cierre épico
+    html += `<div class="mt-4 text-end fst-italic text-info">
+        “Respuesta eficaz ante las amenazas detectadas.”
+    </div>`;
     html += `</div></div>`;
     return html;
 }
+
 
 // ------------------- Grupo 1 Expulsiones (Narrativo) -------------------
 function renderizarResumenDetalladoGrupo1(g1) {
