@@ -161,6 +161,36 @@ form.addEventListener('submit', async function(e) {
         resumenVentana.innerHTML = `<div class="alert alert-danger">Error al consultar los datos: ${err.message}</div>`;
     } finally { spinner.classList.add('d-none'); }
 });
+function normalizarDetenido(obj) {
+    // Para un solo detenido, saca los campos clave, sea formato manual o parser
+    return {
+        nombre: obj.detenidos_g1 || obj.numero || obj.nombre || "-",
+        motivo: obj.motivo_g1 || obj.motivo || "-",
+        nacionalidad: obj.nacionalidad_g1 || obj.nacionalidad || "-",
+        diligencias: obj.diligencias_g1 || obj.diligencias || "",
+        observaciones: obj.observaciones_g1 || obj.observaciones || ""
+    };
+}
+function normalizarExpulsado(obj) {
+    return {
+        nombre: obj.expulsados_g1 || obj.nombre || "-",
+        nacionalidad: obj.nacionalidad_eg1 || obj.nacionalidad || "-",
+        diligencias: obj.diligencias_eg1 || obj.diligencias || "",
+        nConduccionesPos: obj.conduc_pos_eg1 || obj.nConduccionesPos || "",
+        nConduccionesNeg: obj.conduc_neg_eg1 || obj.nConduccionesNeg || "",
+        observaciones: obj.observaciones_eg1 || obj.observaciones || ""
+    };
+}
+function normalizarFletado(obj) {
+    return {
+        nombre: obj.fletados_g1 || obj.nombre || "-",
+        destino: obj.destino_flg1 || obj.destino || "-",
+        pax: obj.pax_flg1 || obj.pax || 0,
+        fecha: obj.fecha || "",
+        observaciones: obj.observaciones_flg1 || obj.observaciones || ""
+    };
+}
+
 
 // --- 5. RENDERIZADORES POR GRUPO: PROFESIONALES Y NARRATIVOS ---
 
@@ -219,12 +249,13 @@ function renderizarResumenDetalladoGrupo1(g1) {
     if (g1.detenidos && g1.detenidos.length > 0) {
         html += `<h5>Detenidos (${g1.detenidos.length})</h5><ul class="list-group mb-3">`;
         g1.detenidos.forEach(d => {
+            const det = normalizarDetenido(d);
             html += `<li class="list-group-item">
-                Nº <b>${d.numero || "-"}</b>
-                — <b>${d.motivo || "-"}</b>
-                (<b>${d.nacionalidad || "-"}</b>)
-                ${d.diligencias ? ` · [${d.diligencias}]` : ""}
-                ${d.observaciones ? ` · ${d.observaciones}` : ""}
+                Nº <b>${det.nombre}</b>
+                — <b>${det.motivo}</b>
+                (<b>${det.nacionalidad}</b>)
+                ${det.diligencias ? ` · [${det.diligencias}]` : ""}
+                ${det.observaciones ? ` · ${det.observaciones}` : ""}
             </li>`;
         });
         html += `</ul>`;
@@ -234,13 +265,14 @@ function renderizarResumenDetalladoGrupo1(g1) {
     if (g1.expulsados && g1.expulsados.length > 0) {
         html += `<h5>Expulsados (${g1.expulsados.length})</h5><ul class="list-group mb-3">`;
         g1.expulsados.forEach(e => {
+            const exp = normalizarExpulsado(e);
             html += `<li class="list-group-item">
-                <b>${e.nombre || "-"}</b>
-                (<b>${e.nacionalidad || "-"}</b>)
-                ${e.diligencias ? ` · [${e.diligencias}]` : ""}
-                ${e.nConduccionesPos ? ` · Conducciones positivas: ${e.nConduccionesPos}` : ""}
-                ${e.nConduccionesNeg ? ` · Conducciones negativas: ${e.nConduccionesNeg}` : ""}
-                ${e.observaciones ? ` · ${e.observaciones}` : ""}
+                <b>${exp.nombre}</b>
+                (<b>${exp.nacionalidad}</b>)
+                ${exp.diligencias ? ` · [${exp.diligencias}]` : ""}
+                ${exp.nConduccionesPos ? ` · Conducciones positivas: ${exp.nConduccionesPos}` : ""}
+                ${exp.nConduccionesNeg ? ` · Conducciones negativas: ${exp.nConduccionesNeg}` : ""}
+                ${exp.observaciones ? ` · ${exp.observaciones}` : ""}
             </li>`;
         });
         html += `</ul>`;
@@ -250,11 +282,12 @@ function renderizarResumenDetalladoGrupo1(g1) {
     if (g1.frustradas && g1.frustradas.length > 0) {
         html += `<h5>Frustradas (${g1.frustradas.length})</h5><ul class="list-group mb-3">`;
         g1.frustradas.forEach(f => {
+            const fru = normalizarFrustrada(f);
             html += `<li class="list-group-item">
-                <b>${f.nombre || "-"}</b>
-                (<b>${f.nacionalidad || "-"}</b>)
-                — Motivo: <b>${f.motivo || "-"}</b>
-                ${f.diligencias ? ` · [${f.diligencias}]` : ""}
+                <b>${fru.nombre}</b>
+                (<b>${fru.nacionalidad}</b>)
+                — Motivo: <b>${fru.motivo}</b>
+                ${fru.diligencias ? ` · [${fru.diligencias}]` : ""}
             </li>`;
         });
         html += `</ul>`;
@@ -264,11 +297,12 @@ function renderizarResumenDetalladoGrupo1(g1) {
     if (g1.fletados && g1.fletados.length > 0) {
         html += `<h5>Vuelos Fletados (${g1.fletados.length})</h5><ul class="list-group mb-3">`;
         g1.fletados.forEach(f => {
+            const fle = normalizarFletado(f);
             html += `<li class="list-group-item">
-                <b>${f.destino || "-"}</b>
-                — ${f.pax || 0} pax
-                ${f.fecha ? ` · ${formatoFecha(f.fecha)}` : ""}
-                ${f.observaciones ? ` · ${f.observaciones}` : ""}
+                <b>${fle.destino}</b>
+                — ${fle.pax || 0} pax
+                ${fle.fecha ? ` · ${formatoFecha(fle.fecha)}` : ""}
+                ${fle.observaciones ? ` · ${fle.observaciones}` : ""}
             </li>`;
         });
         html += `</ul>`;
@@ -414,25 +448,37 @@ function generarTextoWhatsappNarrativo(resumen, desde, hasta) {
 
     // GRUPO 1 (EXPULSIONES)
     if (resumen.grupo1) {
-        const g1 = resumen.grupo1;
-        out += `\n*${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}*\n`;
-        if (g1.detenidos.length > 0) {
-            out += `Detenidos (${g1.detenidos.length}):\n`;
-            g1.detenidos.forEach(d => out += `• ${d.detenidos_g1} (${d.nacionalidad_g1}) por ${d.motivo_g1}\n`);
-        }
-        if (g1.expulsados.length > 0) {
-            out += `Expulsados (${g1.expulsados.length}):\n`;
-            g1.expulsados.forEach(e => out += `• ${e.expulsados_g1} (${e.nacionalidad_eg1})\n`);
-        }
-        if (g1.frustradas.length > 0) {
-            out += `Frustradas (${g1.frustradas.length}):\n`;
-            g1.frustradas.forEach(f => out += `• ${f.exp_frustradas_g1} (${f.nacionalidad_fg1}) - Motivo: ${f.motivo_fg1}\n`);
-        }
-        if (g1.fletados.length > 0) {
-            out += `Vuelos Fletados:\n`;
-            g1.fletados.forEach(f => out += `• ${f.fletados_g1} a ${f.destino_flg1} con ${f.pax_flg1} PAX\n`);
-        }
+    const g1 = resumen.grupo1;
+    out += `\n*${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}*\n`;
+    if (g1.detenidos && g1.detenidos.length > 0) {
+        out += `Detenidos (${g1.detenidos.length}):\n`;
+        g1.detenidos.forEach(d => {
+            const det = normalizarDetenido(d);
+            out += `• ${det.nombre} (${det.nacionalidad}) por ${det.motivo}\n`;
+        });
     }
+    if (g1.expulsados && g1.expulsados.length > 0) {
+        out += `Expulsados (${g1.expulsados.length}):\n`;
+        g1.expulsados.forEach(e => {
+            const exp = normalizarExpulsado(e);
+            out += `• ${exp.nombre} (${exp.nacionalidad})\n`;
+        });
+    }
+    if (g1.frustradas && g1.frustradas.length > 0) {
+        out += `Frustradas (${g1.frustradas.length}):\n`;
+        g1.frustradas.forEach(f => {
+            const fru = normalizarFrustrada(f);
+            out += `• ${fru.nombre} (${fru.nacionalidad}) - Motivo: ${fru.motivo}\n`;
+        });
+    }
+    if (g1.fletados && g1.fletados.length > 0) {
+        out += `Vuelos Fletados:\n`;
+        g1.fletados.forEach(f => {
+            const fle = normalizarFletado(f);
+            out += `• ${fle.destino} — ${fle.pax || 0} pax${fle.fecha ? " · " + formatoFecha(fle.fecha) : ""}\n`;
+        });
+    }
+}
 
     // PUERTO
     if (resumen.puerto) {
@@ -543,43 +589,48 @@ document.getElementById('btnExportarPDF').addEventListener('click', () => {
 
     // GRUPO 1
     if (resumen.grupo1) {
-        const g1 = resumen.grupo1;
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}`, 14, finalY);
-        finalY += 6;
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        if (g1.detenidos.length > 0) {
-            doc.text(`Detenidos (${g1.detenidos.length}):`, 14, finalY); finalY += 5;
-            g1.detenidos.forEach(d => {
-                doc.text(`- ${d.detenidos_g1} (${d.nacionalidad_g1}) por ${d.motivo_g1}`, 16, finalY);
-                finalY += 5;
-            });
-        }
-        if (g1.expulsados.length > 0) {
-            doc.text(`Expulsados (${g1.expulsados.length}):`, 14, finalY); finalY += 5;
-            g1.expulsados.forEach(e => {
-                doc.text(`- ${e.expulsados_g1} (${e.nacionalidad_eg1})`, 16, finalY);
-                finalY += 5;
-            });
-        }
-        if (g1.frustradas.length > 0) {
-            doc.text(`Frustradas (${g1.frustradas.length}):`, 14, finalY); finalY += 5;
-            g1.frustradas.forEach(f => {
-                doc.text(`- ${f.exp_frustradas_g1} (${f.nacionalidad_fg1}) - Motivo: ${f.motivo_fg1}`, 16, finalY);
-                finalY += 5;
-            });
-        }
-        if (g1.fletados.length > 0) {
-            doc.text("Vuelos Fletados:", 14, finalY); finalY += 5;
-            g1.fletados.forEach(f => {
-                doc.text(`- ${f.fletados_g1} a ${f.destino_flg1} con ${f.pax_flg1} PAX`, 16, finalY);
-                finalY += 5;
-            });
-        }
-        finalY += 8;
+    const g1 = resumen.grupo1;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}`, 14, finalY);
+    finalY += 6;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    if (g1.detenidos && g1.detenidos.length > 0) {
+        doc.text(`Detenidos (${g1.detenidos.length}):`, 14, finalY); finalY += 5;
+        g1.detenidos.forEach(d => {
+            const det = normalizarDetenido(d);
+            doc.text(`- ${det.nombre} (${det.nacionalidad}) por ${det.motivo}`, 16, finalY);
+            finalY += 5;
+        });
     }
+    if (g1.expulsados && g1.expulsados.length > 0) {
+        doc.text(`Expulsados (${g1.expulsados.length}):`, 14, finalY); finalY += 5;
+        g1.expulsados.forEach(e => {
+            const exp = normalizarExpulsado(e);
+            doc.text(`- ${exp.nombre} (${exp.nacionalidad})`, 16, finalY);
+            finalY += 5;
+        });
+    }
+    if (g1.frustradas && g1.frustradas.length > 0) {
+        doc.text(`Frustradas (${g1.frustradas.length}):`, 14, finalY); finalY += 5;
+        g1.frustradas.forEach(f => {
+            const fru = normalizarFrustrada(f);
+            doc.text(`- ${fru.nombre} (${fru.nacionalidad}) - Motivo: ${fru.motivo}`, 16, finalY);
+            finalY += 5;
+        });
+    }
+    if (g1.fletados && g1.fletados.length > 0) {
+        doc.text("Vuelos Fletados:", 14, finalY); finalY += 5;
+        g1.fletados.forEach(f => {
+            const fle = normalizarFletado(f);
+            doc.text(`- ${fle.destino} — ${fle.pax || 0} pax${fle.fecha ? " · " + formatoFecha(fle.fecha) : ""}`, 16, finalY);
+            finalY += 5;
+        });
+    }
+    finalY += 8;
+}
+
 
     // PUERTO
     if (resumen.puerto) {
