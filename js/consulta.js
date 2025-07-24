@@ -1,144 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIREX · Consulta Global de Resúmenes</title>
-    <!-- Bootstrap 5.3 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- jsPDF y autoTable -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <!-- Firebase 8 -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .container {
-            max-width: 960px;
-        }
-        .card {
-            border: none;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s ease-in-out;
-        }
-        .card:hover {
-            transform: translateY(-3px);
-        }
-        .card-header {
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .card-header h4 {
-            margin: 0;
-            font-size: 1.2rem;
-        }
-        .form-control, .form-select, .btn {
-            border-radius: 0.5rem;
-        }
-        .btn-primary {
-            background-color: #0d6efd;
-            border: none;
-        }
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-        #exportBtns .btn {
-            font-weight: 500;
-        }
-        .summary-title {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: #343a40;
-        }
-        .narrative-intro, .narrative-outro {
-            font-style: italic;
-            color: #5a6268;
-            font-size: 1.05rem;
-            border-left: 3px solid #0d6efd;
-            padding-left: 1rem;
-            margin: 1rem 0;
-        }
-        .badge {
-            font-size: 0.9rem;
-            padding: 0.5em 0.9em;
-        }
-        .list-group-item {
-            border-color: #e9ecef;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container mt-4 mb-5">
-        <div class="text-center mb-4">
-            <h1 class="summary-title">🛡️ SIREX · Consulta Global de Resúmenes</h1>
-            <p class="text-muted">Selecciona un rango de fechas para generar un informe consolidado de todos los grupos.</p>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-body p-4">
-                <form id="consultaForm">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md">
-                            <label for="fechaDesde" class="form-label fw-bold">Fecha de Inicio</label>
-                            <input type="date" id="fechaDesde" class="form-control" required>
-                        </div>
-                        <div class="col-md">
-                            <label for="fechaHasta" class="form-label fw-bold">Fecha de Fin</label>
-                            <input type="date" id="fechaHasta" class="form-control" required>
-                        </div>
-                        <div class="col-md-auto">
-                            <button type="submit" class="btn btn-primary w-100 py-2">Generar Resumen</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="spinner" class="text-center my-5 d-none">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2 text-muted">Consultando bases de datos...</p>
-        </div>
-        
-        <div id="resumenVentana"></div>
-
-        <div id="exportBtns" class="text-center mt-4 d-none">
-            <div class="d-flex gap-3 justify-content-center">
-                <button id="btnWhatsapp" class="btn btn-success btn-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-whatsapp me-2" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
-                    Exportar a WhatsApp
-                </button>
-                <button id="btnExportarPDF" class="btn btn-danger btn-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill me-2" viewBox="0 0 16 16"><path d="M5.523 12.424q.21-.124.459-.238a8 8 0 0 1-.45.606c-.28.337-.498.516-.635.572a.27.27 0 0 1-.035.012.28.28 0 0 1-.026-.044c-.056-.11-.054-.216.04-.36.106-.165.417-.516.848-.93.05-.05.093-.096.122-.134zM4.603 14.087a.8.8 0 0 1-1.037.016.8.8 0 0 1-.016-1.037l3.7-5.25a.8.8 0 0 1 1.038-.016.8.8 0 0 1 .016 1.037l-3.7 5.25z"/><path fill-rule="evenodd" d="M4.603 14.087a.8.8 0 0 1-1.037.016.8.8 0 0 1-.016-1.037l3.7-5.25a.8.8 0 0 1 1.038-.016.8.8 0 0 1 .016 1.037l-3.7 5.25zM.5 3.5A1.5 1.5 0 0 1 2 2h5l.5.5v.5h.5v.5h.5v.5h.5v.5H10v3.25a.75.75 0 0 1-1.5 0V7.45l-2.72 3.816a.25.25 0 0 0 .016.33.25.25 0 0 0 .33-.016l2.72-3.816V11a.75.75 0 0 1-1.5 0v-2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.25a.75.75 0 0 1-1.5 0V8.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v4.25a.75.75 0 0 1-1.5 0V3.5z"/><path d="M4.603 14.087a.8.8 0 0 1-1.037.016.8.8 0 0 1-.016-1.037l3.7-5.25a.8.8 0 0 1 1.038-.016.8.8 0 0 1 .016 1.037l-3.7 5.25zM.5 3.5A1.5 1.5 0 0 1 2 2h5l.5.5v.5h.5v.5h.5v.5h.5v.5H10v3.25a.75.75 0 0 1-1.5 0V7.45l-2.72 3.816a.25.25 0 0 0 .016.33.25.25 0 0 0 .33-.016l2.72-3.816V11a.75.75 0 0 1-1.5 0v-2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.25a.75.75 0 0 1-1.5 0V8.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v4.25a.75.75 0 0 1-1.5 0V3.5z"/></svg>
-                    Exportar a PDF
-                </button>
-            </div>
-        </div>
-    </div>
-
-<script>
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.0
+// SIREX · Consulta Global / Resúmenes v2.1
 // Autor: Gemini
-// Mejoras: Código modular, diseño mejorado, exportaciones optimizadas para PDF y WhatsApp,
-// redacción narrativa y visualmente atractiva.
+// Descripción: Lógica de la aplicación para la consulta y exportación de resúmenes.
+// Este archivo debe ser enlazado desde un archivo HTML que contenga la estructura y los IDs correspondientes.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -158,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grupo1: { label: 'Expulsiones', icon: '✈️', color: '#0d6efd', theme: 'primary' },
             puerto: { label: 'Puerto', icon: '⚓', color: '#198754', theme: 'success' },
             cecorex: { label: 'CECOREX', icon: '📡', color: '#ffc107', theme: 'warning' },
-            gestion: { label: 'Gestión', icon: '📋', color: '#6c757d', theme: 'secondary' },
+            gestion: { label: 'Gestión', icon: '�', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
         frasesNarrativas: {
@@ -206,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 5. LÓGICA DE CONSULTAS A FIRESTORE ---
     const QueryManager = {
-        // ... (resto de funciones de consulta sin cambios)
         getUcrifNovedades: async (desde, hasta) => {
             const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo'];
             let rawData = [];
@@ -257,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
         getPuertoDetalles: async (desde, hasta) => {
-            const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
+            const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(Field.documentId(), '<=', hasta).get();
             let res = { ferrys: [], incidencias: [], ctrlMarinos: 0, marinosArgos: 0 };
             snap.forEach(doc => {
                 const data = doc.data();
@@ -300,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 6. LÓGICA DE RENDERIZADO HTML ---
     const UIRenderer = {
-        // ... (código de renderizado HTML)
         renderizarResumenGlobalHTML(resumen, desde, hasta) {
             let html = `<div class="alert alert-light text-center my-4 p-3 border">
                 <h2 class="h4"><b>RESUMEN OPERATIVO SIREX</b></h2>
@@ -444,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${day}/${month}/${year}`;
         },
 
-        // --- Sub-objetos para organizar mejor ---
         formatters: {
             dispositivo: (d) => {
                 if (typeof d === "string") return d;
@@ -493,7 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 7. LÓGICA DE EXPORTACIÓN ---
     const ExportManager = {
-        // ... (código de exportación a WhatsApp y PDF)
         generarTextoWhatsapp(resumen, desde, hasta) {
             const f = UIRenderer.formatoFecha;
             let out = `*🛡️ SIREX - RESUMEN OPERATIVO*\n*Periodo:* ${f(desde)} al ${f(hasta)}\n`;
@@ -621,8 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
-            // ... (Otras secciones como Puerto, Cecorex, etc. pueden usar autoTable de forma similar)
-
             // --- PIE DE PÁGINA ---
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
@@ -704,7 +562,4 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.fechaHasta.value = today;
 
 });
-</script>
-
-</body>
-</html>
+�
