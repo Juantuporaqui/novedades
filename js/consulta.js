@@ -209,98 +209,119 @@ function renderizarResumenGlobalHTML(resumen, desde, hasta) {
 }
 
 // ------------------- UCRIF (Narrativo) -------------------
+const FRASES_UCRIF = {
+    apertura: [
+        "Resultados notables tras la intervención coordinada de los grupos UCRIF.",
+        "Balance operativo: despliegue eficaz en el control de inmigración y trata.",
+        "Actuación integral de los equipos UCRIF con presencia activa en los puntos clave.",
+        "Despliegue coordinado y resultados efectivos tras la intervención de los grupos UCRIF.",
+        "Intensa actividad policial durante la jornada con impacto en la seguridad y control migratorio."
+    ],
+    cierre: [
+        "Se mantiene la vigilancia y control en los puntos estratégicos.",
+        "Las actuaciones realizadas refuerzan la seguridad y el cumplimiento legal.",
+        "El operativo se cierra sin incidencias relevantes fuera de lo descrito.",
+        "El dispositivo se consolida como referente en el control especializado.",
+        "Parte cerrado tras una jornada de intensa actividad operativa."
+    ]
+};
+function fraseUcrif(tipo) {
+    const arr = FRASES_UCRIF[tipo] || [];
+    return arr.length ? arr[Math.floor(Math.random() * arr.length)] : "";
+}
+// Helper para formatear dispositivos
+function formateaDispositivo(d) {
+    if (typeof d === "string") return d;
+    // Adapta aquí los campos más habituales:
+    let linea = "";
+    if (d.tipo) linea += `<b>${d.tipo}</b>`;
+    if (d.lugar) linea += ` en ${d.lugar}`;
+    if (d.descripcion) linea += `: ${d.descripcion}`;
+    if (d.funcionarios) linea += ` (Funcionarios: ${d.funcionarios})`;
+    if (d.detenciones) linea += ` — Detenciones: ${d.detenciones}`;
+    if (d.resultado) linea += ` — Resultado: ${d.resultado}`;
+    if (d.observaciones) linea += ` · ${d.observaciones}`;
+    return linea.trim() ? linea : "[Dispositivo operativo registrado]";
+}
+// Helper inspección
+function formateaInspeccion(i) {
+    if (typeof i === "string") return i;
+    let out = "";
+    if (i.lugar) out += `<b>${i.lugar}</b>`;
+    if (i.tipo) out += ` (${i.tipo})`;
+    if (i.identificadas) out += ` — ${i.identificadas} filiadas`;
+    if (i.nacionalidades) out += ` (${i.nacionalidades})`;
+    if (i.citadas) out += `, ${i.citadas} citadas`;
+    if (i.resultado) out += ` — Resultado: ${i.resultado}`;
+    if (i.observaciones) out += ` · ${i.observaciones}`;
+    return out.trim() ? out : "[Inspección registrada]";
+}
+
 function renderizarResumenDetalladoUCRIF(ucrif) {
-    // LITERATURA ÉPICA DE CABECERA
     let html = `<div class="card border-info mb-4 shadow-sm">
     <div class="card-header bg-info text-white">
         <h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4>
     </div>
     <div class="card-body p-3">`;
 
-    // Frase épica contextual
-    html += `<div class="mb-2 fst-italic text-info-emphasis" style="font-size:1.1em;">
-        "Resultados notables tras la intervención coordinada de los grupos UCRIF..."
-    </div>`;
+    // Frase apertura aleatoria, subrayada
+    html += `<div class="mb-2" style="font-style: italic; color: #116699;">"${fraseUcrif('apertura')}"</div>`;
 
-    // Totales generales
-    html += `<p class="mb-2"><b>Totales:</b> 
-        <span class="badge bg-info text-dark ms-2">${ucrif.detenidosILE} ILE</span> 
-        <span class="badge bg-secondary ms-2">${ucrif.filiadosVarios} filiados</span> 
-        <span class="badge bg-warning text-dark ms-2">${ucrif.traslados} traslados</span> 
-        <span class="badge bg-primary ms-2">${ucrif.citadosCecorex} citados CECOREX</span>
-    </p>`;
+    // Totales, visualmente separados y en etiquetas
+    html += `<div class="d-flex flex-wrap gap-2 mb-3">`;
+    html += `<span class="badge bg-primary fs-6">${ucrif.detenidosILE || 0} ILE</span>`;
+    html += `<span class="badge bg-info text-dark fs-6">${ucrif.filiadosVarios || 0} filiados</span>`;
+    html += `<span class="badge bg-warning text-dark fs-6">${ucrif.traslados || 0} traslados</span>`;
+    html += `<span class="badge bg-primary fs-6">${ucrif.citadosCecorex || 0} citados CECOREX</span>`;
+    html += `</div>`;
 
-    // Inspecciones
-    if (ucrif.inspecciones?.length) {
-        html += `<h5 class="mt-3">Inspecciones en casas de citas y establecimientos</h5>
-        <ul class="list-group mb-3">`;
-        ucrif.inspecciones.forEach(ins => {
-            let linea = [];
-            if (ins.lugar) linea.push(`<b>${ins.lugar}</b>`);
-            if (ins.tipo) linea.push(`(${ins.tipo})`);
-            if (ins.identificadas) linea.push(`<b>${ins.identificadas}</b> filiadas`);
-            if (ins.nacionalidades) linea.push(`(${ins.nacionalidades})`);
-            if (ins.citadas) linea.push(`${ins.citadas} citadas`);
-            if (ins.detenciones) linea.push(`${ins.detenciones} detenidas`);
-            if (ins.incautaciones) linea.push(`Incautaciones: ${ins.incautaciones}`);
-            if (ins.observaciones) linea.push(`<i>${ins.observaciones}</i>`);
-            html += `<li class="list-group-item">${linea.join(' · ')}</li>`;
+    // INSPECCIONES
+    if (ucrif.inspecciones && ucrif.inspecciones.length > 0) {
+        html += `<h5 class="mt-3 mb-1">Inspecciones en casas de citas y establecimientos</h5><ul class="list-group mb-3">`;
+        ucrif.inspecciones.forEach(insp => {
+            html += `<li class="list-group-item">${formateaInspeccion(insp)}</li>`;
         });
         html += `</ul>`;
     }
 
-    // Detenidos por delito (no ILE)
-    if (ucrif.detenidosDelito?.length) {
-        html += `<h5 class="mt-3">Detenidos por Delito</h5>
-        <ul class="list-group mb-3">`;
-        ucrif.detenidosDelito.forEach(det => {
-            let linea = [];
-            if (det.descripcion) linea.push(det.descripcion);
-            if (det.motivo) linea.push(`<span class="text-danger">(${det.motivo})</span>`);
-            if (det.observaciones) linea.push(`<i>${det.observaciones}</i>`);
-            html += `<li class="list-group-item">${linea.join(' - ')}</li>`;
+    // DISPOSITIVOS OPERATIVOS
+    if (ucrif.dispositivos && ucrif.dispositivos.length > 0) {
+        html += `<h5 class="mt-3 mb-1">Dispositivos Operativos Destacados</h5><ul class="list-group mb-3">`;
+        ucrif.dispositivos.forEach(d => {
+            html += `<li class="list-group-item">${formateaDispositivo(d)}</li>`;
         });
         html += `</ul>`;
     }
 
-    // Dispositivos y actuaciones especiales
-    if (ucrif.dispositivos?.length) {
-        html += `<h5 class="mt-3">Dispositivos Operativos Destacados</h5>
-        <ul class="list-group mb-3">`;
-        ucrif.dispositivos.forEach(act => {
-            if (act) html += `<li class="list-group-item">${act}</li>`;
+    // DETENIDOS POR DELITO
+    if (ucrif.detenidosDelito && ucrif.detenidosDelito.length > 0) {
+        html += `<h5 class="mt-3 mb-1">Detenidos por Delito</h5><ul class="list-group mb-3">`;
+        ucrif.detenidosDelito.forEach(d => {
+            html += `<li class="list-group-item">${d.descripcion} por ${d.motivo}</li>`;
         });
         html += `</ul>`;
     }
 
-    // Colaboraciones institucionales
-    if (ucrif.colaboraciones?.length) {
-        html += `<h5 class="mt-3">Colaboraciones institucionales</h5>
-        <ul class="list-group mb-3">`;
+    // COLABORACIONES
+    if (ucrif.colaboraciones && ucrif.colaboraciones.length > 0) {
+        html += `<h5 class="mt-3 mb-1">Colaboraciones y Apoyos a Otros Servicios</h5><ul class="list-group mb-3">`;
         ucrif.colaboraciones.forEach(c => {
-            if (c) html += `<li class="list-group-item">${typeof c === 'string' ? c : (c.colaboracionDesc || JSON.stringify(c))}</li>`;
+            html += `<li class="list-group-item">${typeof c === 'string' ? c : (c.colaboracionDesc || '[Colaboración]')}</li>`;
         });
         html += `</ul>`;
     }
 
-    // Observaciones
-    if (ucrif.observaciones?.length) {
-        html += `<h5 class="mt-3">Notas y Observaciones</h5>
-        <ul class="list-group mb-3">`;
-        ucrif.observaciones.forEach(o => {
-            if (o) html += `<li class="list-group-item"><i>${o}</i></li>`;
-        });
-        html += `</ul>`;
+    // OBSERVACIONES FINALES
+    if (ucrif.observaciones && ucrif.observaciones.length > 0) {
+        html += `<div class="alert alert-secondary mt-2"><b>Observaciones:</b><br>${ucrif.observaciones.filter(o => o && o.trim()).map(o => `<div>${o}</div>`).join("")}</div>`;
     }
 
-    // Cierre épico
-    html += `<div class="mt-4 text-end fst-italic text-info">
-        “Respuesta eficaz ante las amenazas detectadas.”
-    </div>`;
+    // Frase cierre aleatoria
+    html += `<div class="mt-2 text-muted"><i>${fraseUcrif('cierre')}</i></div>`;
+
     html += `</div></div>`;
     return html;
 }
-
 
 // ------------------- Grupo 1 Expulsiones (Narrativo) -------------------
 function renderizarResumenDetalladoGrupo1(g1) {
