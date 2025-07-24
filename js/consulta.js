@@ -22,7 +22,7 @@ const exportBtns = document.getElementById('exportBtns');
 // --- ETIQUETAS E ICONOS DE GRUPOS ---
 const GRUPOS_CONFIG = {
     ucrif: { label: 'UCRIF (Grupos 2, 3 y 4)', icon: '🛡️', color: 'info' },
-    grupo1: { label: 'Expulsiones', icon: '🚔', color: 'primary' },
+    grupo1: { label: 'Expulsiones', icon: '�', color: 'primary' },
     puerto: { label: 'Puerto', icon: '⚓', color: 'success' },
     cecorex: { label: 'CECOREX', icon: '📡', color: 'warning' },
     gestion: { label: 'Gestión', icon: '📋', color: 'secondary' },
