@@ -274,7 +274,7 @@ function formateaInspeccion(i) {
 
 function renderizarResumenDetalladoUCRIF(ucrif) {
     let html = `<div class="card border-info mb-4 shadow-sm">
-    <div class="card-header bg-info text-white">
+    <div class="card-header bg-dark text-white">
         <h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4>
     </div>
     <div class="card-body p-3">`;
@@ -355,7 +355,7 @@ function renderizarResumenDetalladoUCRIF(ucrif) {
     }
 
     // PIE: frase cierre, mismo formato que la cabecera
-    html += `<div class="mt-3" style="font-size:1.03rem; color:#1177bb;">${fraseUcrif('cierre')}</div>`;
+    html += `<div class="mt-3" style="font-size:1.03rem; color:#112233;">${fraseUcrif('cierre')}</div>`;
 
     html += `</div></div>`;
     return html;
