@@ -79,6 +79,232 @@ const QUERY_STRATEGIES = {
         return resultado;
     },
 
+    // 1. Agrupa inspecciones y detenidos por tipo y localización
+function agruparResumenUCRIF(ucrifData) {
+    // Desglose de casas de citas, masajes, estaciones, mendicidad, textil, puerto, otros
+    const tipologias = {};
+    const nacionalidadesTotales = {};
+    let totalInspecciones = 0, totalFiliados = 0, totalCitados = 0, totalTraslados = 0;
+    let detallesLocales = [];
+    let citadosCECOREX = ucrifData.citadosCecorex || 0;
+
+    // Clasificador de tipo de inspección según el lugar
+    function clasificarTipo(lugar) {
+        if (!lugar) return "Otros";
+        lugar = lugar.toLowerCase();
+        if (/(cita|escorts|put|prost)/.test(lugar)) return "Casas de citas";
+        if (/masaj/.test(lugar)) return "Salón de masajes";
+        if (/estaci[óo]n|autob[úu]s|ave|metro/.test(lugar)) return "Estaciones / Transporte";
+        if (/mendicidad/.test(lugar)) return "Mendicidad";
+        if (/textil|empresa/.test(lugar)) return "Empresa Textil";
+        if (/puerto|maritima/.test(lugar)) return "Puerto";
+        return "Otros";
+    }
+
+    // Procesa inspecciones (casas de citas, etc)
+    if (ucrifData.inspeccionesCasasCitas) {
+        ucrifData.inspeccionesCasasCitas.forEach(insp => {
+            const tipo = clasificarTipo(insp.lugar);
+            if (!tipologias[tipo]) tipologias[tipo] = { inspecciones: 0, filiados: 0, citados: 0, locales: [] };
+            tipologias[tipo].inspecciones++;
+            tipologias[tipo].filiados += insp.filiadas || 0;
+            tipologias[tipo].citados += insp.citadas || 0;
+            totalInspecciones++;
+            totalFiliados += insp.filiadas || 0;
+            totalCitados += insp.citadas || 0;
+
+            // Acumula nacionalidades
+            if (insp.nacionalidades) {
+                insp.nacionalidades.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean).forEach(nac=>{
+                    nacionalidadesTotales[nac] = (nacionalidadesTotales[nac]||0)+1;
+                });
+            }
+            // Detalle de cada local (para texto y tabla)
+            tipologias[tipo].locales.push({
+                lugar: insp.lugar,
+                filiados: insp.filiadas,
+                citados: insp.citadas,
+                nacionalidades: insp.nacionalidades
+            });
+        });
+    }
+
+    // Detenidos por delito (no ILE) agrupados por motivo
+    const detenidosPorDelito = {};
+    if (ucrifData.detenidosDelito && ucrifData.detenidosDelito.length) {
+        for (const d of ucrifData.detenidosDelito) {
+            const motivo = (d.motivo || "Delito no especificado").toLowerCase();
+            if (!detenidosPorDelito[motivo]) detenidosPorDelito[motivo] = [];
+            detenidosPorDelito[motivo].push(d.descripcion);
+        }
+    }
+
+    // Resumen de dispositivos especiales (Railpol, etc.) si existe
+    // (Si tienes campo específico para ello, adáptalo aquí; si no, busca en actuaciones/varios)
+    let resumenRailpol = ""; // <---- mejora: aquí podrías auto extraer info de actuaciones con regexp, si lo tienes
+
+    // Devuelve objeto resumen enriquecido
+    return {
+        tipologias,
+        nacionalidadesTotales,
+        totalInspecciones,
+        totalFiliados,
+        totalCitados,
+        citadosCECOREX,
+        totalDetenidosILE: ucrifData.detenidosILE,
+        detenidosPorDelito,
+        resumenRailpol // lo puedes rellenar si tienes esos campos
+    };
+}
+
+// 2. Generador avanzado para WhatsApp
+function generarTextoWhatsappUCRIF(resumen, desde, hasta) {
+    const ucrif = resumen.ucrif;
+    if (!ucrif) return "No hay datos UCRIF para el periodo.";
+
+    const agrupado = agruparResumenUCRIF(ucrif);
+
+    let msg = `*🚨 NOVEDADES UCRIF (${desde} a ${hasta})*\n\n`;
+
+    msg += `*${agrupado.totalDetenidosILE}* detenidos por ILE, *${agrupado.totalFiliados}* filiados, *${agrupado.totalCitados}* citados a CECOREX\n\n`;
+
+    // Por cada tipología, resumen bonito
+    Object.keys(agrupado.tipologias).forEach(tipo => {
+        const t = agrupado.tipologias[tipo];
+        if (!t.inspecciones) return;
+        msg += `*${t.inspecciones}* ${tipo.toUpperCase()}:\n`;
+        t.locales.forEach(l => {
+            msg += `- ${l.lugar ? l.lugar : tipo}`;
+            if (l.filiados) msg += `: ${l.filiados} filiadas`;
+            if (l.nacionalidades) msg += ` (${l.nacionalidades})`;
+            if (l.citados) msg += `, ${l.citados} citadas`;
+            msg += "\n";
+        });
+        // Totales de esa tipología
+        msg += `  *Total*: ${t.inspecciones} inspecciones, ${t.filiados} filiados${t.citados ? `, ${t.citados} citados` : ""}\n\n`;
+    });
+
+    // Totales nacionales
+    if (Object.keys(agrupado.nacionalidadesTotales).length) {
+        msg += `*Nacionalidades Filiados/as:*\n`;
+        Object.entries(agrupado.nacionalidadesTotales).forEach(([nac, num]) => {
+            msg += `- ${nac}: ${num}\n`;
+        });
+        msg += "\n";
+    }
+
+    // Detenidos por delito
+    if (Object.keys(agrupado.detenidosPorDelito).length) {
+        msg += "*Detenidos por Delito:*\n";
+        Object.entries(agrupado.detenidosPorDelito).forEach(([delito, lista]) => {
+            msg += `- ${lista.length} por ${delito}:\n`;
+            lista.forEach(desc => { msg += `  • ${desc}\n`; });
+        });
+        msg += "\n";
+    }
+
+    // Railpol/dispositivo especial
+    if (agrupado.resumenRailpol) msg += `*Dispositivo Especial:*\n${agrupado.resumenRailpol}\n\n`;
+
+    // Resumen final
+    msg += `*RESUMEN FINAL UCRIF*: ${agrupado.totalInspecciones} inspecciones, ${agrupado.totalFiliados} filiados/as, ${agrupado.totalCitados} citados CECOREX, ${agrupado.totalDetenidosILE} detenidos ILE`;
+
+    return msg;
+}
+
+// 3. Para HTML/PDF profesional, renderizado de tabla enriquecida
+function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
+    const ucrif = resumen.ucrif;
+    if (!ucrif) return "<div class='alert alert-warning'>Sin datos UCRIF para este periodo.</div>";
+
+    const agrupado = agruparResumenUCRIF(ucrif);
+
+    let html = `
+    <div class="alert alert-info text-center mb-2">
+      <h4>Balance UCRIF (${desde} a ${hasta})</h4>
+      <strong>${agrupado.totalInspecciones} inspecciones</strong> – <strong>${agrupado.totalFiliados} filiados/as</strong> – <strong>${agrupado.totalDetenidosILE} detenidos ILE</strong> – <strong>${agrupado.totalCitados} citados CECOREX</strong>
+    </div>
+    <table class="table table-bordered table-sm mb-4">
+      <thead class="table-warning text-center">
+        <tr>
+          <th>Tipología</th>
+          <th>Inspecciones</th>
+          <th>Filiados/as</th>
+          <th>Citados</th>
+          <th>Locales y Nacionalidades</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+    Object.keys(agrupado.tipologias).forEach(tipo => {
+        const t = agrupado.tipologias[tipo];
+        html += `<tr>
+            <td><b>${tipo}</b></td>
+            <td>${t.inspecciones}</td>
+            <td>${t.filiados}</td>
+            <td>${t.citados}</td>
+            <td>
+                <ul class="mb-0">${t.locales.map(l=>`<li>${l.lugar? `<b>${l.lugar}:</b> ` : ''}${l.filiados||''} ${l.nacionalidades?`(${l.nacionalidades})`:''}${l.citados?`, ${l.citados} citadas`:''}</li>`).join('')}</ul>
+            </td>
+        </tr>`;
+    });
+    html += "</tbody></table>";
+
+    // Nacionalidades totales
+    if (Object.keys(agrupado.nacionalidadesTotales).length) {
+        html += `<div class="mb-2"><b>Nacionalidades Filiados/as:</b> `;
+        html += Object.entries(agrupado.nacionalidadesTotales).map(([nac, num]) => `<span class="badge bg-secondary me-1">${nac}: ${num}</span>`).join(' ');
+        html += "</div>";
+    }
+
+    // Detenidos por delito, como bloque aparte
+    if (Object.keys(agrupado.detenidosPorDelito).length) {
+        html += `<div class="alert alert-danger mt-3"><b>Detenidos por Delito:</b><ul class="mb-0">`;
+        Object.entries(agrupado.detenidosPorDelito).forEach(([delito, lista]) => {
+            html += `<li><b>${delito.toUpperCase()}:</b> ${lista.length} –<ul>${lista.map(desc=>`<li>${desc}</li>`).join('')}</ul></li>`;
+        });
+        html += "</ul></div>";
+    }
+
+    // Dispositivo especial
+    if (agrupado.resumenRailpol) html += `<div class="alert alert-success mt-2"><b>Dispositivo Especial:</b> ${agrupado.resumenRailpol}</div>`;
+
+    // Resumen visual final
+    html += `<div class="alert alert-primary text-center mt-4"><b>RESUMEN FINAL:</b> ${agrupado.totalInspecciones} inspecciones, ${agrupado.totalFiliados} filiados/as, ${agrupado.totalCitados} citados CECOREX, ${agrupado.totalDetenidosILE} detenidos ILE</div>`;
+    return html;
+}
+
+// 4. Integra en tus botones de exportación y WhatsApp:
+document.getElementById('btnWhatsapp').addEventListener('click', () => {
+    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
+    const { resumen, desde, hasta } = window._ultimoResumen;
+    const msg = generarTextoWhatsappUCRIF(resumen, desde, hasta); // Usa el nuevo generador
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+});
+
+document.getElementById('btnExportarPDF').addEventListener('click', () => {
+    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
+    const { resumen, desde, hasta } = window._ultimoResumen;
+    const { jsPDF } = window.jspdf;
+    const sourceHTML = renderizarResumenDetalladoUCRIF(resumen, desde, hasta); // Usa el nuevo render
+    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = sourceHTML;
+    document.body.appendChild(tempDiv);
+    doc.html(tempDiv, {
+        callback: function (doc) {
+            doc.save(`SIREX-UCRIF_Resumen_${desde}_a_${hasta}.pdf`);
+            document.body.removeChild(tempDiv);
+        },
+        x: 15, y: 15, width: 550, windowWidth: tempDiv.scrollWidth
+    });
+});
+
+// Opcional: si quieres que el HTML del resumen global incluya el bloque bonito de UCRIF
+// en tu render global, inserta: renderizarResumenDetalladoUCRIF(resumen, desde, hasta)
+
+
     getGrupo1Detalles: async (desde, hasta) => {
         const snap = await db.collection('grupo1_expulsiones').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
         const res = { detenidos: 0, expulsados: 0, frustradas: 0, fletados: [], motivos_frustradas: [] };
