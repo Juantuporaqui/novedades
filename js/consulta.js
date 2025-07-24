@@ -1,5 +1,5 @@
 // js/consulta.js
-// SIREX · Consulta Global / Resúmenes (Versión 2.0 - Mejorada con Resúmenes Detallados y de WhatsApp)
+// SIREX · Consulta Global / Resúmenes (Versión 2.1 - Resumen de WhatsApp mejorado)
 
 // --- CONFIGURACIÓN FIREBASE ---
 const firebaseConfig = {
@@ -53,7 +53,7 @@ const QUERY_STRATEGIES = {
         return totals;
     },
 
-    // --- NUEVA ESTRATEGIA DETALLADA PARA UCRIF ---
+    // --- ESTRATEGIA DETALLADA PARA UCRIF ---
     getUcrifNovedades: async (desde, hasta) => {
         const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo'];
         let rawData = [];
@@ -116,8 +116,6 @@ const QUERY_STRATEGIES = {
                         if (!resultado.operacionesEspeciales[op]) {
                             resultado.operacionesEspeciales[op] = { detenidosILE: 0, filiados: 0, traslados: 0, citados: 0, funcionarios: 0 };
                         }
-                        // Esta parte es una estimación; la estructura del parte no detalla esto por actuación.
-                        // Se podría mejorar si el parte de origen tuviera más estructura.
                     } else {
                         resultado.otrasActuaciones.push(act.descripcion);
                     }
@@ -251,26 +249,37 @@ function renderizarResumenDetalladoHTML(resumen, desde, hasta) {
 // ====== EXPORTACIÓN A WHATSAPP Y OTROS ==========================================
 // =================================================================================
 
+// ############# FUNCIÓN MEJORADA #############
 function generarTextoWhatsapp(resumen, desde, hasta) {
     let msg = `*🇪🇸 SIREX Resumen Global*\n*Periodo:* ${desde} al ${hasta}\n`;
 
-    // --- Resumen conciso de UCRIF ---
+    // --- Resumen DETALLADO Y ESTRUCTURADO de UCRIF ---
     const ucrif = resumen.ucrif;
     if (ucrif) {
         msg += `\n*${GRUPOS_CONFIG.ucrif.icon} Novedades UCRIF*\n`;
-        let ucrifResumen = [];
-        if (ucrif.detenidosILE > 0) ucrifResumen.push(`${ucrif.detenidosILE} detenidos ILE`);
-        if (ucrif.detenidosDelito.length > 0) ucrifResumen.push(`${ucrif.detenidosDelito.length} detenidos delito`);
-        if (ucrif.filiadosVarios > 0) ucrifResumen.push(`${ucrif.filiadosVarios} filiados`);
-        if (ucrif.traslados > 0) ucrifResumen.push(`${ucrif.traslados} traslados`);
-        if (ucrif.citadosCecorex > 0) ucrifResumen.push(`${ucrif.citadosCecorex} citados CECOREX`);
-        msg += `- ${ucrifResumen.join(', ')}\n`;
 
+        // Línea de totales
+        let totales = [];
+        if (ucrif.detenidosILE > 0) totales.push(`*${ucrif.detenidosILE}* ILE`);
+        if (ucrif.filiadosVarios > 0) totales.push(`*${ucrif.filiadosVarios}* filiados`);
+        if (ucrif.traslados > 0) totales.push(`*${ucrif.traslados}* traslados`);
+        if (ucrif.citadosCecorex > 0) totales.push(`*${ucrif.citadosCecorex}* citados CECOREX`);
+        if (totales.length > 0) msg += `- _Totales:_ ${totales.join(', ')}\n`;
+
+        // Sección específica para detenidos por delito
+        if (ucrif.detenidosDelito.length > 0) {
+            msg += `\n- _Detenidos por Delito (*${ucrif.detenidosDelito.length}*):_\n`;
+            ucrif.detenidosDelito.forEach(d => {
+                msg += `  • 1 por *${d.motivo.toLowerCase()}* (${d.descripcion})\n`;
+            });
+        }
+        
+        // Sección para inspecciones
         const totalCasas = ucrif.inspeccionesCasasCitas.length;
         if (totalCasas > 0) {
             const totalFiliadas = ucrif.inspeccionesCasasCitas.reduce((sum, i) => sum + i.filiadas, 0);
             const totalCitadas = ucrif.inspeccionesCasasCitas.reduce((sum, i) => sum + i.citadas, 0);
-            msg += `- Inspecciones: *${totalCasas}* casas de citas (*${totalFiliadas}* filiadas, *${totalCitadas}* citadas)\n`;
+            msg += `\n- _Inspecciones:_ *${totalCasas}* casas de citas con *${totalFiliadas}* filiadas y *${totalCitadas}* citadas.\n`;
         }
     }
 
@@ -306,17 +315,21 @@ document.getElementById('btnExportarPDF').addEventListener('click', () => {
     if (!window._ultimoResumen) return alert("Primero genera un resumen.");
     const { desde, hasta } = window._ultimoResumen;
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
     
     const source = document.getElementById('resumenVentana');
-    // Se usa html() para renderizar el contenido HTML del div en el PDF
+    const doc = new jsPDF({
+        orientation: "p",
+        unit: "pt",
+        format: "a4"
+    });
+    
     doc.html(source, {
         callback: function (doc) {
             doc.save(`SIREX-Resumen_Detallado_${desde}_a_${hasta}.pdf`);
         },
-        x: 10,
-        y: 10,
-        width: 180,
-        windowWidth: source.offsetWidth
+        x: 15,
+        y: 15,
+        width: 550,
+        windowWidth: source.scrollWidth
     });
 });
