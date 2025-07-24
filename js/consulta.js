@@ -40,6 +40,9 @@ function agruparResumenUCRIF(ucrifData) {
     let totalFiliadosVarios = ucrifData.filiadosVarios || 0;
     let totalTraslados = ucrifData.traslados || 0;
     let totalCitadosCecorex = ucrifData.citadosCecorex || 0;
+    let colaboraciones = ucrifData.colaboraciones || [];
+    let dispositivos = ucrifData.dispositivos || [];
+    let observaciones = ucrifData.observaciones || [];
 
     function clasificarTipo(lugar) {
         if (!lugar) return "Otros";
@@ -86,9 +89,10 @@ function agruparResumenUCRIF(ucrifData) {
     return {
         tipologias, nacionalidadesTotales, totalInspecciones, totalFiliados,
         totalCitados, totalDetenidosILE, totalFiliadosVarios, totalTraslados, totalCitadosCecorex,
-        detenidosPorDelito
+        detenidosPorDelito, colaboraciones, dispositivos, observaciones
     };
 }
+
 
 // -------- EXPULSIONES (GRUPO 1) --------
 function agruparResumenGrupo1(g1) {
@@ -97,26 +101,23 @@ function agruparResumenGrupo1(g1) {
     let detenidos = g1.detenidos || 0;
     let motivosFrustradas = g1.motivos_frustradas || [];
     let fletados = g1.fletados || [];
-    return { expulsados, frustradas, detenidos, motivosFrustradas, fletados };
+    let nacionalidades = (g1.nacionalidades || []).map(x=>x.trim()).filter(Boolean);
+    let menores = g1.menores || 0;
+    let observaciones = g1.observaciones || "";
+    return { expulsados, frustradas, detenidos, motivosFrustradas, fletados, nacionalidades, menores, observaciones };
 }
 
 // -------- PUERTO --------
 function agruparResumenPuerto(puerto) {
-    let denegaciones = puerto.denegaciones || 0;
-    let detenidos = puerto.detenidos || 0;
-    let cruceristas = puerto.cruceristas || 0;
-    let incidencias = puerto.incidencias || [];
-    return { denegaciones, detenidos, cruceristas, incidencias };
+    let out = {...puerto};
+    out.incidencias = puerto.incidencias || [];
+    return out;
 }
 
 // -------- CECOREX --------
 function agruparResumenCecorex(cc) {
-    let detenidos = cc.detenidos || 0;
-    let decretosExp = cc.decretos_exp || 0;
-    let asistLetrada = cc.asist_letrada || 0;
-    let prohEntrada = cc.proh_entrada || 0;
-    let menas = cc.menas || 0;
-    return { detenidos, decretosExp, asistLetrada, prohEntrada, menas };
+    let out = {...cc};
+    return out;
 }
 
 // -------- GESTIÓN Y CIE --------
@@ -124,18 +125,21 @@ function agruparResumenBasico(grupo) {
     return grupo || {};
 }
 
-// =========== NUEVA FUNCIÓN DE TABLA MULTICOLUMNA (puedes añadirla tras los agrupadores) ===========
-function renderizarTablaMulticolumna(obj, columnas = 2, colTitles = []) {
-    const keys = Object.keys(obj).filter(k => obj[k] !== 0 && obj[k] !== "" && obj[k] !== null && obj[k] !== "N/D");
+// =========== TABLA MULTICOLUMNA FLEXIBLE (ajusta columnas según campos) ===========
+function renderizarTablaMulticolumna(obj, maxCol = 3, colTitles = []) {
+    const keys = Object.keys(obj).filter(
+        k => obj[k] !== 0 && obj[k] !== "" && obj[k] !== null && obj[k] !== "N/D" && !Array.isArray(obj[k])
+    );
     if (!keys.length) return "<div class='text-muted'>Sin datos.</div>";
+    let columnas = Math.min(maxCol, Math.ceil(keys.length/6)+1);
     let html = `<div class="row">`;
     const perCol = Math.ceil(keys.length / columnas);
     for (let c = 0; c < columnas; c++) {
-        html += `<div class="col-md-${12/columnas}"><ul class="list-group">`;
+        html += `<div class="col-md-${12/columnas}"><ul class="list-group mb-2">`;
         for (let i = c*perCol; i < (c+1)*perCol && i < keys.length; i++) {
             const k = keys[i], t = colTitles[i] || k;
             html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>${t}</span><span class="fw-bold">${obj[k]}</span>
+                <span>${t.replace(/_/g, " ")}</span><span class="fw-bold">${obj[k]}</span>
             </li>`;
         }
         html += `</ul></div>`;
@@ -173,11 +177,11 @@ function renderizarResumenGlobalHTML(resumen, desde, hasta) {
     return html;
 }
 
+// --- UCRIF Detallado y Narrativo ---
 function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
     const ucrif = resumen.ucrif;
     if (!ucrif) return "";
     const ag = agruparResumenUCRIF(ucrif);
-    // --- Resumen narrativo profesional ---
     let html = `<div class="card border-info mb-4 shadow">
     <div class="card-header bg-info text-white text-center">
       <h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4>
@@ -191,7 +195,7 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
     <div class="card-body p-3">
     <div class="alert alert-info mb-3">
         <b>Balance Operativo UCRIF (${desde} a ${hasta})</b><br>
-        Se realizaron <b>${ag.totalInspecciones}</b> inspecciones (casas de citas, salones de masaje, estaciones de transporte, empresas textiles y otros ámbitos), identificando a <b>${ag.totalFiliados}</b> personas y citando a <b>${ag.totalCitadosCecorex}</b> para CECOREX. Se priorizó la detección de víctimas, la lucha contra delitos de extranjería y trata, y se articularon dispositivos especiales según necesidades operativas.
+        Durante este periodo se han realizado <b>${ag.totalInspecciones}</b> actuaciones en <b>${Object.keys(ag.tipologias).length}</b> tipologías diferentes. Destacan las inspecciones en casas de citas, salones de masaje, estaciones de transporte y empresas textiles. El dispositivo ha incluido la identificación de <b>${ag.totalFiliados}</b> personas y la citación de <b>${ag.totalCitadosCecorex}</b> para CECOREX. Se ha priorizado la detección de víctimas, la lucha contra la trata y delitos documentales, además de una estrecha colaboración con otros servicios.
     </div>
     <ul>`;
     for (const tipo in ag.tipologias) {
@@ -213,13 +217,11 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
         html += `</li>`;
     }
     html += `</ul>`;
-    // Nacionalidades
     if (Object.keys(ag.nacionalidadesTotales).length) {
         html += `<div class="mb-2"><b>Nacionalidades filiadas:</b> `;
         html += Object.entries(ag.nacionalidadesTotales).map(([nac, num]) => `<span class="badge bg-secondary me-1">${nac}: ${num}</span>`).join(' ');
         html += "</div>";
     }
-    // Detenidos
     if (Object.keys(ag.detenidosPorDelito).length || ag.totalDetenidosILE) {
         html += `<div class="alert alert-danger mt-3 p-2"><b>Detenidos:</b><ul>`;
         if (ag.totalDetenidosILE)
@@ -230,7 +232,21 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
         });
         html += "</ul></div>";
     }
-    // Hechos destacados
+    if (ag.dispositivos && ag.dispositivos.length) {
+        html += `<div class="alert alert-secondary mt-3 p-2"><b>Dispositivos Especiales:</b><ul>`;
+        ag.dispositivos.forEach(d => html += `<li>${d}</li>`);
+        html += "</ul></div>";
+    }
+    if (ag.colaboraciones && ag.colaboraciones.length) {
+        html += `<div class="alert alert-secondary mt-2 p-2"><b>Colaboraciones:</b><ul>`;
+        ag.colaboraciones.forEach(c => html += `<li>${c}</li>`);
+        html += "</ul></div>";
+    }
+    if (ag.observaciones && ag.observaciones.length) {
+        html += `<div class="alert alert-light mt-2 p-2"><b>Observaciones:</b><ul>`;
+        ag.observaciones.forEach(c => html += `<li>${c}</li>`);
+        html += "</ul></div>";
+    }
     html += `<div class="alert alert-warning mt-3 p-2"><b>Hechos destacados:</b><ul>
         <li>Colaboración eficaz con CECOREX en entrevistas a posibles víctimas.</li>
         <li>Dispositivo RAILPOL: 3 detenidos ILE, 28 identificados, 3 traslados y 5 citaciones CECOREX.</li>
@@ -241,6 +257,7 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
     return html;
 }
 
+// --- Grupo 1 Expulsiones: Redacción ampliada con nacionalidades, menores y vuelos ---
 function renderizarResumenDetalladoGrupo1(resumen, desde, hasta) {
     const g1 = resumen.grupo1;
     if (!g1) return "";
@@ -250,10 +267,21 @@ function renderizarResumenDetalladoGrupo1(resumen, desde, hasta) {
       <h4>${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}</h4>
     </div>
     <div class="card-body p-3">
+      <div class="alert alert-info mb-2">
+        <b>Resumen Expulsiones:</b><br>
+        Se han materializado <b>${ag.expulsados}</b> expulsiones, ${ag.menores ? ag.menores + ' de ellos menores. ' : ''} 
+        ${ag.nacionalidades && ag.nacionalidades.length ? `Nacionalidades: <span class="badge bg-light text-dark">${ag.nacionalidades.join('</span> <span class="badge bg-light text-dark">')}</span>. ` : ''}
+        Además, se han frustrado <b>${ag.frustradas}</b> por motivos como: ${[...new Set(ag.motivosFrustradas)].join(', ') || 'no especificados'}. 
+        Se han realizado <b>${ag.detenidos}</b> detenciones vinculadas a las actuaciones. 
+        ${ag.fletados.length ? `<br><b>Vuelos Fletados:</b> ${ag.fletados.join(', ')}.` : ''}
+        ${ag.observaciones ? `<br><b>Observaciones:</b> ${ag.observaciones}` : ''}
+      </div>
       <ul class="list-group mb-2">
         <li class="list-group-item"><b>Expulsados OK:</b> ${ag.expulsados}</li>
         <li class="list-group-item"><b>Expulsiones frustradas:</b> ${ag.frustradas} ${ag.motivosFrustradas.length ? `<br><small>Motivos: ${[...new Set(ag.motivosFrustradas)].join(', ')}</small>` : ""}</li>
-        <li class="list-group-item"><b>Detenidos:</b> ${ag.detenidos}</li>
+              <li class="list-group-item"><b>Detenidos:</b> ${ag.detenidos}</li>
+        ${ag.nacionalidades && ag.nacionalidades.length ? `<li class="list-group-item"><b>Nacionalidades implicadas:</b> ${ag.nacionalidades.join(', ')}</li>` : ""}
+        ${ag.menores ? `<li class="list-group-item"><b>Menores expulsados:</b> ${ag.menores}</li>` : ""}
         ${ag.fletados.length ? `<li class="list-group-item"><b>Vuelos Fletados:</b> ${ag.fletados.join(', ')}</li>` : ""}
       </ul>
       <div class="alert alert-primary text-center"><b>TOTAL EXPULSIONES:</b> ${ag.expulsados} OK · ${ag.frustradas} KO · ${ag.detenidos} detenidos</div>
@@ -261,6 +289,7 @@ function renderizarResumenDetalladoGrupo1(resumen, desde, hasta) {
     return html;
 }
 
+// --- PUERTO: Incluye todos los campos del formulario, incidencias como bloque destacado ---
 function renderizarResumenDetalladoPuerto(resumen, desde, hasta) {
     const puerto = resumen.puerto;
     if (!puerto) return "";
@@ -270,15 +299,20 @@ function renderizarResumenDetalladoPuerto(resumen, desde, hasta) {
       <h4>${GRUPOS_CONFIG.puerto.icon} ${GRUPOS_CONFIG.puerto.label}</h4>
     </div>
     <div class="card-body p-3">
-      ${renderizarTablaMulticolumna(ag, 3, ['Denegaciones', 'Detenidos', 'Cruceristas', 'Incidencias'])}
+      ${renderizarTablaMulticolumna(ag, 3)}
       ${ag.incidencias && ag.incidencias.length ? `
         <div class="alert alert-warning mt-2 p-2"><b>Incidencias detalladas:</b>
         <ul>${ag.incidencias.map(x=>`<li>${x}</li>`).join('')}</ul></div>` : ''}
-      <div class="alert alert-success text-center mt-3"><b>TOTAL PUERTO:</b> ${ag.denegaciones} denegaciones · ${ag.detenidos} detenidos · ${ag.cruceristas} cruceristas</div>
+      <div class="alert alert-success text-center mt-3"><b>TOTAL PUERTO:</b> 
+        ${(ag.denegaciones || 0)} denegaciones · 
+        ${(ag.detenidos || 0)} detenidos · 
+        ${(ag.cruceristas || 0)} cruceristas
+      </div>
     </div></div>`;
     return html;
 }
 
+// --- CECOREX: Todos los campos, incidencias y MENAS visibles ---
 function renderizarResumenDetalladoCecorex(resumen, desde, hasta) {
     const cc = resumen.cecorex;
     if (!cc) return "";
@@ -288,14 +322,20 @@ function renderizarResumenDetalladoCecorex(resumen, desde, hasta) {
       <h4>${GRUPOS_CONFIG.cecorex.icon} ${GRUPOS_CONFIG.cecorex.label}</h4>
     </div>
     <div class="card-body p-3">
-      ${renderizarTablaMulticolumna(ag, 3, [
-        'Detenidos','Decretos expulsión','Asistencias letradas',
-        'Prohibiciones de entrada','MENAS gestionados'
-      ])}
-      <div class="alert alert-warning text-center mt-3"><b>TOTAL CECOREX:</b> ${ag.detenidos} detenidos · ${ag.decretosExp} decretos · ${ag.asistLetrada} asistencias letradas · ${ag.prohEntrada} prohib. entrada · ${ag.menas} MENAS</div>
+      ${renderizarTablaMulticolumna(ag, 3)}
+      ${(ag.incidencias && ag.incidencias.length) ? `<div class="alert alert-warning mt-2 p-2"><b>Incidencias/observaciones:</b><ul>${ag.incidencias.map(x=>`<li>${x}</li>`).join('')}</ul></div>` : ''}
+      <div class="alert alert-warning text-center mt-3"><b>TOTAL CECOREX:</b> 
+        ${(ag.detenidos || 0)} detenidos · 
+        ${(ag.decretosExp || ag.decretos_exp || 0)} decretos · 
+        ${(ag.asistLetrada || ag.asist_letrada || 0)} asistencias letradas · 
+        ${(ag.prohEntrada || ag.proh_entrada || 0)} prohib. entrada · 
+        ${(ag.menas || 0)} MENAS
+      </div>
     </div></div>`;
     return html;
 }
+
+// --- GESTIÓN y CIE: Todos los campos multicolumna ---
 function renderizarResumenDetalladoBasico(resumen, grupoId) {
     const config = GRUPOS_CONFIG[grupoId];
     const datos = resumen[grupoId];
@@ -309,269 +349,3 @@ function renderizarResumenDetalladoBasico(resumen, grupoId) {
     </div></div>`;
     return html;
 }
-
-// ======================= GENERADOR RESUMEN WHATSAPP AVANZADO =======================
-
-function generarTextoWhatsappUCRIF(resumen, desde, hasta) {
-    const ucrif = resumen.ucrif;
-    if (!ucrif) return "No hay datos UCRIF para el periodo.";
-    const ag = agruparResumenUCRIF(ucrif);
-    let msg = `*🛡️ NOVEDADES UCRIF* (${desde} a ${hasta})\n\n`;
-
-    msg += `*${ag.totalDetenidosILE}* detenidos ILE · *${ag.totalFiliados}* filiados · *${ag.totalCitadosCecorex}* citados CECOREX\n`;
-    Object.keys(ag.tipologias).forEach(tipo => {
-        const t = ag.tipologias[tipo];
-        msg += `\n*${t.inspecciones}* ${tipo.toUpperCase()}:\n`;
-        t.locales.forEach(l => {
-            msg += `- ${l.lugar}: ${l.filiados} filiadas${l.nacionalidades ? ` (${l.nacionalidades})` : ''}${l.citados ? `, ${l.citados} citadas` : ''}\n`;
-        });
-        msg += `  _Total:_ ${t.inspecciones} inspecciones, ${t.filiados} filiados${t.citados ? `, ${t.citados} citados` : ""}\n`;
-    });
-    if (Object.keys(ag.nacionalidadesTotales).length) {
-        msg += `\n*Nacionalidades Filiados/as:*\n`;
-        Object.entries(ag.nacionalidadesTotales).forEach(([nac, num]) => {
-            msg += `- ${nac}: ${num}\n`;
-        });
-    }
-    if (Object.keys(ag.detenidosPorDelito).length) {
-        msg += `\n*Detenidos por Delito:*\n`;
-        Object.entries(ag.detenidosPorDelito).forEach(([delito, lista]) => {
-            msg += `- ${lista.length} por ${delito}:\n`;
-            lista.forEach(desc => { msg += `  • ${desc}\n`; });
-        });
-    }
-    msg += `\n*TOTAL UCRIF*: ${ag.totalInspecciones} inspecciones, ${ag.totalFiliados} filiados, ${ag.totalCitadosCecorex} citados CECOREX, ${ag.totalDetenidosILE} detenidos ILE\n`;
-    return msg;
-}
-
-function generarTextoWhatsappGrupo1(resumen) {
-    const g1 = resumen.grupo1;
-    if (!g1) return "";
-    const ag = agruparResumenGrupo1(g1);
-    let msg = `*🚔 EXPULSIONES*\n`;
-    msg += `- Expulsados OK: *${ag.expulsados}*\n- Expulsiones frustradas: *${ag.frustradas}*\n- Detenidos: *${ag.detenidos}*\n`;
-    if (ag.motivosFrustradas.length) msg += `- Motivos KO: ${[...new Set(ag.motivosFrustradas)].join(', ')}\n`;
-    if (ag.fletados.length) msg += `- Vuelos Fletados: ${ag.fletados.join(', ')}\n`;
-    return msg;
-}
-
-function generarTextoWhatsappPuerto(resumen) {
-    const puerto = resumen.puerto;
-    if (!puerto) return "";
-    const ag = agruparResumenPuerto(puerto);
-    let msg = `*⚓ PUERTO*\n- Denegaciones: *${ag.denegaciones}*\n- Detenidos: *${ag.detenidos}*\n- Cruceristas: *${ag.cruceristas}*\n`;
-    if (ag.incidencias.length) msg += `- Incidencias: ${ag.incidencias.join(', ')}\n`;
-    return msg;
-}
-
-function generarTextoWhatsappCecorex(resumen) {
-    const cc = resumen.cecorex;
-    if (!cc) return "";
-    const ag = agruparResumenCecorex(cc);
-    let msg = `*📡 CECOREX*\n- Detenidos: *${ag.detenidos}*\n- Decretos expulsión: *${ag.decretosExp}*\n- Asistencias letradas: *${ag.asistLetrada}*\n- Prohibiciones de entrada: *${ag.prohEntrada}*\n- MENAS gestionados: *${ag.menas}*\n`;
-    return msg;
-}
-
-function generarTextoWhatsappBasico(resumen, grupoId) {
-    const config = GRUPOS_CONFIG[grupoId];
-    const datos = resumen[grupoId];
-    if (!datos) return "";
-    let msg = `*${config.icon} ${config.label}*\n`;
-    Object.entries(datos).forEach(([k,v]) => {
-        if (v !== 0 && v !== "" && v !== null && v !== "N/D") {
-            msg += `- ${k}: *${v}*\n`;
-        }
-    });
-    return msg;
-}
-
-function generarTextoWhatsappGlobal(resumen, desde, hasta) {
-    let msg = `*🇪🇸 SIREX RESUMEN GLOBAL*\n*Periodo:* ${desde} a ${hasta}\n\n`;
-    msg += generarTextoWhatsappUCRIF(resumen, desde, hasta) + "\n";
-    msg += generarTextoWhatsappGrupo1(resumen) + "\n";
-    msg += generarTextoWhatsappPuerto(resumen) + "\n";
-    msg += generarTextoWhatsappCecorex(resumen) + "\n";
-    msg += generarTextoWhatsappBasico(resumen, 'gestion') + "\n";
-    msg += generarTextoWhatsappBasico(resumen, 'cie');
-    return msg;
-}
-
-// ======================= CONSULTA PRINCIPAL Y EVENTOS =======================
-
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    resumenVentana.innerHTML = '';
-    spinner.classList.remove('d-none');
-    exportBtns.classList.add('d-none');
-    const desde = form.fechaDesde.value;
-    const hasta = form.fechaHasta.value;
-    if (desde > hasta) {
-        resumenVentana.innerHTML = `<div class="alert alert-danger">La fecha de inicio no puede ser posterior a la de fin.</div>`;
-        spinner.classList.add('d-none');
-        return;
-    }
-    try {
-        const promesas = {
-            ucrif: QUERY_STRATEGIES.getUcrifNovedades(desde, hasta),
-            grupo1: QUERY_STRATEGIES.getGrupo1Detalles(desde, hasta),
-            puerto: QUERY_STRATEGIES.getPuertoDetalles(desde, hasta),
-            cecorex: QUERY_STRATEGIES.getCecorexDetalles(desde, hasta),
-            gestion: QUERY_STRATEGIES.getGestion(desde, hasta),
-            cie: QUERY_STRATEGIES.getCIE(desde, hasta),
-        };
-        const resultados = await Promise.all(Object.values(promesas));
-        const resumen = Object.keys(promesas).reduce((acc, key, index) => {
-            acc[key] = resultados[index];
-            return acc;
-        }, {});
-        window._ultimoResumen = { resumen, desde, hasta };
-        resumenVentana.innerHTML = renderizarResumenGlobalHTML(resumen, desde, hasta);
-        exportBtns.classList.remove('d-none');
-    } catch (err) {
-        console.error("Error al generar resumen:", err);
-        resumenVentana.innerHTML = `<div class="alert alert-danger">Error al consultar los datos: ${err.message}</div>`;
-    } finally {
-        spinner.classList.add('d-none');
-    }
-});
-
-document.getElementById('btnWhatsapp').addEventListener('click', () => {
-    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    const msg = generarTextoWhatsappGlobal(resumen, desde, hasta);
-    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-});
-
-document.getElementById('btnExportarPDF').addEventListener('click', () => {
-    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    const { jsPDF } = window.jspdf;
-    const sourceHTML = renderizarResumenGlobalHTML(resumen, desde, hasta);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = sourceHTML;
-    document.body.appendChild(tempDiv);
-    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-    doc.html(tempDiv, {
-        callback: function (doc) {
-            doc.save(`SIREX-Resumen_${desde}_a_${hasta}.pdf`);
-            document.body.removeChild(tempDiv);
-        },
-        x: 15, y: 15, width: 550, windowWidth: tempDiv.scrollWidth
-    });
-});
-
-// =================== ESTRATEGIAS DE CONSULTA DETALLADA (NO MODIFICADAS) ===================
-
-const QUERY_STRATEGIES = {
-    getUcrifNovedades: async (desde, hasta) => {
-        const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo'];
-        let rawData = [];
-        for (const coll of collections) {
-            const snap = await db.collection(coll).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-            snap.forEach(doc => rawData.push(doc.data()));
-        }
-        const resultado = {
-            detenidosILE: 0, filiadosVarios: 0, traslados: 0, citadosCecorex: 0,
-            inspeccionesCasasCitas: [], detenidosDelito: []
-        };
-        const isILE = (motivo = '') => motivo.toUpperCase().includes('ILE') || motivo.toUpperCase().includes('EXTRANJERÍA');
-        rawData.forEach(data => {
-            resultado.filiadosVarios += Number(data.identificados_g4) || 0;
-            resultado.citadosCecorex += Number(data.citadosCecorex_g4) || 0;
-            if (data.traslados_g4) resultado.traslados += (String(data.traslados_g4).match(/\d+/) || [0])[0] * 1;
-            const todosDetenidos = [...(data.detenidos || []), ...(data.detenidos_g4 || [])];
-            todosDetenidos.forEach(d => {
-                const motivo = d.motivo || d.motivo_g4 || '';
-                if (isILE(motivo)) {
-                    resultado.detenidosILE++;
-                } else {
-                    resultado.detenidosDelito.push({
-                        descripcion: `${d.detenido || d.detenidos_g4 || 'N/A'} (${d.nacionalidad || d.nacionalidad_g4 || 'N/A'})`,
-                        motivo: motivo,
-                    });
-                }
-            });
-            if (data.inspecciones) {
-                data.inspecciones.forEach(insp => {
-                    resultado.inspeccionesCasasCitas.push({
-                        lugar: insp.lugar || "Lugar no especificado", filiadas: Number(insp.identificadas) || 0,
-                        citadas: Number(insp.citadas) || 0, nacionalidades: insp.nacionalidades || ""
-                    });
-                });
-            }
-        });
-        return resultado;
-    },
-
-    getGrupo1Detalles: async (desde, hasta) => {
-        const snap = await db.collection('grupo1_expulsiones').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        const res = { detenidos: 0, expulsados: 0, frustradas: 0, fletados: [], motivos_frustradas: [] };
-        snap.forEach(doc => {
-            const data = doc.data();
-            res.detenidos += data.detenidos_g1?.length || 0;
-            res.expulsados += data.expulsados_g1?.length || 0;
-            res.frustradas += data.exp_frustradas_g1?.length || 0;
-            if (data.exp_frustradas_g1) data.exp_frustradas_g1.forEach(e => res.motivos_frustradas.push(e.motivo_fg1));
-            if (data.fletados_g1) data.fletados_g1.forEach(f => res.fletados.push(`${f.fletados_g1} con ${f.pax_flg1} PAX`));
-        });
-        return res;
-    },
-
-    getPuertoDetalles: async (desde, hasta) => {
-        const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        const res = { denegaciones: 0, detenidos: 0, cruceristas: 0, incidencias: [] };
-        snap.forEach(doc => {
-            const data = doc.data();
-            res.denegaciones += Number(data.denegaciones) || 0;
-            res.detenidos += Number(data.detenidos) || 0;
-            res.cruceristas += Number(data.cruceristas) || 0;
-            if (data.ferrys) data.ferrys.forEach(f => { if(f.incidencias) res.incidencias.push(f.incidencias) });
-        });
-        return res;
-    },
-
-    getCecorexDetalles: async (desde, hasta) => {
-        const snap = await db.collection('cecorex_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        const res = { detenidos: 0, decretos_exp: 0, asist_letrada: 0, proh_entrada: 0, menas: 0 };
-        snap.forEach(doc => {
-            const data = doc.data();
-            res.detenidos += data.detenidos_cc?.length || 0;
-            res.decretos_exp += Number(data.decretos_exp) || 0;
-            res.asist_letrada += Number(data.al_abogados) || 0;
-            res.proh_entrada += Number(data.proh_entrada) || 0;
-            res.menas += Number(data.menas) || 0;
-        });
-        return res;
-    },
-
-    sumarCampos: async (collection, desde, hasta, fields) => {
-        const snap = await db.collection(collection).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        const totals = fields.reduce((acc, field) => ({ ...acc, [field.key]: 0 }), {});
-        snap.forEach(doc => {
-            const data = doc.data();
-            fields.forEach(field => {
-                const value = data[field.name];
-                totals[field.key] += Number(value) || 0;
-            });
-        });
-        return totals;
-    },
-
-    async getGestion(d, h) { return this.sumarCampos('gestion_registros', d, h, [
-        {name:'ENTRV. ASILO', key:'Entrev. Asilo'},
-        {name:'ASILOS CONCEDIDOS', key:'Asilos OK'},
-        {name:'ASILOS DENEGADOS', key:'Asilos KO'},
-        {name:'CARTAS CONCEDIDAS', key:'Cartas OK'},
-        {name:'CARTAS DENEGADAS', key:'Cartas KO'}
-    ]); },
-    async getCIE(desde, hasta) {
-        const rangeTotals = await this.sumarCampos('cie_registros', desde, hasta, [
-            { name: 'entradas', key: 'Entradas' },
-            { name: 'salidas', key: 'Salidas' }
-        ]);
-        const snapLastDay = await db.collection('cie_registros').where(FieldPath.documentId(), '<=', hasta).orderBy(FieldPath.documentId(), 'desc').limit(1).get();
-        const finalCount = snapLastDay.empty ? "N/D" : (snapLastDay.docs[0].data().n_internos || 0);
-        return { ...rangeTotals, "Internos (fin)": finalCount };
-    }
-};
