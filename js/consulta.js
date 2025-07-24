@@ -1,9 +1,8 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.2
+// SIREX · Consulta Global / Resúmenes v2.3
 // Autor: Gemini
 // Descripción: Lógica de la aplicación para la consulta y exportación de resúmenes.
-// Este archivo debe ser enlazado desde un archivo HTML que contenga la estructura y los IDs correspondientes.
-// CORRECCIÓN: Solucionado ReferenceError 'Field is not defined' en getPuertoDetalles.
+// CORRECCIÓN: Añadida verificación para jsPDF-AutoTable para prevenir el error 'doc.autoTable is not a function'.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -410,6 +409,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         exportarPDF(resumen, desde, hasta) {
+            // Verificación de seguridad para el plugin autoTable
+            if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
+                console.error("Error: El plugin jsPDF-AutoTable no está cargado. Asegúrate de que el script 'jspdf.plugin.autotable.min.js' esté incluido en tu archivo HTML después de 'jspdf.umd.min.js'.");
+                alert("Error al generar PDF: El plugin de tablas no está cargado.");
+                return;
+            }
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
             const f = UIRenderer.formatoFecha;
