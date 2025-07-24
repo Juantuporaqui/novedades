@@ -561,8 +561,10 @@ document.getElementById('btnWhatsapp').addEventListener('click', () => {
 });
 
 // ------ FUNCIÓN: GENERA TEXTO NARRATIVO MULTIGRUPO PARA WHATSAPP ------
+// ------ FUNCIÓN: GENERA TEXTO NARRATIVO MULTIGRUPO PARA WHATSAPP ------
 function generarTextoWhatsappNarrativo(resumen, desde, hasta) {
     let out = `*${GRUPOS_CONFIG.ucrif.icon} SIREX UCRIF*\n_Periodo:_ ${desde} a ${hasta}\n\n`;
+    
     // CABECERA narrativa
     out += `${fraseUcrif('apertura')}\n\n`;
 
@@ -593,45 +595,43 @@ function generarTextoWhatsappNarrativo(resumen, desde, hasta) {
             u.observaciones.forEach(o => { if (o && o.trim()) out += `- ${o}\n`; });
         }
     }
-    // PIE narrativa
+    
+    // PIE narrativa UCRIF
     out += `\n_${fraseUcrif('cierre')}_\n`;
-    return out;
-}
-
 
     // GRUPO 1 (EXPULSIONES)
     if (resumen.grupo1) {
-    const g1 = resumen.grupo1;
-    out += `\n*${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}*\n`;
-    if (g1.detenidos && g1.detenidos.length > 0) {
-        out += `Detenidos (${g1.detenidos.length}):\n`;
-        g1.detenidos.forEach(d => {
-            const det = normalizarDetenido(d);
-            out += `• ${det.nombre} (${det.nacionalidad}) por ${det.motivo}\n`;
-        });
+        const g1 = resumen.grupo1;
+        out += `\n*${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}*\n`;
+        if (g1.detenidos && g1.detenidos.length > 0) {
+            out += `Detenidos (${g1.detenidos.length}):\n`;
+            g1.detenidos.forEach(d => {
+                const det = normalizarDetenido(d);
+                out += `• ${det.nombre} (${det.nacionalidad}) por ${det.motivo}\n`;
+            });
+        }
+        if (g1.expulsados && g1.expulsados.length > 0) {
+            out += `Expulsados (${g1.expulsados.length}):\n`;
+            g1.expulsados.forEach(e => {
+                const exp = normalizarExpulsado(e);
+                out += `• ${exp.nombre} (${exp.nacionalidad})\n`;
+            });
+        }
+        if (g1.frustradas && g1.frustradas.length > 0) {
+            out += `Frustradas (${g1.frustradas.length}):\n`;
+            g1.frustradas.forEach(f => {
+                const fru = normalizarFrustrada(f);
+                out += `• ${fru.nombre} (${fru.nacionalidad}) - Motivo: ${fru.motivo}\n`;
+            });
+        }
+        if (g1.fletados && g1.fletados.length > 0) {
+            out += `Vuelos Fletados:\n`;
+            g1.fletados.forEach(f => {
+                const fle = normalizarFletado(f);
+                out += `• ${fle.destino} — ${fle.pax || 0} pax${fle.fecha ? " · " + formatoFecha(fle.fecha) : ""}\n`;
+            });
+        }
     }
-    if (g1.expulsados && g1.expulsados.length > 0) {
-        out += `Expulsados (${g1.expulsados.length}):\n`;
-        g1.expulsados.forEach(e => {
-            const exp = normalizarExpulsado(e);
-            out += `• ${exp.nombre} (${exp.nacionalidad})\n`;
-        });
-    }
-    if (g1.frustradas && g1.frustradas.length > 0) {
-        out += `Frustradas (${g1.frustradas.length}):\n`;
-        g1.frustradas.forEach(f => {
-            const fru = normalizarFrustrada(f);
-            out += `• ${fru.nombre} (${fru.nacionalidad}) - Motivo: ${fru.motivo}\n`;
-        });
-    }
-    if (g1.fletados && g1.fletados.length > 0) {
-        out += `Vuelos Fletados:\n`;
-        g1.fletados.forEach(f => {
-            const fle = normalizarFletado(f);
-            out += `• ${fle.destino} — ${fle.pax || 0} pax${fle.fecha ? " · " + formatoFecha(fle.fecha) : ""}\n`;
-        });
-    }
-}
 
     // PUERTO
     if (resumen.puerto) {
@@ -684,6 +684,8 @@ function generarTextoWhatsappNarrativo(resumen, desde, hasta) {
     }
 
     out += `\n_Parte cerrado SIREX._`;
+    
+    // ESTE ES EL ÚNICO RETURN QUE DEBE HABER, AL FINAL DE LA FUNCIÓN
     return out;
 }
 
