@@ -214,29 +214,70 @@ function renderizarResumenDetalladoGrupo1(g1) {
     let html = `<div class="card border-primary mb-4 shadow-sm">
     <div class="card-header bg-primary text-white"><h4>${GRUPOS_CONFIG.grupo1.icon} ${GRUPOS_CONFIG.grupo1.label}</h4></div>
     <div class="card-body p-3">`;
-    if (g1.detenidos.length > 0) {
+
+    // Detenidos
+    if (g1.detenidos && g1.detenidos.length > 0) {
         html += `<h5>Detenidos (${g1.detenidos.length})</h5><ul class="list-group mb-3">`;
-        g1.detenidos.forEach(d => { html += `<li class="list-group-item">${d.detenidos_g1} (${d.nacionalidad_g1}) por ${d.motivo_g1}</li>`; });
+        g1.detenidos.forEach(d => {
+            html += `<li class="list-group-item">
+                Nº <b>${d.numero || "-"}</b>
+                — <b>${d.motivo || "-"}</b>
+                (<b>${d.nacionalidad || "-"}</b>)
+                ${d.diligencias ? ` · [${d.diligencias}]` : ""}
+                ${d.observaciones ? ` · ${d.observaciones}` : ""}
+            </li>`;
+        });
         html += `</ul>`;
     }
-    if (g1.expulsados.length > 0) {
+
+    // Expulsados
+    if (g1.expulsados && g1.expulsados.length > 0) {
         html += `<h5>Expulsados (${g1.expulsados.length})</h5><ul class="list-group mb-3">`;
-        g1.expulsados.forEach(e => { html += `<li class="list-group-item">${e.expulsados_g1} (${e.nacionalidad_eg1})</li>`; });
+        g1.expulsados.forEach(e => {
+            html += `<li class="list-group-item">
+                <b>${e.nombre || "-"}</b>
+                (<b>${e.nacionalidad || "-"}</b>)
+                ${e.diligencias ? ` · [${e.diligencias}]` : ""}
+                ${e.nConduccionesPos ? ` · Conducciones positivas: ${e.nConduccionesPos}` : ""}
+                ${e.nConduccionesNeg ? ` · Conducciones negativas: ${e.nConduccionesNeg}` : ""}
+                ${e.observaciones ? ` · ${e.observaciones}` : ""}
+            </li>`;
+        });
         html += `</ul>`;
     }
-    if (g1.frustradas.length > 0) {
-        html += `<h5>Expulsiones Frustradas (${g1.frustradas.length})</h5><ul class="list-group mb-3">`;
-        g1.frustradas.forEach(f => { html += `<li class="list-group-item">${f.exp_frustradas_g1} (${f.nacionalidad_fg1}) - Motivo: ${f.motivo_fg1}</li>`; });
+
+    // Frustradas
+    if (g1.frustradas && g1.frustradas.length > 0) {
+        html += `<h5>Frustradas (${g1.frustradas.length})</h5><ul class="list-group mb-3">`;
+        g1.frustradas.forEach(f => {
+            html += `<li class="list-group-item">
+                <b>${f.nombre || "-"}</b>
+                (<b>${f.nacionalidad || "-"}</b>)
+                — Motivo: <b>${f.motivo || "-"}</b>
+                ${f.diligencias ? ` · [${f.diligencias}]` : ""}
+            </li>`;
+        });
         html += `</ul>`;
     }
-    if (g1.fletados.length > 0) {
-        html += `<h5>Vuelos Fletados</h5><ul class="list-group">`;
-        g1.fletados.forEach(f => { html += `<li class="list-group-item">${f.fletados_g1} a ${f.destino_flg1} con ${f.pax_flg1} PAX</li>`; });
+
+    // Fletados
+    if (g1.fletados && g1.fletados.length > 0) {
+        html += `<h5>Vuelos Fletados (${g1.fletados.length})</h5><ul class="list-group mb-3">`;
+        g1.fletados.forEach(f => {
+            html += `<li class="list-group-item">
+                <b>${f.destino || "-"}</b>
+                — ${f.pax || 0} pax
+                ${f.fecha ? ` · ${formatoFecha(f.fecha)}` : ""}
+                ${f.observaciones ? ` · ${f.observaciones}` : ""}
+            </li>`;
+        });
         html += `</ul>`;
     }
+
     html += `</div></div>`;
     return html;
 }
+
 
 // ------------------- Puerto (Narrativo) -------------------
 function renderizarResumenDetalladoPuerto(puerto) {
