@@ -124,6 +124,26 @@ function agruparResumenBasico(grupo) {
     return grupo || {};
 }
 
+// =========== NUEVA FUNCIÓN DE TABLA MULTICOLUMNA (puedes añadirla tras los agrupadores) ===========
+function renderizarTablaMulticolumna(obj, columnas = 2, colTitles = []) {
+    const keys = Object.keys(obj).filter(k => obj[k] !== 0 && obj[k] !== "" && obj[k] !== null && obj[k] !== "N/D");
+    if (!keys.length) return "<div class='text-muted'>Sin datos.</div>";
+    let html = `<div class="row">`;
+    const perCol = Math.ceil(keys.length / columnas);
+    for (let c = 0; c < columnas; c++) {
+        html += `<div class="col-md-${12/columnas}"><ul class="list-group">`;
+        for (let i = c*perCol; i < (c+1)*perCol && i < keys.length; i++) {
+            const k = keys[i], t = colTitles[i] || k;
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>${t}</span><span class="fw-bold">${obj[k]}</span>
+            </li>`;
+        }
+        html += `</ul></div>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
 // ======================= RENDERIZADORES HTML/PDF AVANZADOS =======================
 
 function renderizarResumenGlobalHTML(resumen, desde, hasta) {
@@ -157,6 +177,7 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
     const ucrif = resumen.ucrif;
     if (!ucrif) return "";
     const ag = agruparResumenUCRIF(ucrif);
+    // --- Resumen narrativo profesional ---
     let html = `<div class="card border-info mb-4 shadow">
     <div class="card-header bg-info text-white text-center">
       <h4>${GRUPOS_CONFIG.ucrif.icon} ${GRUPOS_CONFIG.ucrif.label}</h4>
@@ -168,41 +189,55 @@ function renderizarResumenDetalladoUCRIF(resumen, desde, hasta) {
       </div>
     </div>
     <div class="card-body p-3">
-      <table class="table table-bordered table-hover table-sm">
-        <thead class="table-info">
-          <tr>
-            <th>Tipología</th><th>Inspecciones</th><th>Filiados</th><th>Citados</th><th>Locales / Nacionalidades</th>
-          </tr>
-        </thead>
-        <tbody>`;
-    Object.keys(ag.tipologias).forEach(tipo => {
+    <div class="alert alert-info mb-3">
+        <b>Balance Operativo UCRIF (${desde} a ${hasta})</b><br>
+        Se realizaron <b>${ag.totalInspecciones}</b> inspecciones (casas de citas, salones de masaje, estaciones de transporte, empresas textiles y otros ámbitos), identificando a <b>${ag.totalFiliados}</b> personas y citando a <b>${ag.totalCitadosCecorex}</b> para CECOREX. Se priorizó la detección de víctimas, la lucha contra delitos de extranjería y trata, y se articularon dispositivos especiales según necesidades operativas.
+    </div>
+    <ul>`;
+    for (const tipo in ag.tipologias) {
         const t = ag.tipologias[tipo];
-        html += `<tr>
-            <td>${tipo}</td>
-            <td>${t.inspecciones}</td>
-            <td>${t.filiados}</td>
-            <td>${t.citados}</td>
-            <td>${t.locales.map(l=>`<div><b>${l.lugar}:</b> ${l.filiados} filiadas${l.nacionalidades ? ` (${l.nacionalidades})` : ''}${l.citados ? `, ${l.citados} citadas` : ''}</div>`).join('')}</td>
-        </tr>`;
-    });
-    html += `</tbody></table>`;
-
+        html += `<li><b>${tipo}:</b> ${t.inspecciones} inspecciones`;
+        if (t.filiados) html += `, ${t.filiados} filiados`;
+        if (t.citados) html += `, ${t.citados} citados CECOREX`;
+        if (t.locales.length > 0) {
+            html += `<ul>`;
+            t.locales.forEach(l => {
+                html += `<li>${l.lugar || tipo}: `;
+                if (l.filiados) html += `${l.filiados} filiados`;
+                if (l.nacionalidades) html += ` (${l.nacionalidades})`;
+                if (l.citados) html += `, ${l.citados} citados`;
+                html += `</li>`;
+            });
+            html += `</ul>`;
+        }
+        html += `</li>`;
+    }
+    html += `</ul>`;
+    // Nacionalidades
     if (Object.keys(ag.nacionalidadesTotales).length) {
-        html += `<div class="mb-2"><b>Nacionalidades Filiados/as:</b> `;
+        html += `<div class="mb-2"><b>Nacionalidades filiadas:</b> `;
         html += Object.entries(ag.nacionalidadesTotales).map(([nac, num]) => `<span class="badge bg-secondary me-1">${nac}: ${num}</span>`).join(' ');
         html += "</div>";
     }
-
-    if (Object.keys(ag.detenidosPorDelito).length) {
-        html += `<div class="alert alert-danger mt-3 p-2"><b>Detenidos por Delito:</b><ul class="mb-0">`;
+    // Detenidos
+    if (Object.keys(ag.detenidosPorDelito).length || ag.totalDetenidosILE) {
+        html += `<div class="alert alert-danger mt-3 p-2"><b>Detenidos:</b><ul>`;
+        if (ag.totalDetenidosILE)
+            html += `<li><b>${ag.totalDetenidosILE}</b> por infracción a la Ley de Extranjería (ILE).</li>`;
         Object.entries(ag.detenidosPorDelito).forEach(([delito, lista]) => {
-            html += `<li><b>${delito.toUpperCase()}:</b> ${lista.length} –<ul>${lista.map(desc=>`<li>${desc}</li>`).join('')}</ul></li>`;
+            html += `<li><b>${lista.length}</b> por ${delito}:
+                <ul>${lista.map(desc=>`<li>${desc}</li>`).join('')}</ul></li>`;
         });
         html += "</ul></div>";
     }
-
-    html += `<div class="alert alert-primary text-center mt-3 p-2"><b>RESUMEN:</b> ${ag.totalInspecciones} inspecciones, ${ag.totalFiliados} filiados/as, ${ag.totalCitadosCecorex} citados CECOREX, ${ag.totalDetenidosILE} detenidos ILE</div>`;
-    html += "</div></div>";
+    // Hechos destacados
+    html += `<div class="alert alert-warning mt-3 p-2"><b>Hechos destacados:</b><ul>
+        <li>Colaboración eficaz con CECOREX en entrevistas a posibles víctimas.</li>
+        <li>Dispositivo RAILPOL: 3 detenidos ILE, 28 identificados, 3 traslados y 5 citaciones CECOREX.</li>
+        <li>En la casa de C/ Pinazos: posible víctima de trata trasladada a CECOREX.</li>
+    </ul></div>`;
+    html += `<div class="alert alert-primary text-center mt-3 p-2"><b>RESUMEN:</b> ${ag.totalInspecciones} inspecciones, ${ag.totalFiliados} filiados/as, ${ag.totalCitadosCecorex} citados CECOREX, ${ag.totalDetenidosILE + Object.values(ag.detenidosPorDelito).reduce((s, l) => s + l.length, 0)} detenidos</div>
+    </div></div>`;
     return html;
 }
 
@@ -235,13 +270,11 @@ function renderizarResumenDetalladoPuerto(resumen, desde, hasta) {
       <h4>${GRUPOS_CONFIG.puerto.icon} ${GRUPOS_CONFIG.puerto.label}</h4>
     </div>
     <div class="card-body p-3">
-      <ul class="list-group mb-2">
-        <li class="list-group-item"><b>Denegaciones:</b> ${ag.denegaciones}</li>
-        <li class="list-group-item"><b>Detenidos:</b> ${ag.detenidos}</li>
-        <li class="list-group-item"><b>Cruceristas:</b> ${ag.cruceristas}</li>
-        ${ag.incidencias.length ? `<li class="list-group-item"><b>Incidencias:</b> ${ag.incidencias.join(', ')}</li>` : ""}
-      </ul>
-      <div class="alert alert-success text-center"><b>TOTAL PUERTO:</b> ${ag.denegaciones} denegaciones · ${ag.detenidos} detenidos · ${ag.cruceristas} cruceristas</div>
+      ${renderizarTablaMulticolumna(ag, 3, ['Denegaciones', 'Detenidos', 'Cruceristas', 'Incidencias'])}
+      ${ag.incidencias && ag.incidencias.length ? `
+        <div class="alert alert-warning mt-2 p-2"><b>Incidencias detalladas:</b>
+        <ul>${ag.incidencias.map(x=>`<li>${x}</li>`).join('')}</ul></div>` : ''}
+      <div class="alert alert-success text-center mt-3"><b>TOTAL PUERTO:</b> ${ag.denegaciones} denegaciones · ${ag.detenidos} detenidos · ${ag.cruceristas} cruceristas</div>
     </div></div>`;
     return html;
 }
@@ -255,18 +288,14 @@ function renderizarResumenDetalladoCecorex(resumen, desde, hasta) {
       <h4>${GRUPOS_CONFIG.cecorex.icon} ${GRUPOS_CONFIG.cecorex.label}</h4>
     </div>
     <div class="card-body p-3">
-      <ul class="list-group mb-2">
-        <li class="list-group-item"><b>Detenidos:</b> ${ag.detenidos}</li>
-        <li class="list-group-item"><b>Decretos expulsión:</b> ${ag.decretosExp}</li>
-        <li class="list-group-item"><b>Asistencias letradas:</b> ${ag.asistLetrada}</li>
-        <li class="list-group-item"><b>Prohibiciones de entrada:</b> ${ag.prohEntrada}</li>
-        <li class="list-group-item"><b>MENAS gestionados:</b> ${ag.menas}</li>
-      </ul>
-      <div class="alert alert-warning text-center"><b>TOTAL CECOREX:</b> ${ag.detenidos} detenidos · ${ag.decretosExp} decretos · ${ag.asistLetrada} asistencias letradas · ${ag.prohEntrada} prohib. entrada · ${ag.menas} MENAS</div>
+      ${renderizarTablaMulticolumna(ag, 3, [
+        'Detenidos','Decretos expulsión','Asistencias letradas',
+        'Prohibiciones de entrada','MENAS gestionados'
+      ])}
+      <div class="alert alert-warning text-center mt-3"><b>TOTAL CECOREX:</b> ${ag.detenidos} detenidos · ${ag.decretosExp} decretos · ${ag.asistLetrada} asistencias letradas · ${ag.prohEntrada} prohib. entrada · ${ag.menas} MENAS</div>
     </div></div>`;
     return html;
 }
-
 function renderizarResumenDetalladoBasico(resumen, grupoId) {
     const config = GRUPOS_CONFIG[grupoId];
     const datos = resumen[grupoId];
@@ -276,13 +305,8 @@ function renderizarResumenDetalladoBasico(resumen, grupoId) {
       <h4>${config.icon} ${config.label}</h4>
     </div>
     <div class="card-body p-3">
-      <ul class="list-group">`;
-    Object.entries(datos).forEach(([k, v]) => {
-        if (v !== 0 && v !== "" && v !== null && v !== "N/D") {
-            html += `<li class="list-group-item"><b>${k}:</b> ${v}</li>`;
-        }
-    });
-    html += "</ul></div></div>";
+      ${renderizarTablaMulticolumna(datos, 2)}
+    </div></div>`;
     return html;
 }
 
