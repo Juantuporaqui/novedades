@@ -28,7 +28,7 @@
     .btn-global:hover { transform: translateY(-2px);}
     .btn-novedades { background-color: #198754;}
     .btn-consulta { background-color: #0d6efd;}
-    /* Estilo simple login */
+    /* Estilo simple login — ELIMINADO
     #login-container {
       max-width: 350px;
       margin: 80px auto 0;
@@ -43,10 +43,11 @@
     #login-container button { margin: 10px 0; border-radius: 5px; border: none; padding: 8px 16px; font-weight: bold;}
     #btn-login { background: #198754; color: #fff;}
     #btn-logout { float: right; margin-top: 15px;}
+    */
   </style>
 </head>
 <body>
-  <!-- LOGIN LOCAL -->
+  <!-- LOGIN LOCAL — ELIMINADO
   <div id="login-container">
     <h2>Acceso SIREX</h2>
     <input type="text" id="user" placeholder="Usuario"><br>
@@ -54,13 +55,14 @@
     <button id="btn-login">Entrar</button>
     <div id="login-error" style="color:#e53935;min-height:20px;margin-top:10px;"></div>
   </div>
+  -->
 
-  <!-- CONTENIDO SOLO SI ESTÁ LOGUEADO -->
-  <div id="app-container" style="display:none;">
+  <!-- CONTENIDO SIEMPRE VISIBLE, SIN LOGIN -->
+  <div id="app-container" style="display:block;">
     <header class="sirex-header">
       <div class="sirex-title">SIREX</div>
       <div class="sirex-desc">Sistema Inteligente de Registro de Extranjería</div>
-      <button id="btn-logout" style="float:right;">Salir</button>
+      <!-- <button id="btn-logout" style="float:right;">Salir</button>  — ELIMINADO -->
     </header>
     <main>
       <div class="grupos-menu">
@@ -112,6 +114,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+  <!-- Lógica JS de login — ELIMINADA
   <script>
     // --- Parámetros ---
     const USUARIO = "Benito";
@@ -160,5 +163,6 @@
       loginError.textContent = "";
     };
   </script>
+  -->
 </body>
 </html>
