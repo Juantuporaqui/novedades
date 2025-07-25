@@ -488,7 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
             out += `\n_Parte cerrado y generado automáticamente por SIREX._`;
             return out;
         },
-
         exportarPDF(resumen, desde, hasta) {
     try {
         if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
@@ -766,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Error al generar el PDF:", error);
         alert("Se produjo un error al intentar generar el PDF. Por favor, revisa la consola para más detalles.");
     }
-};
+}
 
     // --- 8. MANEJADOR PRINCIPAL DE EVENTOS ---
     async function handleFormSubmit(e) {
