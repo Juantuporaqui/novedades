@@ -1,15 +1,15 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.0
+// SIREX · Consulta Global / Resúmenes v3.1
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con rediseño completo de la exportación a PDF.
-// MEJORAS CLAVE (v3.0):
-// 1. **PDF de Diseño Profesional**: Se ha rediseñado la exportación a PDF inspirándose
-//    en la imagen de referencia del usuario. Incluye un nuevo encabezado gráfico,
-//    un bloque de "Indicadores Clave" y tablas con un estilo mejorado.
-// 2. **Corrección de Errores de PDF**: Eliminados los emojis de la exportación a PDF
-//    para solucionar definitivamente los errores de renderizado de caracteres.
-// 3. **Estabilidad Mantenida**: Se conservan todas las correcciones de datos y filtros
-//    de versiones anteriores, asegurando la precisión de la información.
+// Descripción: Versión con exportación a WhatsApp mejorada y más detallada.
+// MEJORAS CLAVE (v3.1):
+// 1. **Resumen de WhatsApp Narrativo**: La exportación a WhatsApp para la sección
+//    de UCRIF ha sido rediseñada para incluir una descripción detallada de
+//    inspecciones, detenidos (con motivo/nacionalidad) y colaboraciones.
+// 2. **Formato Mejorado**: Se utiliza el formato de WhatsApp (negrita, cursiva) para
+//    resaltar la información clave y mejorar la legibilidad del resumen.
+// 3. **Estabilidad Mantenida**: Se conservan todas las correcciones y mejoras de
+//    diseño de la v3.0, incluyendo el PDF profesional.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -370,11 +370,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (resumen.ucrif) {
                 const u = resumen.ucrif;
-                let content = `• *Totales*: ${u.detenidosILE ?? 0} ILE, ${u.filiadosVarios ?? 0} filiados, ${u.traslados ?? 0} traslados.\n`;
-                if (u.inspecciones?.length > 0) content += `• Inspecciones: ${u.inspecciones.length}\n`;
-                if (u.detenidosDelito?.length > 0) content += `• Detenidos (delito): ${u.detenidosDelito.length}\n`;
+                let content = `*Resumen General:*\n`;
+                content += `• Detenidos ILE: ${u.detenidosILE ?? 0}\n`;
+                content += `• Filiados: ${u.filiadosVarios ?? 0}\n`;
+                content += `• Traslados: ${u.traslados ?? 0}\n`;
+
+                if (u.inspecciones?.length > 0) {
+                    content += `\n*Inspecciones Destacadas:*\n`;
+                    u.inspecciones.slice(0, 3).forEach(i => {
+                        const inspText = UIRenderer.formatters.inspeccion(i).replace(/<strong>|<\/strong>/g, '');
+                        content += `• ${inspText}\n`;
+                    });
+                }
+
+                if (u.detenidosDelito?.length > 0) {
+                    content += `\n*Detenidos por Otros Delitos:*\n`;
+                    u.detenidosDelito.forEach(d => {
+                        content += `• ${d.descripcion} por _${d.motivo}_.\n`;
+                    });
+                }
+                
+                if (u.colaboraciones?.length > 0) {
+                    content += `\n*Colaboraciones:*\n`;
+                    u.colaboraciones.forEach(c => {
+                         if (typeof c === 'object' && c.colaboracionDesc) {
+                             content += `• ${c.colaboracionDesc} con ${c.colaboracionUnidad || 'unidad no especificada'}. Resultado: ${c.colaboracionResultado || 'N/D'}\n`;
+                         } else if (typeof c === 'string') {
+                             content += `• ${c}\n`;
+                         }
+                    });
+                }
+                
+                if (u.dispositivos?.length > 0) {
+                    content += `\n*Dispositivos en Curso:*\n`;
+                    u.dispositivos.slice(0, 5).forEach(d => {
+                         const dispText = UIRenderer.formatters.dispositivo(d).replace(/<strong>|<\/strong>/g, '');
+                         content += `• ${dispText}\n`;
+                    });
+                }
+
                 addSection(AppConfig.grupos.ucrif, content);
             }
+
             if (resumen.grupo1) {
                 const g1 = resumen.grupo1;
                 let content = '';
@@ -406,7 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let finalY = 15;
                 const pageW = doc.internal.pageSize.getWidth();
                 const margin = 15;
-                const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
 
                 const addHeader = () => {
                     doc.setFillColor(40, 58, 90); // Color azul oscuro corporativo
@@ -434,7 +470,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 addHeader();
                 
-                // --- Bloque de Indicadores Clave ---
                 if (resumen.ucrif) {
                     const u = resumen.ucrif;
                     doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(40, 58, 90);
@@ -454,17 +489,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         doc.text(String(item.value), margin + (index * blockWidth), finalY, { align: 'left' });
                         doc.setFontSize(9); doc.setTextColor(100);
                         doc.text(item.label, margin + (index * blockWidth), finalY + 5, { align: 'left' });
-                        doc.setFontSize(18); // Reset for next loop
+                        doc.setFontSize(18);
                     });
                     finalY += 15;
                 }
-
 
                 const addSection = (cfg, callback) => {
                     if (!callback) return;
                     checkPageBreak();
                     doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
-                    doc.text(cfg.label, margin, finalY); // Sin icono
+                    doc.text(cfg.label, margin, finalY);
                     finalY += 7;
                     doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
                     callback();
