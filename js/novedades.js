@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
    SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, CIE)
    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
-   Versión 2.5: Mejorada la validación y el parsing para todos los grupos (G4, Puerto, Cecorex, Gestión).
+   Versión 2.6: Mejorado parser de Gestiones G1 y añadida lógica para auto-detectar inspecciones de "casa de citas" en G2/G3.
 --------------------------------------------------------------------------- */
 let parsedDataForConfirmation = null;
 
@@ -381,19 +381,23 @@ document.addEventListener('DOMContentLoaded', () => {
       pendientes_g1: []
     };
 
-    const allElements = Array.from(root.children);
-    for(let i = 0; i < allElements.length; i++) {
-        const elem = allElements[i];
-        const text = elem.textContent.trim().toUpperCase();
-        
-        if (elem.tagName === 'P' && text === 'GESTIONES') {
-            let nextIndex = i + 1;
-            while(nextIndex < allElements.length && allElements[nextIndex].tagName === 'P') {
-                const gestionText = allElements[nextIndex].textContent.trim();
-                if (gestionText) datos.pendientes_g1.push({ descripcion: gestionText });
-                nextIndex++;
-            }
-            i = nextIndex - 1;
+    // Lógica mejorada para encontrar gestiones
+    let parsingGestiones = false;
+    const paragraphs = Array.from(root.querySelectorAll('p'));
+    for (const p of paragraphs) {
+        const text = p.textContent.trim();
+        const upperText = text.toUpperCase();
+
+        if (upperText.startsWith('GRUPO 2') || upperText.startsWith('GRUPO 3')) {
+            parsingGestiones = false;
+        }
+
+        if (parsingGestiones && text) {
+            datos.pendientes_g1.push({ descripcion: text });
+        }
+
+        if (upperText === 'GESTIONES') {
+            parsingGestiones = true;
         }
     }
     
@@ -488,7 +492,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nacionalidad = tds[3]?.textContent.trim() || "";
                 const observaciones = tds[4]?.textContent.trim() || "";
 
-                if (detenido) {
+                // Lógica para "Casa de Citas"
+                if (operacion.toLowerCase().includes('casa de citas') || observaciones.toLowerCase().includes('casa de citas')) {
+                    const identMatch = observaciones.match(/(\d+)\s*.*?\s*identificadas/i);
+                    const citadasMatch = observaciones.match(/(\d+)\s*.*?\s*citadas/i);
+                    datos.inspecciones.push({
+                        lugar: operacion,
+                        identificadas: identMatch ? identMatch[1] : '0',
+                        citadas: citadasMatch ? citadasMatch[1] : '0',
+                        nacionalidades: nacionalidad
+                    });
+                } else if (detenido) { // Lógica para detenidos normales
                     datos.detenidos.push({
                         operacion_d: operacion,
                         detenido: detenido,
@@ -496,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nacionalidad: nacionalidad,
                         observaciones: observaciones
                     });
-                } else if (observaciones) { 
+                } else if (observaciones) { // Lógica para actuaciones normales
                     datos.actuaciones.push({
                         operacion: operacion,
                         delito: motivo,
@@ -572,7 +586,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nacionalidad = tds[3]?.textContent.trim() || "";
                 const observaciones = tds[4]?.textContent.trim() || "";
 
-                if (detenido) {
+                // Lógica para "Casa de Citas"
+                if (operacion.toLowerCase().includes('casa de citas') || observaciones.toLowerCase().includes('casa de citas')) {
+                    const identMatch = observaciones.match(/(\d+)\s*.*?\s*identificadas/i);
+                    const citadasMatch = observaciones.match(/(\d+)\s*.*?\s*citadas/i);
+                    datos.inspecciones.push({
+                        lugar: operacion,
+                        identificadas: identMatch ? identMatch[1] : '0',
+                        citadas: citadasMatch ? citadasMatch[1] : '0',
+                        nacionalidades: nacionalidad
+                    });
+                } else if (detenido) { // Lógica para detenidos normales
                     datos.detenidos.push({
                         operacion_d: operacion,
                         detenido: detenido,
@@ -580,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nacionalidad: nacionalidad,
                         observaciones: observaciones
                     });
-                } else if (observaciones) { 
+                } else if (observaciones) { // Lógica para actuaciones normales
                     datos.actuaciones.push({
                         operacion: operacion,
                         delito: motivo,
