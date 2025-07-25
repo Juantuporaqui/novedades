@@ -362,10 +362,7 @@ function parseGrupo1(html) {
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-        detenidos_g1: [],
-        expulsados_g1: [],
         exp_frustradas_g1: [],
-        fletados_g1: [],
         pendientes_g1: []
     };
 
@@ -374,28 +371,23 @@ function parseGrupo1(html) {
         if (!rows.length) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("EXP. FRUSTRADAS") && header.includes("NACIONALIDAD-FG1")) {
+        if (header.includes("EXP. FRUSTRADAS")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 4 || !tds[0].textContent.trim()) continue;
-                datos.exp_frustradas_g1.push({
-                    exp_frustradas_g1: tds[0].textContent.trim(),
-                    nacionalidad_fg1: tds[1].textContent.trim(),
-                    diligencias_fg1: tds[2].textContent.trim(),
-                    motivo_fg1: tds[3].textContent.trim()
-                });
+                if (tds.length >= 4 && tds[0].textContent.trim()) {
+                    datos.exp_frustradas_g1.push({
+                        exp_frustradas_g1: tds[0].textContent.trim(),
+                        nacionalidad_fg1: tds[1].textContent.trim(),
+                        diligencias_fg1: tds[2].textContent.trim(),
+                        motivo_fg1: tds[3].textContent.trim()
+                    });
+                }
             }
         } else if (header.includes("GESTIONES")) {
-            // Se usa un selector más específico para evitar conflictos
-            const gestionesTitle = rows[0]?.cells[0]?.textContent.trim();
-            if (gestionesTitle === 'GESTIONES') {
-                 for (let i = 1; i < rows.length; i++) {
-                    const cellText = rows[i].cells[0]?.textContent.trim();
-                    if (cellText) {
-                        datos.pendientes_g1.push({
-                            descripcion: cellText
-                        });
-                    }
+             for (let i = 1; i < rows.length; i++) {
+                const cellText = rows[i].cells[0]?.textContent.trim();
+                if (cellText) {
+                    datos.pendientes_g1.push({ descripcion: cellText });
                 }
             }
         }
@@ -415,9 +407,7 @@ function parseGrupo2(html) {
     let fecha = '';
     let datos = {
         detenidos: [],
-        inspecciones: [],
-        actuaciones: [],
-        varios: ""
+        actuaciones: []
     };
 
     for (const tabla of tablas) {
@@ -458,9 +448,7 @@ function parseGrupo3(html) {
     let fecha = '';
     let datos = {
         detenidos: [],
-        inspecciones: [],
-        actuaciones: [],
-        varios: ""
+        actuaciones: []
     };
 
     for (const tabla of tablas) {
@@ -484,17 +472,6 @@ function parseGrupo3(html) {
                     datos.detenidos.push({ operacion_d: operacion, detenido: detenido, motivo: motivo, nacionalidad: nacionalidad, observaciones: observaciones });
                 }
             }
-        } else if (header.includes("INSPECCION G3 LUGAR")) {
-             for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 4 || !tds[0]?.textContent.trim()) continue;
-                datos.inspecciones.push({
-                    lugar: tds[0]?.textContent.trim() || "",
-                    identificadas: tds[1]?.textContent.trim() || "",
-                    citadas: tds[2]?.textContent.trim() || "",
-                    nacionalidades: tds[3]?.textContent.trim() || ""
-                });
-            }
         }
         
         if (!fecha) {
@@ -512,11 +489,7 @@ function parseGrupo4(html) {
     let fecha = '';
     let datos = {
         detenidos_g4: [],
-        colaboraciones_g4: [],
-        inspecciones_g4: [],
-        identificados_g4: 0,
-        citadosCecorex_g4: 0,
-        observaciones_g4: ""
+        colaboraciones_g4: []
     };
 
     for (const tabla of tablas) {
@@ -524,33 +497,28 @@ function parseGrupo4(html) {
         if (!rows.length) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("N. DETENIDOS-G4") && header.includes("MOTIVO–G4")) {
+        if (header.includes("N. DETENIDOS-G4")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 4 || !tds[0].textContent.trim()) continue;
-                datos.detenidos_g4.push({
-                    detenidos_g4: tds[0].textContent.trim(),
-                    motivo_g4: tds[1].textContent.trim(),
-                    nacionalidad_g4: tds[2].textContent.trim(),
-                    observaciones_dg4: tds[3].textContent.trim()
-                });
+                if (tds.length >= 4 && tds[0].textContent.trim()) {
+                    datos.detenidos_g4.push({
+                        detenidos_g4: tds[0].textContent.trim(),
+                        motivo_g4: tds[1].textContent.trim(),
+                        nacionalidad_g4: tds[2].textContent.trim(),
+                        observaciones_dg4: tds[3].textContent.trim()
+                    });
+                }
             }
-        } else if (header.includes("IDENTIFICADOS") && header.includes("CITADOS CECOREX")) {
-            const rowData = rows[1]?.querySelectorAll('td');
-            if (rowData) {
-                datos.identificados_g4 = parseInt(rowData[0]?.textContent.trim() || "0", 10);
-                datos.citadosCecorex_g4 = parseInt(rowData[1]?.textContent.trim() || "0", 10);
-                datos.observaciones_g4 = rowData[3]?.textContent.trim() || "";
-            }
-        } else if (header.includes("COLABORACION") && header.includes("UNIDAD C.")) {
+        } else if (header.includes("COLABORACION")) {
              for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 3 || !tds[0].textContent.trim()) continue;
-                datos.colaboraciones_g4.push({
-                    colaboracionDesc: tds[0].textContent.trim(),
-                    colaboracionUnidad: tds[1].textContent.trim(),
-                    colaboracionResultado: tds[2].textContent.trim()
-                });
+                if (tds.length >= 3 && tds[0].textContent.trim()) {
+                    datos.colaboraciones_g4.push({
+                        colaboracionDesc: tds[0].textContent.trim(),
+                        colaboracionUnidad: tds[1].textContent.trim(),
+                        colaboracionResultado: tds[2].textContent.trim()
+                    });
+                }
             }
         }
 
@@ -567,45 +535,31 @@ function parseGrupoPuerto(html) {
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
-    let datos = {
-        ctrlMarinos: 0, marinosArgos: 0, cruceros: 0, cruceristas: 0,
-        visadosCg: 0, visadosVal: 0, visadosExp: 0, vehChequeados: 0, persChequeadas: 0,
-        detenidos: 0, denegaciones: 0, entrExcep: 0, eixics: 0, ptosDeportivos: 0,
-        ferrys: [], gestiones_puerto: []
-    };
-    const mapCampos = {
-        ctrlMarinos: /^CTRL\.MARINOS$/i, marinosArgos: /^MARINOS ARGOS$/i, cruceros: /^CRUCEROS$/i, cruceristas: /^CRUCERISTAS$/i,
-        visadosCg: /^VISAS\. CG$/i, visadosVal: /^VISAS VAL\.$/i, visadosExp: /^VISAS\. EXP$/i, vehChequeados: /^VEH\. CHEQUEADOS$/i, persChequeadas: /^PERS\. CHEQUEADAS$/i,
-        detenidos: /^DETENIDOS$/i, denegaciones: /^DENEGACIONES$/i, entrExcep: /^ENTR\. EXCEP$/i, eixics: /^EIXICS$/i, ptosDeportivos: /^PTOS\. DEPORTIVOS$/i
-    };
+    let datos = {};
 
     for (const tabla of tablas) {
         const rows = Array.from(tabla.querySelectorAll('tr'));
         if (rows.length < 2) continue;
-        const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
-        
-        let processed = false;
-        cabeceras.forEach((cab, idx) => {
-            for (const clave in mapCampos) {
-                if (mapCampos[clave].test(cab)) {
-                    datos[clave] = parseInt(valores[idx]) || 0;
-                    processed = true;
-                }
-            }
-        });
+        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
 
-        if (processed) {
-             const gestionesText = valores[valores.length -1];
-             if (gestionesText && cabeceras.length < valores.length) {
-                datos.gestiones_puerto.push({ gestion: gestionesText });
-             }
+        if(header.includes('CTRL.MARINOS')) {
+            datos.ctrlMarinos = parseInt(values[0]) || 0;
+            datos.marinosArgos = parseInt(values[1]) || 0;
+            datos.cruceros = parseInt(values[2]) || 0;
+            datos.cruceristas = parseInt(values[3]) || 0;
+        } else if (header.includes('VISAS. CG')) {
+            datos.visadosCg = parseInt(values[0]) || 0;
+            datos.visadosExp = parseInt(values[2]) || 0;
+        } else if (header.includes('PTOS. DEPORTIVOS')) {
+            datos.ptosDeportivos = parseInt(values[4]) || 0;
+        } else if (header.includes('GESTIONES PUERTO')) {
+            datos.gestiones_puerto = values[0] || '';
         }
         
         if (!fecha) {
-            const plainText = tabla.innerText || tabla.textContent || "";
-            const match = plainText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (match) fecha = `${match[3]}-${match[2]}-${match[1]}`;
+            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
         }
     }
     return { datos, fecha };
@@ -616,53 +570,45 @@ function parseGrupoCECOREX(html) {
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
-    let datos = {
-        detenidos_cc: [], cons_tfno: '', cons_presc: '', cons_equip: '', citados: '',
-        notificaciones: '', al_abogados: '', rem_subdelegacion: '', decretos_exp: '',
-        tramites_audiencia: '', cie_concedido: '', cies_denegado: '', proh_entrada: '',
-        menas: '', dil_informe: '', gestiones_cecorex: ''
-    };
+    let datos = {};
 
     for (const tabla of tablas) {
         const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
+        if (rows.length < 2) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
 
         if (header.includes("DETENIDOS-CC")) {
+            datos.detenidos_cc = [];
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 5 || !tds[0].textContent.trim()) continue;
-                datos.detenidos_cc.push({
-                    detenidos_cc: tds[0].textContent.trim(), motivo_cc: tds[1].textContent.trim(),
-                    nacionalidad_cc: tds[2].textContent.trim(), presenta: tds[3].textContent.trim(),
-                    observaciones_cc: tds[4].textContent.trim()
-                });
+                if (tds.length >= 5 && tds[0].textContent.trim()) {
+                     datos.detenidos_cc.push({
+                        detenidos_cc: tds[0].textContent.trim(),
+                        motivo_cc: tds[1].textContent.trim(),
+                        nacionalidad_cc: tds[2].textContent.trim(),
+                        presenta: tds[3].textContent.trim(),
+                        observaciones_cc: tds[4].textContent.trim()
+                    });
+                }
             }
         } else if (header.includes("CONS.TFNO")) {
-            const tds = rows[1]?.querySelectorAll('td');
-            if (tds) {
-                datos.cons_tfno = tds[0]?.textContent.trim() || '';
-                datos.notificaciones = tds[4]?.textContent.trim() || '';
-            }
+            datos.cons_tfno = parseInt(values[0]) || 0;
+            datos.notificaciones = parseInt(values[4]) || 0;
         } else if (header.includes("REM. SUBDELEGACIÓN")) {
-            const tds = rows[1]?.querySelectorAll('td');
-            if (tds) {
-                datos.rem_subdelegacion = tds[0]?.textContent.trim() || '';
-                datos.decretos_exp = tds[1]?.textContent.trim() || '';
-                datos.tramites_audiencia = tds[2]?.textContent.trim() || '';
-            }
-        } else if (header.includes("CIE CONCEDIDO")) {
-            const tds = rows[1]?.querySelectorAll('td');
-            if (tds) {
-                datos.proh_entrada = tds[2]?.textContent.trim() || '';
-                datos.menas = tds[3]?.textContent.trim() || '';
-                datos.dil_informe = tds[4]?.textContent.trim() || '';
-            }
+            datos.rem_subdelegacion = parseInt(values[0]) || 0;
+            datos.decretos_exp = parseInt(values[1]) || 0;
+            datos.tramites_audiencia = parseInt(values[2]) || 0;
+        } else if (header.includes("PROH. ENTRADA")) {
+            datos.proh_entrada = parseInt(values[2]) || 0;
+            datos.menas = parseInt(values[3]) || 0;
+            datos.dil_informe = parseInt(values[4]) || 0;
         } else if (header.includes("GESTIONES CECOREX")) {
-            const cellText = rows[1]?.cells[0]?.textContent.trim();
-            if(cellText) datos.gestiones_cecorex = cellText;
+            if (rows[1] && rows[1].cells[0]) {
+                datos.gestiones_cecorex = rows[1].cells[0].textContent.trim();
+            }
         }
-
+        
         if (!fecha) {
             let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
             if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
@@ -677,7 +623,7 @@ function parseGestion(html) {
     const tablas = Array.from(root.querySelectorAll('table'));
     let datos = {};
     let fecha = '';
- 
+
     for (const tabla of tablas) {
         const rows = Array.from(tabla.querySelectorAll('tr'));
         if (rows.length < 2) continue;
@@ -685,22 +631,22 @@ function parseGestion(html) {
         const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
 
         if(header.includes('CITAS-G')) {
-            datos['CITAS-G'] = parseInt(values[0]) || 0;
-            datos['FALLOS ASILO'] = parseInt(values[3]) || 0;
-            datos['ASILOS CONCEDIDOS'] = parseInt(values[4]) || 0;
+            datos.citas_g = parseInt(values[0]) || 0;
+            datos.fallos_asilo = parseInt(values[3]) || 0;
+            datos.asilos_concedidos = parseInt(values[4]) || 0;
         } else if (header.includes('CARTAS CONCEDIDAS')) {
-            datos['CARTAS CONCEDIDAS'] = parseInt(values[0]) || 0;
-            datos['TARJET. SUBDELEG'] = parseInt(values[4]) || 0;
+            datos.cartas_concedidas = parseInt(values[0]) || 0;
+            datos.tarjet_subdeleg = parseInt(values[4]) || 0;
         } else if (header.includes('NOTIFICACIONES DENEGADAS')) {
-            datos['NOTIFICACIONES DENEGADAS'] = parseInt(values[1]) || 0;
-            datos['PRESENTADOS'] = parseInt(values[2]) || 0;
-            datos['CORREOS UCRANIA'] = parseInt(values[3]) || 0;
+            datos.notificaciones_denegadas = parseInt(values[1]) || 0;
+            datos.presentados = parseInt(values[2]) || 0;
+            datos.correos_ucrania = parseInt(values[3]) || 0;
         } else if (header.includes('TELE. FAVO')) {
-             datos['TELE. FAVO'] = parseInt(values[0]) || 0;
-             datos['TELE. DESFAV'] = parseInt(values[1]) || 0;
-             datos['CITAS TLFN ASILO'] = parseInt(values[2]) || 0;
+             datos.tele_favo = parseInt(values[0]) || 0;
+             datos.tele_desfav = parseInt(values[1]) || 0;
+             datos.citas_tlfn_asilo = parseInt(values[2]) || 0;
         }
-
+        
         if (!fecha) {
             let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
             if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
@@ -714,30 +660,20 @@ function parseGrupoCIE(html) {
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
-    let datos = {
-        internos: '',
-        entradas: '',
-        salidas: '',
-        incidencias_cie: ''
-    };
+    let datos = {};
 
     for (const tabla of tablas) {
         const rows = Array.from(tabla.querySelectorAll('tr'));
         if (!rows.length) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("INTERNOS") && header.includes("ENTRADAS") && header.includes("SALIDAS")) {
+        if (header.includes("INTERNOS")) {
             const rowData = rows[1]?.children;
-            if (rowData) {
-                datos.internos = rowData[0]?.textContent.trim() || '';
-            }
-        } else if (header.includes("INCIDENCIAS CIE")) {
-            const rowData = rows[1]?.cells[0];
-            if (rowData && rowData.textContent.trim()) {
-                datos.incidencias_cie = rowData.textContent.trim();
+            if (rowData && rowData[0]) {
+                datos.internos = rowData[0].textContent.trim();
             }
         }
-
+        
         if (!fecha) {
             let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
             if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
