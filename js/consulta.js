@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Error al generar el PDF:", error);
         alert("Se produjo un error al intentar generar el PDF. Por favor, revisa la consola para más detalles.");
     }
-}
+};
 
     // --- 8. MANEJADOR PRINCIPAL DE EVENTOS ---
     async function handleFormSubmit(e) {
