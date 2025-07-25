@@ -1,14 +1,16 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.4
+// SIREX · Consulta Global / Resúmenes v3.5
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con corrección definitiva para la integración de datos de CECOREX.
-// MEJORAS CLAVE (v3.4):
-// 1. **Corrección de Detenidos CECOREX**: Se ha solucionado el problema que impedía
-//    mostrar los detenidos de CECOREX. El script ahora lee correctamente la estructura
-//    de datos guardada por `cecorex.js`.
-// 2. **Normalización de Datos**: Se ha implementado un "traductor" interno que convierte
-//    los campos en mayúsculas (ej. `DETENIDOS`) a minúsculas (`nombre`), asegurando
-//    la compatibilidad y correcta visualización en todos los resúmenes (HTML, PDF, WhatsApp).
+// Descripción: Versión con lógica de consulta CECOREX y generación de PDF restaurada y corregida.
+// MEJORAS CLAVE (v3.5):
+// 1. **Corrección Definitiva de CECOREX**: Gracias al JSON proporcionado, la función de
+//    consulta ahora lee el campo `detenidos_cc` y normaliza correctamente los datos
+//    de los detenidos, solucionando el problema de forma definitiva.
+// 2. **Consulta a Múltiples Colecciones**: Se ha añadido la capacidad de consultar
+//    en `cecorex_registros` y `cecorex` para no omitir ningún dato.
+// 3. **Generación de PDF Restaurada**: Se ha eliminado la optimización que causaba
+//    problemas y se ha restaurado una lógica de generación de PDF más explícita y robusta,
+//    asegurando que todos los grupos con datos se incluyan en el informe.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -183,33 +185,39 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
 
-        // --- [CORRECCIÓN CLAVE] --- Se ha ajustado esta función para que coincida con la estructura de datos real de CECOREX.
+        // --- [CORRECCIÓN CLAVE] --- Función ajustada a la estructura de datos real de CECOREX.
         getCecorexDetalles: async (desde, hasta) => {
-            const snap = await db.collection('cecorex_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
+            const collectionsToQuery = ['cecorex_registros', 'cecorex'];
             let res = { numericos: {}, detenidos: [] };
-            snap.forEach(doc => {
-                const data = doc.data();
-                Object.keys(data).forEach(key => {
-                    // Mapea los campos numéricos. Los nombres de campo en Firebase (ej. "CITADOS") se usan directamente.
-                    const numericValue = Number(data[key]);
-                    if (key !== 'fecha' && !Array.isArray(data[key]) && !isNaN(numericValue)) {
-                         res.numericos[key] = (res.numericos[key] || 0) + numericValue;
+
+            for (const coll of collectionsToQuery) {
+                const snap = await db.collection(coll).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    
+                    // Suma campos que son numéricos o strings que representan números
+                    Object.keys(data).forEach(key => {
+                        if (key !== 'detenidos_cc' && !Array.isArray(data[key])) {
+                            const numericValue = Number(data[key]);
+                            if (!isNaN(numericValue)) {
+                                res.numericos[key] = (res.numericos[key] || 0) + numericValue;
+                            }
+                        }
+                    });
+
+                    // Procesa el array de detenidos desde el campo `detenidos_cc`
+                    if (data.detenidos_cc && Array.isArray(data.detenidos_cc)) {
+                        const detenidosNormalizados = data.detenidos_cc.map(d => ({
+                            nombre: d.detenidos_cc || 'N/A',
+                            motivo: d.motivo_cc || 'N/A',
+                            nacionalidad: d.nacionalidad_cc || 'N/A',
+                            observaciones: d.observaciones_cc || '',
+                            presenta: d.presenta || ''
+                        }));
+                        res.detenidos.push(...detenidosNormalizados);
                     }
                 });
-                
-                // 1. Busca el array de detenidos con el nombre correcto: `detenidos`.
-                if (data.detenidos && Array.isArray(data.detenidos)) {
-                    // 2. Normaliza los campos: convierte las claves de MAYÚSCULAS a minúsculas para que el resto del script las entienda.
-                    const detenidosNormalizados = data.detenidos.map(d => ({
-                        nombre: d.DETENIDOS || 'N/A', // `DETENIDOS` se convierte en `nombre`
-                        motivo: d.MOTIVO || 'N/A',
-                        nacionalidad: d.NACIONALIDAD || 'N/A',
-                        presenta: d.PRESENTA || '',
-                        observaciones: d.OBSERVACIONES || ''
-                    }));
-                    res.detenidos.push(...detenidosNormalizados);
-                }
-            });
+            }
             return res;
         },
 
@@ -251,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resumen.ucrif && Object.values(resumen.ucrif).some(v => (Array.isArray(v) ? v.length > 0 : v > 0))) {
                 html += this.renderizarUcrif(resumen.ucrif);
             }
-            
             if (resumen.grupo1 && Object.values(resumen.grupo1).some(v => v?.length > 0)) html += this.renderizarGrupo1(resumen.grupo1);
             if (resumen.puerto && (Object.keys(resumen.puerto.numericos ?? {}).length > 0 || resumen.puerto.ferrys?.length > 0)) html += this.renderizarPuerto(resumen.puerto);
             if (resumen.cecorex && (Object.keys(resumen.cecorex.numericos ?? {}).length > 0 || resumen.cecorex.detenidos?.length > 0)) html += this.renderizarCecorex(resumen.cecorex);
@@ -361,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `
                         <div class="col-sm-6 col-md-4">
                             <div class="d-flex justify-content-between align-items-center border rounded p-2 h-100 bg-light">
-                                <span class="text-capitalize small me-2">${key.replace(/_/g, " ").replace(/(\b[a-z](?!\s))/g, x => x.toUpperCase())}</span>
+                                <span class="small me-2">${key.replace(/_/g, " ")}</span>
                                 <span class="badge bg-${cfg.theme} text-dark rounded-pill fs-6">${value}</span>
                             </div>
                         </div>`;
@@ -369,7 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `</div>`;
             }
 
-            // Gracias a la normalización en QueryManager, ahora `data.detenidos` tiene las claves en minúsculas.
             if (data.detenidos && data.detenidos.length > 0) {
                 html += this.renderListSection('Detenidos Registrados', data.detenidos, d => {
                     return `<strong>${d.nombre || 'Nombre N/A'}</strong> (${d.nacionalidad || 'Nac. N/A'}) por motivo de <strong>${d.motivo || 'Motivo N/A'}</strong>`;
@@ -518,10 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (u.inspecciones?.length > 0) {
                     content += `\n`;
                     u.inspecciones.forEach(i => {
-                        const inspText = UIRenderer.formatters.inspeccion(i)
-                            .replace(/<strong>/g, '*')
-                            .replace(/<\/strong>/g, '*')
-                            .replace(/\[.*?\]\s/,'');
+                        const inspText = UIRenderer.formatters.inspeccion(i).replace(/<strong>/g, '*').replace(/<\/strong>/g, '*').replace(/\[.*?\]\s/,'');
                         content += `• Inspección en ${inspText}\n`;
                     });
                 }
@@ -537,8 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked'))
-                    .map(cb => u.dispositivos[parseInt(cb.value)]);
+                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked')).map(cb => u.dispositivos[parseInt(cb.value)]);
 
                 if (selectedDispositivos.length > 0) {
                     content += `\n*En el marco de las investigaciones de UCRIF destacan los siguientes avances:*\n`;
@@ -585,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return out;
         },
 
+        // --- [RESTAURADO] --- Lógica de exportación a PDF restaurada a una versión más explícita y completa.
         exportarPDF(resumen, desde, hasta) {
             try {
                 if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
@@ -620,6 +623,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.text(title, margin, 15);
                     doc.setFont(fonts.body, "normal");
                     doc.setFontSize(9);
+                    doc.setTextColor(255, 255, 255);
+                     if (JSON.stringify(color) === JSON.stringify(colors.cecorex)) {
+                         doc.setTextColor(0, 0, 0);
+                    }
                     doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW - margin, 15, { align: "right" });
                     finalY = 32;
                 };
@@ -640,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         try { doc.addImage(logoURL, 'PNG', pageW - margin - 8, pageH - 13.5, 8, 8); } catch(e) { console.error("Error al añadir el logo al pie de página."); }
                     }
                 };
-
+                
                 const createSectionTitle = (y, title, color) => {
                     finalY = y;
                     if (finalY > pageH - 25) { doc.addPage(); addHeader("Continuación", colors.primary); finalY = 32; }
@@ -674,41 +681,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 doc.rect(0, 0, pageW, pageH, 'F');
                 try { doc.addImage(logoURL, 'PNG', pageW / 2 - 25, 40, 50, 50); } catch (e) { console.error("Error al añadir el logo a la portada."); }
                 doc.setTextColor(255, 255, 255);
-                doc.setFont(fonts.title, "bold");
-                doc.setFontSize(26);
+                doc.setFont(fonts.title, "bold"); doc.setFontSize(26);
                 doc.text("INFORME OPERATIVO GLOBAL", pageW / 2, 120, { align: 'center' });
-                doc.setFontSize(14);
-                doc.setFont(fonts.body, "normal");
+                doc.setFontSize(14); doc.setFont(fonts.body, "normal");
                 doc.text("BRIGADA PROVINCIAL DE EXTRANJERÍA Y FRONTERAS", pageW / 2, 135, { align: 'center' });
-                doc.setLineWidth(0.5);
-                doc.setDrawColor(255, 255, 255);
+                doc.setLineWidth(0.5); doc.setDrawColor(255, 255, 255);
                 doc.line(margin, 145, pageW - margin, 145);
                 doc.setFontSize(12);
                 doc.text(`Periodo del ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, 155, { align: 'center' });
-                doc.setFontSize(10);
-                doc.setTextColor(180, 180, 180);
+                doc.setFontSize(10); doc.setTextColor(180, 180, 180);
                 doc.text("Generado por el Sistema de Informes de Extranjería (SIREX)", pageW / 2, pageH - 30, { align: 'center' });
                 
                 // --- RESUMEN EJECUTIVO (KPIs) ---
                 doc.addPage();
                 addHeader("Resumen Ejecutivo", colors.primary);
-                
                 const randomFraseApertura = AppConfig.frasesNarrativas.apertura[Math.floor(Math.random() * AppConfig.frasesNarrativas.apertura.length)];
-                doc.setFont(fonts.body, "italic");
-                doc.setFontSize(11);
-                doc.setTextColor(...colors.secondary);
+                doc.setFont(fonts.body, "italic"); doc.setFontSize(11); doc.setTextColor(...colors.secondary);
                 const introText = doc.splitTextToSize(randomFraseApertura, pageW - margin * 2);
                 doc.text(introText, margin, finalY);
                 finalY += introText.length * 5 + 8;
                 
                 createSectionTitle(finalY, "Indicadores Clave (KPIs)", colors.primary);
-                
                 const expulsadosValidosParaKPI = resumen.grupo1?.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad?.trim() && e.nacionalidad !== 'N/A' && e.nacionalidad !== 'cuenca') ?? [];
-
                 createKPIBox(margin, finalY, "Detenidos por ILE", resumen.ucrif?.detenidosILE ?? 0, colors.ucrif);
                 createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Expulsiones Materializadas", expulsadosValidosParaKPI.length, colors.grupo1);
                 finalY += 25 + 5; 
-                
                 createKPIBox(margin, finalY, "Inspecciones Totales", resumen.ucrif?.inspecciones?.length ?? 0, colors.ucrif);
                 createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Pasajeros Controlados (Puerto)", resumen.puerto?.numericos?.paxChequeadas ?? 0, colors.puerto);
                 finalY += 25 + 5;
@@ -734,8 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     margin: { left: margin, right: margin }
                 };
 
+                // SECCIÓN UCRIF
                 if (resumen.ucrif) {
-                    doc.addPage(); addHeader("UCRIF (Grupos 2, 3 y 4)", colors.ucrif);
+                    doc.addPage(); addHeader("UCRIF (Grupos 2, 3 y 4)", colors.ucrif); finalY = 32;
                     createSectionTitle(finalY, "Indicadores Principales", colors.ucrif);
                     doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Indicador', 'Total']],
                         body: [['Detenciones por ILE', resumen.ucrif.detenidosILE ?? 0], ['Personas filiadas', resumen.ucrif.filiadosVarios ?? 0],
@@ -745,37 +743,94 @@ document.addEventListener('DOMContentLoaded', () => {
                     finalY = doc.autoTable.previous.finalY + 10;
                 }
                 
-                const createSimpleKeyValuePage = (groupKey, cfg, data) => {
-                     if (data && Object.keys(data).length > 0) {
-                        doc.addPage(); const color = colors[groupKey] || colors.secondary;
-                        addHeader(cfg.label, color); createSectionTitle(finalY, "Resumen de Actividad", color);
+                // SECCIÓN GRUPO 1
+                if (resumen.grupo1 && Object.values(resumen.grupo1).some(v => v?.length > 0)) {
+                    doc.addPage(); addHeader("Grupo I - Expulsiones", colors.grupo1); finalY = 32;
+                    const g1 = resumen.grupo1;
+                    const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo?.trim() && d.motivo !== 'N/A');
+                    if(detenidosValidos.length > 0) {
+                        createSectionTitle(finalY, "Detenidos", colors.grupo1);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Motivo', 'Nacionalidad']], body: detenidosValidos.map(d => [d.motivo, d.nacionalidad]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
+                }
+
+                // SECCIÓN PUERTO
+                if (resumen.puerto && (Object.keys(resumen.puerto.numericos ?? {}).length > 0 || resumen.puerto.ferrys?.length > 0)) {
+                    doc.addPage(); addHeader("Grupo Puerto", colors.puerto); finalY = 32;
+                    if (Object.keys(resumen.puerto.numericos ?? {}).length > 0) {
+                        createSectionTitle(finalY, "Resumen Numérico", colors.puerto);
                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Concepto', 'Total']],
-                            body: Object.entries(data).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
-                            headStyles: { ...autoTableConfig.headStyles, fillColor: color, textColor: (groupKey === 'cecorex' ? [0,0,0] : [255,255,255]) }
+                            body: Object.entries(resumen.puerto.numericos).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.puerto }
                         });
                         finalY = doc.autoTable.previous.finalY + 10;
                     }
-                };
+                    if (resumen.puerto.ferrys?.length > 0) {
+                        createSectionTitle(finalY, "Detalle de Ferrys Controlados", colors.puerto);
+                        const totalPasajeros = resumen.puerto.ferrys.reduce((sum, f) => sum + (Number(f.pasajeros) || 0), 0);
+                        const totalVehiculos = resumen.puerto.ferrys.reduce((sum, f) => sum + (Number(f.vehiculos) || 0), 0);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY,
+                            head: [['Fecha', 'Destino', 'Pasajeros', 'Vehículos', 'Incidencias']],
+                            body: resumen.puerto.ferrys.map(f => [UIRenderer.formatoFecha(f.fecha), f.destino, f.pasajeros, f.vehiculos, f.incidencias]),
+                            foot: [['TOTALES', `${resumen.puerto.ferrys.length} Ferrys`, totalPasajeros, totalVehiculos, '']],
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.puerto },
+                            footStyles: { fontStyle: 'bold', fillColor: [230, 230, 230], textColor: [0,0,0] }
+                        });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
+                }
                 
+                // SECCIÓN CECOREX
                 if (resumen.cecorex && (Object.keys(resumen.cecorex.numericos ?? {}).length > 0 || resumen.cecorex.detenidos?.length > 0)) {
-                    doc.addPage(); addHeader("CECOREX", colors.cecorex);
+                    doc.addPage(); addHeader("CECOREX", colors.cecorex); finalY = 32;
                      if (Object.keys(resumen.cecorex.numericos ?? {}).length > 0) {
                         createSectionTitle(finalY, "Resumen Numérico", colors.cecorex);
                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Concepto', 'Total']],
-                            body: Object.entries(resumen.cecorex.numericos).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                            body: Object.entries(resumen.cecorex.numericos).map(([k, v]) => [k.replace(/_/g, " "), v]),
                             headStyles: { ...autoTableConfig.headStyles, fillColor: colors.cecorex, textColor: [0,0,0] }
                         });
                         finalY = doc.autoTable.previous.finalY + 10;
                     }
                     if (resumen.cecorex.detenidos?.length > 0) {
                          createSectionTitle(finalY, "Detalle de Detenidos Registrados", colors.cecorex);
-                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Nombre', 'Nacionalidad', 'Motivo']],
-                            body: resumen.cecorex.detenidos.map(d => [d.nombre || 'N/A', d.nacionalidad || 'N/A', d.motivo || 'N/A']),
+                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Nombre/Cant.', 'Nacionalidad', 'Motivo', 'Observaciones']],
+                            body: resumen.cecorex.detenidos.map(d => [d.nombre, d.nacionalidad, d.motivo, d.observaciones]),
                             headStyles: { ...autoTableConfig.headStyles, fillColor: colors.cecorex, textColor: [0,0,0] }
                          });
                          finalY = doc.autoTable.previous.finalY + 10;
                     }
                 }
+                
+                // SECCIÓN GESTIÓN
+                if (resumen.gestion && Object.keys(resumen.gestion).length > 0) {
+                    doc.addPage(); addHeader(AppConfig.grupos.gestion.label, colors.gestion); finalY = 32;
+                    createSectionTitle(finalY, "Resumen de Actividad", colors.gestion);
+                    doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Concepto', 'Total']],
+                        body: Object.entries(resumen.gestion).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.gestion }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+
+                // SECCIÓN CIE
+                if (resumen.cie && Object.keys(resumen.cie).length > 0) {
+                    doc.addPage(); addHeader(AppConfig.grupos.cie.label, colors.cie); finalY = 32;
+                    createSectionTitle(finalY, "Resumen de Actividad", colors.cie);
+                    doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Concepto', 'Total']],
+                        body: Object.entries(resumen.cie).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.cie }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+
+                // --- PÁGINA DE CIERRE ---
+                doc.addPage();
+                addHeader("Conclusión del Informe", colors.primary);
+                const randomFraseCierre = AppConfig.frasesNarrativas.cierre[Math.floor(Math.random() * AppConfig.frasesNarrativas.cierre.length)];
+                doc.setFont(fonts.body, "normal"); doc.setFontSize(12); doc.setTextColor(...colors.primary);
+                const conclusionText = doc.splitTextToSize(randomFraseCierre, pageW - margin * 2 - 20);
+                doc.text(conclusionText, margin + 10, 40);
 
                 // --- FINALIZACIÓN Y GUARDADO ---
                 addFooter();
