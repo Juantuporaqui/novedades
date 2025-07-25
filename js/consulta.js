@@ -1,8 +1,8 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.3
+// SIREX · Consulta Global / Resúmenes v2.4
 // Autor: Gemini
 // Descripción: Lógica de la aplicación para la consulta y exportación de resúmenes.
-// CORRECCIÓN: Añadida verificación para jsPDF-AutoTable para prevenir el error 'doc.autoTable is not a function'.
+// ACTUALIZACIÓN: El resumen de CECOREX ahora suma todos sus campos y los muestra en 3 columnas.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grupo1: { label: 'Expulsiones', icon: '✈️', color: '#0d6efd', theme: 'primary' },
             puerto: { label: 'Puerto', icon: '⚓', color: '#198754', theme: 'success' },
             cecorex: { label: 'CECOREX', icon: '📡', color: '#ffc107', theme: 'warning' },
-            gestion: { label: 'Gestión', icon: '📋', color: '#6c757d', theme: 'secondary' },
+            gestion: { label: 'Gestión', icon: '�', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
         frasesNarrativas: {
@@ -131,24 +131,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             return res;
         },
-        getCecorexDetalles: async (desde, hasta) => {
-            const snap = await db.collection('cecorex_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-            let res = { gestiones: [], incidencias: [], detenidos: 0 };
-            snap.forEach(doc => {
-                const data = doc.data();
-                if (data.gestiones_cecorex) res.gestiones.push(...data.gestiones_cecorex);
-                if (data.incidencias) res.incidencias.push(...data.incidencias);
-                if (data.detenidos_cc) res.detenidos += data.detenidos_cc.length || 0;
-            });
-            return res;
-        },
         sumarCampos: async (collection, desde, hasta) => {
             const snap = await db.collection(collection).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
             let res = {};
             snap.forEach(doc => {
                 const data = doc.data();
                 Object.keys(data).forEach(key => {
-                    if (key !== 'fecha') res[key] = (res[key] || 0) + (Number(data[key]) || 0);
+                    if (key !== 'fecha' && !isNaN(Number(data[key]))) {
+                         res[key] = (res[key] || 0) + (Number(data[key]) || 0);
+                    }
                 });
             });
             return res;
@@ -252,15 +243,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderizarCecorex(data) {
             const cfg = AppConfig.grupos.cecorex;
-            let html = `<div class="card border-${cfg.theme} mb-4">
+            let html = `<div class="card border-warning mb-4">
                 <div class="card-header bg-warning text-dark"><h4>${cfg.icon} ${cfg.label}</h4></div>
-                <div class="card-body p-4">`;
+                <div class="card-body p-4"><div class="row g-3">`;
 
-            html += `<p>Gestiones: <strong>${data.gestiones?.length || 0}</strong>. Incidencias: <strong>${data.incidencias?.length || 0}</strong>. Detenidos gestionados: <strong>${data.detenidos || 0}</strong>.</p>`;
-            html += this.renderListSection('Gestiones Destacadas', data.gestiones, g => g.gestion || g);
-            html += this.renderListSection('Incidencias', data.incidencias, inc => inc);
+            const fields = Object.entries(data);
+            if (fields.length === 0) {
+                html += `<div class="col-12"><p class="text-muted">No hay datos para mostrar en este periodo.</p></div>`;
+            } else {
+                fields.forEach(([key, value]) => {
+                    html += `
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-between align-items-center border rounded p-2 h-100">
+                                <span class="text-capitalize small">${key.replace(/_/g, " ")}</span>
+                                <span class="badge bg-warning text-dark rounded-pill fs-6">${value}</span>
+                            </div>
+                        </div>`;
+                });
+            }
 
-            html += `</div></div>`;
+            html += `</div></div></div>`;
             return html;
         },
 
@@ -390,9 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 addSection(AppConfig.grupos.puerto, `• Marinos controlados: ${p.ctrlMarinos || 0}\n• Incidencias: ${p.incidencias?.length || 0}\n`);
             }
 
-            // CECOREX
-            if (resumen.cecorex) {
-                const c = resumen.cecorex;
+            // CECOREX (Lógica de exportación sin cambios por ahora)
+            if (resumen.cecorex_export) { // Usamos una clave diferente para no romper la lógica actual
+                const c = resumen.cecorex_export;
                 addSection(AppConfig.grupos.cecorex, `• Gestiones: ${c.gestiones?.length || 0}\n• Detenidos: ${c.detenidos || 0}\n`);
             }
 
@@ -409,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         exportarPDF(resumen, desde, hasta) {
-            // Verificación de seguridad para el plugin autoTable
             if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
                 console.error("Error: El plugin jsPDF-AutoTable no está cargado. Asegúrate de que el script 'jspdf.plugin.autotable.min.js' esté incluido en tu archivo HTML después de 'jspdf.umd.min.js'.");
                 alert("Error al generar PDF: El plugin de tablas no está cargado.");
@@ -424,7 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageW = doc.internal.pageSize.getWidth();
             const margin = 15;
 
-            // --- CABECERA DEL DOCUMENTO ---
             doc.setFont("helvetica", "bold");
             doc.setFontSize(18);
             doc.text("SIREX - Resumen Operativo Global", pageW / 2, finalY, { align: "center" });
@@ -450,7 +450,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 finalY += 10;
             };
 
-            // --- SECCIONES DEL PDF ---
             if (resumen.ucrif) {
                 addSection(AppConfig.grupos.ucrif, () => {
                     const u = resumen.ucrif;
@@ -488,7 +487,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
-            // --- PIE DE PÁGINA ---
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -523,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ucrif: QueryManager.getUcrifNovedades(desde, hasta),
                 grupo1: QueryManager.getGrupo1Detalles(desde, hasta),
                 puerto: QueryManager.getPuertoDetalles(desde, hasta),
-                cecorex: QueryManager.getCecorexDetalles(desde, hasta),
+                cecorex: QueryManager.sumarCampos('cecorex_registros', desde, hasta), // <-- CAMBIO AQUÍ
                 gestion: QueryManager.sumarCampos('gestion_registros', desde, hasta),
                 cie: QueryManager.getCIE(desde, hasta),
             };
