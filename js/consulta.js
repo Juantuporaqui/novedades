@@ -1,16 +1,13 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.5
+// SIREX · Consulta Global / Resúmenes v3.7
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con lógica de consulta CECOREX y generación de PDF restaurada y corregida.
-// MEJORAS CLAVE (v3.5):
-// 1. **Corrección Definitiva de CECOREX**: Gracias al JSON proporcionado, la función de
-//    consulta ahora lee el campo `detenidos_cc` y normaliza correctamente los datos
-//    de los detenidos, solucionando el problema de forma definitiva.
-// 2. **Consulta a Múltiples Colecciones**: Se ha añadido la capacidad de consultar
-//    en `cecorex_registros` y `cecorex` para no omitir ningún dato.
-// 3. **Generación de PDF Restaurada**: Se ha eliminado la optimización que causaba
-//    problemas y se ha restaurado una lógica de generación de PDF más explícita y robusta,
-//    asegurando que todos los grupos con datos se incluyan en el informe.
+// Descripción: Versión con agrupación de detenidos de CECOREX en la vista global.
+// MEJORAS CLAVE (v3.7):
+// 1. **Agrupación de Detenidos CECOREX**: En la vista HTML principal, los detenidos
+//    de CECOREX ahora se muestran agrupados por motivo y nacionalidad, sumando
+//    las cantidades para una visualización más clara y concisa.
+// 2. **Sin Cambios en PDF**: Atendiendo a la solicitud, la exportación a PDF de
+//    CECOREX mantiene el formato detallado sin agrupar.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grupo1: { label: 'Grupo I - Expulsiones', icon: '✈️', color: '#0d6efd', theme: 'primary' },
             puerto: { label: 'Grupo Puerto', icon: '⚓', color: '#198754', theme: 'success' },
             cecorex: { label: 'CECOREX', icon: '📡', color: '#ffc107', theme: 'warning' },
-            gestion: { label: 'Grupo de Gestión', icon: '📋', color: '#6c757d', theme: 'secondary' },
+            gestion: { label: 'Grupo de Gestión', icon: '�', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
         frasesNarrativas: {
@@ -185,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
 
-        // --- [CORRECCIÓN CLAVE] --- Función ajustada a la estructura de datos real de CECOREX.
         getCecorexDetalles: async (desde, hasta) => {
             const collectionsToQuery = ['cecorex_registros', 'cecorex'];
             let res = { numericos: {}, detenidos: [] };
@@ -195,17 +191,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 snap.forEach(doc => {
                     const data = doc.data();
                     
-                    // Suma campos que son numéricos o strings que representan números
                     Object.keys(data).forEach(key => {
                         if (key !== 'detenidos_cc' && !Array.isArray(data[key])) {
                             const numericValue = Number(data[key]);
                             if (!isNaN(numericValue)) {
-                                res.numericos[key] = (res.numericos[key] || 0) + numericValue;
+                                const cleanKey = key.replace(/_/g, " ").replace(/\./g, "").trim();
+                                res.numericos[cleanKey] = (res.numericos[cleanKey] || 0) + numericValue;
                             }
                         }
                     });
 
-                    // Procesa el array de detenidos desde el campo `detenidos_cc`
                     if (data.detenidos_cc && Array.isArray(data.detenidos_cc)) {
                         const detenidosNormalizados = data.detenidos_cc.map(d => ({
                             nombre: d.detenidos_cc || 'N/A',
@@ -282,6 +277,15 @@ document.addEventListener('DOMContentLoaded', () => {
             html += this.renderListSectionWithCheckboxes('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
             html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
             
+            html += this.renderListSection('Colaboraciones con otras unidades', data.colaboraciones, c => {
+                if (typeof c === 'object' && c.colaboracionDesc) {
+                    return `${c.colaboracionDesc} con <strong>${c.colaboracionUnidad || 'unidad no especificada'}</strong>. Resultado: ${c.colaboracionResultado || 'N/D'}`;
+                } else if (typeof c === 'string') {
+                    return c;
+                }
+                return 'Colaboración no especificada.';
+            });
+
             if (data.observaciones?.filter(o => o && o.trim()).length > 0) {
                 html += `<div class="alert alert-light mt-3"><strong>Observaciones Relevantes de los Grupos:</strong><br>${data.observaciones.filter(o => o && o.trim()).map(o => `<div><small>- ${o}</small></div>`).join("")}</div>`;
             }
@@ -356,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return html;
         },
 
+        // --- [MEJORA] --- Lógica de renderizado de detenidos CECOREX modificada para agrupar resultados.
         renderizarCecorex(data) {
             const cfg = AppConfig.grupos.cecorex;
             let html = `<div class="card border-${cfg.theme} mb-4 shadow-sm">
@@ -368,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `
                         <div class="col-sm-6 col-md-4">
                             <div class="d-flex justify-content-between align-items-center border rounded p-2 h-100 bg-light">
-                                <span class="small me-2">${key.replace(/_/g, " ")}</span>
+                                <span class="text-capitalize small me-2">${key}</span>
                                 <span class="badge bg-${cfg.theme} text-dark rounded-pill fs-6">${value}</span>
                             </div>
                         </div>`;
@@ -377,8 +382,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.detenidos && data.detenidos.length > 0) {
-                html += this.renderListSection('Detenidos Registrados', data.detenidos, d => {
-                    return `<strong>${d.nombre || 'Nombre N/A'}</strong> (${d.nacionalidad || 'Nac. N/A'}) por motivo de <strong>${d.motivo || 'Motivo N/A'}</strong>`;
+                const agrupados = data.detenidos.reduce((acc, d) => {
+                    const motivo = d.motivo || 'Sin motivo';
+                    const nacionalidad = d.nacionalidad || 'Sin nacionalidad';
+                    const key = `${motivo}|${nacionalidad}`;
+                    
+                    if (!acc[key]) {
+                        acc[key] = {
+                            motivo: motivo,
+                            nacionalidad: nacionalidad,
+                            count: 0
+                        };
+                    }
+                    acc[key].count += Number(d.nombre) || 0;
+                    return acc;
+                }, {});
+
+                const detenidosAgrupados = Object.values(agrupados);
+                
+                html += this.renderListSection('Detenidos Registrados', detenidosAgrupados, item => {
+                    return `<strong>${item.count}</strong> detenido/s por <strong>${item.motivo}</strong> de <strong>${item.nacionalidad}</strong>`;
                 });
             }
             
@@ -587,7 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return out;
         },
 
-        // --- [RESTAURADO] --- Lógica de exportación a PDF restaurada a una versión más explícita y completa.
         exportarPDF(resumen, desde, hasta) {
             try {
                 if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
@@ -741,6 +763,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
                     });
                     finalY = doc.autoTable.previous.finalY + 10;
+                    
+                    if (resumen.ucrif.colaboraciones?.length > 0) {
+                        createSectionTitle(finalY, "Colaboraciones con otras unidades", colors.ucrif);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY,
+                            head: [['Descripción', 'Unidad', 'Resultado']],
+                            body: resumen.ucrif.colaboraciones.map(c => {
+                                if (typeof c === 'object' && c.colaboracionDesc) {
+                                    return [c.colaboracionDesc, c.colaboracionUnidad || 'N/D', c.colaboracionResultado || 'N/D'];
+                                } else if (typeof c === 'string') {
+                                    return [c, '', ''];
+                                }
+                                return ['Dato no válido', '', ''];
+                            }),
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
+                        });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
                 }
                 
                 // SECCIÓN GRUPO 1
@@ -748,9 +787,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.addPage(); addHeader("Grupo I - Expulsiones", colors.grupo1); finalY = 32;
                     const g1 = resumen.grupo1;
                     const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo?.trim() && d.motivo !== 'N/A');
+                    const expulsadosValidos = g1.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad?.trim() && e.nacionalidad !== 'N/A');
+                    const frustradasValidas = g1.frustradas.map(UIRenderer.normalizers.frustrada).filter(f => f.nombre && f.nombre.trim() && f.nombre !== 'N/A');
+                    const fletadosValidos = g1.fletados.map(UIRenderer.normalizers.fletado).filter(f => f.destino && f.destino.trim() && f.destino !== 'N/A');
+
                     if(detenidosValidos.length > 0) {
                         createSectionTitle(finalY, "Detenidos", colors.grupo1);
                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Motivo', 'Nacionalidad']], body: detenidosValidos.map(d => [d.motivo, d.nacionalidad]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
+                    if(expulsadosValidos.length > 0) {
+                        createSectionTitle(finalY, "Expulsiones Materializadas", colors.grupo1);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Nombre', 'Nacionalidad']], body: expulsadosValidos.map(e => [e.nombre, e.nacionalidad]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
+                    if(frustradasValidas.length > 0) {
+                        createSectionTitle(finalY, "Expulsiones Frustradas", colors.grupo1);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Nombre', 'Nacionalidad', 'Motivo']], body: frustradasValidas.map(f => [f.nombre, f.nacionalidad, f.motivo]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
+                        finalY = doc.autoTable.previous.finalY + 10;
+                    }
+                    if(fletadosValidos.length > 0) {
+                        createSectionTitle(finalY, "Vuelos Fletados", colors.grupo1);
+                        doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Destino', 'PAX']], body: fletadosValidos.map(f => [f.destino, f.pax]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
                         finalY = doc.autoTable.previous.finalY + 10;
                     }
                 }
@@ -787,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      if (Object.keys(resumen.cecorex.numericos ?? {}).length > 0) {
                         createSectionTitle(finalY, "Resumen Numérico", colors.cecorex);
                         doc.autoTable({ ...autoTableConfig, startY: finalY, head: [['Concepto', 'Total']],
-                            body: Object.entries(resumen.cecorex.numericos).map(([k, v]) => [k.replace(/_/g, " "), v]),
+                            body: Object.entries(resumen.cecorex.numericos).map(([k, v]) => [k, v]),
                             headStyles: { ...autoTableConfig.headStyles, fillColor: colors.cecorex, textColor: [0,0,0] }
                         });
                         finalY = doc.autoTable.previous.finalY + 10;
