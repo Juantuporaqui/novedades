@@ -416,305 +416,407 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 7. LÓGICA DE EXPORTACIÓN (ExportManager) ---
-    const ExportManager = {
-        generarTextoWhatsapp(resumen, desde, hasta) {
-            const f = UIRenderer.formatoFecha;
-            let out = `*🛡️ SIREX - RESUMEN OPERATIVO*\n*Periodo:* ${f(desde)} al ${f(hasta)}\n`;
-            const addSection = (cfg, content) => { if (content && content.trim()) out += `\n*${cfg.icon} ${cfg.label.toUpperCase()}*\n${content}`; };
+const ExportManager = {
+    generarTextoWhatsapp(resumen, desde, hasta) {
+        // Esta función se mantiene igual, ya que su propósito es diferente y funcional.
+        const f = UIRenderer.formatoFecha;
+        let out = `*🛡️ SIREX - RESUMEN OPERATIVO*\n*Periodo:* ${f(desde)} al ${f(hasta)}\n`;
+        const addSection = (cfg, content) => { if (content && content.trim()) out += `\n*${cfg.icon} ${cfg.label.toUpperCase()}*\n${content}`; };
 
-            if (resumen.ucrif) {
-                const u = resumen.ucrif;
-                let content = `Las novedades UCRIF son las siguientes:\n\n`;
-                content += `*${u.detenidosILE ?? 0}* detenidos por ILE, *${u.filiadosVarios ?? 0}* identificados, *${u.traslados ?? 0}* traslados y *${u.citadosCecorex ?? 0}* citados para CECOREX.\n`;
-                
-                const detenidosAgrupados = u.detenidosDelito.reduce((acc, d) => {
-                    const key = `${d.motivo} (${d.nacionalidad})`;
-                    acc[key] = (acc[key] || 0) + 1;
-                    return acc;
-                }, {});
-
-                if (Object.keys(detenidosAgrupados).length > 0) {
-                    content += `\n`;
-                    for (const desc in detenidosAgrupados) {
-                        content += `• ${detenidosAgrupados[desc]} detenido/s por _${desc}_\n`;
-                    }
-                }
-                
-                if (u.inspecciones?.length > 0) {
-                    content += `\n`;
-                    u.inspecciones.forEach(i => {
-                        const inspText = UIRenderer.formatters.inspeccion(i)
-                            .replace(/<strong>/g, '*')
-                            .replace(/<\/strong>/g, '*')
-                            .replace(/\[.*?\]\s/,''); // Quita la fecha para ser más conciso
-                        content += `• Inspección en ${inspText}\n`;
-                    });
-                }
-                
-                if (u.colaboraciones?.length > 0) {
-                    content += `\n*Colaboraciones:*\n`;
-                    u.colaboraciones.forEach(c => {
-                         if (typeof c === 'object' && c.colaboracionDesc) {
-                             content += `• ${c.colaboracionDesc} con ${c.colaboracionUnidad || 'unidad no especificada'}. Resultado: ${c.colaboracionResultado || 'N/D'}\n`;
-                         } else if (typeof c === 'string') {
-                             content += `• ${c}\n`;
-                         }
-                    });
-                }
-
-                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked'))
-                    .map(cb => u.dispositivos[parseInt(cb.value)]);
-
-                if (selectedDispositivos.length > 0) {
-                    content += `\n*En el marco de las investigaciones de UCRIF destacan los siguientes avances:*\n`;
-                    selectedDispositivos.forEach(d => {
-                         const dispText = UIRenderer.formatters.dispositivo(d).replace(/<strong>|<\/strong>/g, '').replace(/\[.*?\]\s/,'');
-                         content += `• ${dispText}\n`;
-                    });
-                }
-
-                addSection(AppConfig.grupos.ucrif, content);
-            }
-
-            if (resumen.grupo1) {
-                const g1 = resumen.grupo1;
-                let content = '';
-                const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo && d.motivo.trim() && d.motivo !== 'N/A');
-                if(detenidosValidos.length > 0) content += `• Detenidos: ${detenidosValidos.length}\n`;
-                const expulsadosValidos = g1.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad && e.nacionalidad.trim() && e.nacionalidad !== 'N/A');
-                if(expulsadosValidos.length > 0) content += `• Expulsados: ${expulsadosValidos.length}\n`;
-                const frustradasValidas = g1.frustradas.map(UIRenderer.normalizers.frustrada).filter(f => f.nombre && f.nombre.trim() && f.nombre !== 'N/A');
-                if(frustradasValidas.length > 0) content += `• Frustradas: ${frustradasValidas.length}\n`;
-                addSection(AppConfig.grupos.grupo1, content);
-            }
-             if (resumen.puerto?.numericos) {
-                const p = resumen.puerto.numericos;
-                addSection(AppConfig.grupos.puerto, `• Pasajeros Chequeados: ${p.paxChequeadas ?? 0}\n• Vehículos Chequeados: ${p.vehChequeados ?? 0}\n• Denegaciones: ${p.denegaciones ?? 0}`);
-            }
-            const addKeyValueSection = (cfg, data) => { if (data && Object.keys(data).length > 0) addSection(cfg, Object.entries(data).map(([k,v]) => `• ${k.replace(/_/g, " ")}: ${v}`).join('\n')); };
-            addKeyValueSection(AppConfig.grupos.cecorex, resumen.cecorex);
-            addKeyValueSection(AppConfig.grupos.gestion, resumen.gestion);
-            addKeyValueSection(AppConfig.grupos.cie, resumen.cie);
-            out += `\n_Parte cerrado y generado automáticamente por SIREX._`;
-            return out;
-        },
-
-       exportarPDF(resumen, desde, hasta) {
-    try {
-        if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
-            alert("Error al generar PDF: El plugin de tablas no está disponible."); return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-        const margin = 18;
-        let finalY = margin;
-
-        // --- PORTADA ---
-        doc.setFillColor(17,119,187);
-        doc.rect(0, 0, pageW, pageH, 'F');
-        doc.setTextColor(255,255,255);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(27);
-        doc.text("INFORME OPERATIVO GLOBAL SIREX", pageW/2, 54, { align: "center" });
-        doc.setFontSize(14); doc.setFont("helvetica", "normal");
-        doc.text("Brigada Provincial de Extranjería y Fronteras · Valencia", pageW/2, 68, { align: "center" });
-        doc.setFontSize(11);
-        doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW/2, 77, { align: "center" });
-
-        // LOGO NUEVO
-        const logoURL = 'https://i.imgur.com/3ZWSJnc.png'; // Cambia por la ruta local si lo descargas
-        try {
-            doc.addImage(logoURL, 'PNG', pageW/2-30, 87, 60, 60, '', 'FAST');
-        } catch(e) {}
-
-        doc.setFontSize(13); doc.text('Expediente generado automáticamente por SIREX', pageW/2, 156, { align: "center" });
-
-        // ÍNDICE simplificado y visual
-        doc.setFontSize(12); doc.setTextColor(235,235,235);
-        doc.text('Índice', pageW/2, 178, { align: 'center' });
-        doc.setFontSize(10);
-        let yIdx = 186;
-        const indices = [
-            "Resumen Ejecutivo",
-            "Indicadores UCRIF",
-            "Actuaciones detalladas",
-            "Resumen de otros grupos",
-            "Conclusión"
-        ];
-        indices.forEach((txt,i)=>{ doc.text(`${i+1}. ${txt}`, pageW/2, yIdx, { align: "center" }); yIdx+=7; });
-        doc.addPage();
-
-        // --- FUNCIONES AUXILIARES PDF ---
-        const addHeader = (seccion) => {
-            doc.setFillColor(17,119,187);
-            doc.rect(0, 0, pageW, 20, 'F');
-            doc.setTextColor(255,255,255);
-            doc.setFont("helvetica", "bold"); doc.setFontSize(16);
-            doc.text(`SIREX · ${seccion || 'Resumen Operativo'}`, margin, 14);
-            doc.setFontSize(10); doc.setFont("helvetica", "normal");
-            doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW - margin, 14, { align: "right" });
-            doc.setTextColor(0,0,0);
-            finalY = 28;
-        };
-        const addFooter = () => {
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 2; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setLineWidth(0.5);
-                doc.setDrawColor(220, 220, 220);
-                doc.line(margin, pageH-14, pageW - margin, pageH-14);
-                doc.setFontSize(9); doc.setTextColor(80,80,80);
-                doc.text(`Página ${i-1} de ${pageCount-1}`, pageW/2, pageH-7, { align: 'center' });
-                try {
-                    doc.addImage(logoURL, 'PNG', pageW-margin-10, pageH-12, 8, 8);
-                } catch(e) {}
-                doc.setFontSize(8);
-                doc.text(`Informe SIREX generado el ${new Date().toLocaleString('es-ES')}`, margin, pageH-7);
-                doc.setTextColor(0,0,0);
-            }
-        };
-
-        // --- 1. Resumen Ejecutivo ---
-        addHeader('Resumen Ejecutivo');
-        doc.setFont("helvetica", "normal"); doc.setFontSize(12);
-        doc.setTextColor(30,35,55);
-        const introText = doc.splitTextToSize(
-            "En este informe se detalla la operativa policial desarrollada por la Brigada Provincial de Extranjería y Fronteras de Valencia en el periodo seleccionado. Se resumen indicadores clave y actuaciones agrupadas de forma ejecutiva y clara.",
-            pageW - margin * 2
-        );
-        doc.text(introText, margin, finalY+3);
-        finalY += introText.length * 5 + 10;
-        doc.setTextColor(0,0,0);
-
-        // --- 2. Indicadores UCRIF (en la misma página si cabe) ---
-        if (resumen.ucrif) {
-            doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-            doc.setTextColor(17,119,187);
-            doc.text("Indicadores clave UCRIF", margin, finalY+3);
-            finalY += 8;
-            const u = resumen.ucrif;
-            const ucrifStats = [
-                ["Detenidos ILE", String(u.detenidosILE ?? 0)],
-                ["Personas Filiadas", String(u.filiadosVarios ?? 0)],
-                ["Traslados", String(u.traslados ?? 0)],
-                ["Citados CECOREX", String(u.citadosCecorex ?? 0)]
-            ];
-            doc.autoTable({
-                startY: finalY,
-                head: [["Indicador", "Total"]],
-                body: ucrifStats,
-                theme: 'striped',
-                styles: { fillColor: [240,248,255], textColor: 20, minCellHeight: 9, fontSize: 11, fontStyle: 'bold' },
-                headStyles: { fillColor: [0, 164, 204], textColor: 255, fontStyle: "bold" },
-                margin: { left: margin, right: margin }
-            });
-            finalY = doc.autoTable.previous.finalY + 6;
-        }
-
-        // --- 3. Actuaciones Detalladas UCRIF (agrupadas, mismo color de cabecera, sin saltar de página salvo que sea necesario) ---
         if (resumen.ucrif) {
             const u = resumen.ucrif;
-            const addSubSectionTable = (title, head, body, color) => {
-                if (!body || body.length === 0) return;
-                doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-                doc.setTextColor(...color); doc.text(title, margin, finalY+2);
-                finalY += 6;
-                doc.autoTable({
-                    startY: finalY, head: head, body: body, theme: 'grid',
-                    styles: { fontSize: 10, minCellHeight: 8 },
-                    headStyles: { fillColor: color, textColor: 255 },
-                    margin: { left: margin, right: margin }
+            let content = `Las novedades UCRIF son las siguientes:\n\n`;
+            content += `*${u.detenidosILE ?? 0}* detenidos por ILE, *${u.filiadosVarios ?? 0}* identificados, *${u.traslados ?? 0}* traslados y *${u.citadosCecorex ?? 0}* citados para CECOREX.\n`;
+            
+            const detenidosAgrupados = u.detenidosDelito.reduce((acc, d) => {
+                const key = `${d.motivo} (${d.nacionalidad})`;
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            if (Object.keys(detenidosAgrupados).length > 0) {
+                content += `\n`;
+                for (const desc in detenidosAgrupados) {
+                    content += `• ${detenidosAgrupados[desc]} detenido/s por _${desc}_\n`;
+                }
+            }
+            
+            if (u.inspecciones?.length > 0) {
+                content += `\n`;
+                u.inspecciones.forEach(i => {
+                    const inspText = UIRenderer.formatters.inspeccion(i)
+                        .replace(/<strong>/g, '*')
+                        .replace(/<\/strong>/g, '*')
+                        .replace(/\[.*?\]\s/,''); // Quita la fecha para ser más conciso
+                    content += `• Inspección en ${inspText}\n`;
                 });
-                finalY = doc.autoTable.previous.finalY + 8;
-            };
-            // Inspecciones y controles
-            addSubSectionTable(
-                "Inspecciones y controles:",
-                [["Fecha", "Lugar", "Tipo", "Resultado"]],
-                u.inspecciones.map(i => [
-                    UIRenderer.formatoFecha(i.fecha), 
-                    i.lugar || 'N/D', 
-                    i.tipo || 'N/D', 
-                    i.resultado || 'N/D'
-                ]), 
-                [17,119,187]
-            );
-            // Nacionalidades filiadas
-            addSubSectionTable(
-                "Nacionalidades filiadas:",
-                [["Nacionalidad", "Total"]],
-                Object.entries(u.nacionalidadesFiliados || {}), 
-                [17,119,187]
-            );
-            // Dispositivos operativos seleccionados
+            }
+            
+            if (u.colaboraciones?.length > 0) {
+                content += `\n*Colaboraciones:*\n`;
+                u.colaboraciones.forEach(c => {
+                    if (typeof c === 'object' && c.colaboracionDesc) {
+                        content += `• ${c.colaboracionDesc} con ${c.colaboracionUnidad || 'unidad no especificada'}. Resultado: ${c.colaboracionResultado || 'N/D'}\n`;
+                    } else if (typeof c === 'string') {
+                        content += `• ${c}\n`;
+                    }
+                });
+            }
+
             const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked'))
                 .map(cb => u.dispositivos[parseInt(cb.value)]);
-            addSubSectionTable(
-                "Dispositivos Operativos Especiales:",
-                [["Fecha", "Operación", "Descripción"]],
-                selectedDispositivos.map(d => [
-                    UIRenderer.formatoFecha(d.fecha), 
-                    d.operacion || 'N/D', 
-                    d.descripcion || 'N/D'
-                ]), 
-                [17,119,187]
-            );
-            // Detenidos por otros delitos
-            addSubSectionTable(
-                "Detenidos por otros delitos:",
-                [["Fecha", "Detenido", "Nacionalidad", "Motivo"]],
-                u.detenidosDelito.map(d => [
-                    UIRenderer.formatoFecha(d.fecha), 
-                    d.descripcion, 
-                    d.nacionalidad, 
-                    d.motivo
-                ]), 
-                [17,119,187]
-            );
+
+            if (selectedDispositivos.length > 0) {
+                content += `\n*En el marco de las investigaciones de UCRIF destacan los siguientes avances:*\n`;
+                selectedDispositivos.forEach(d => {
+                    const dispText = UIRenderer.formatters.dispositivo(d).replace(/<strong>|<\/strong>/g, '').replace(/\[.*?\]\s/,'');
+                    content += `• ${dispText}\n`;
+                });
+            }
+
+            addSection(AppConfig.grupos.ucrif, content);
         }
 
-        // --- 4. Otros Grupos (todas las tablas en una o dos páginas máximo) ---
-        doc.addPage();
-        addHeader('Resumen otros grupos');
-        const printSection = (nombre, colorRGB, datos) => {
-            if (!datos || Object.keys(datos).length === 0) return;
-            doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-            doc.setTextColor(...colorRGB);
-            doc.text(nombre, margin, finalY+3);
-            finalY += 6;
-            const arr = Object.entries(datos).map(([k,v]) => [k.replace(/_/g,' ').toUpperCase(), String(v)]);
-            doc.autoTable({ startY: finalY, head: [["Clave", "Valor"]], body: arr, theme: 'striped', headStyles: { fillColor: colorRGB, textColor: 255 }, styles: { fontSize: 10, minCellHeight: 8 }, margin: { left: margin, right: margin } });
-            finalY = doc.autoTable.previous.finalY + 5;
-        };
-        printSection('Grupo 1 - Expulsiones', [13,110,253], resumen.grupo1);
-        printSection('Puerto', [25,135,84], resumen.puerto?.numericos);
-        printSection('CECOREX', [255,193,7], resumen.cecorex);
-        printSection('Gestión', [108,117,125], resumen.gestion);
-        printSection('CIE', [220,53,69], resumen.cie);
+        if (resumen.grupo1) {
+            const g1 = resumen.grupo1;
+            let content = '';
+            const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo && d.motivo.trim() && d.motivo !== 'N/A');
+            if(detenidosValidos.length > 0) content += `• Detenidos: ${detenidosValidos.length}\n`;
+            const expulsadosValidos = g1.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad && e.nacionalidad.trim() && e.nacionalidad !== 'N/A');
+            if(expulsadosValidos.length > 0) content += `• Expulsados: ${expulsadosValidos.length}\n`;
+            const frustradasValidas = g1.frustradas.map(UIRenderer.normalizers.frustrada).filter(f => f.nombre && f.nombre.trim() && f.nombre !== 'N/A');
+            if(frustradasValidas.length > 0) content += `• Frustradas: ${frustradasValidas.length}\n`;
+            addSection(AppConfig.grupos.grupo1, content);
+        }
+         if (resumen.puerto?.numericos) {
+            const p = resumen.puerto.numericos;
+            addSection(AppConfig.grupos.puerto, `• Pasajeros Chequeados: ${p.paxChequeadas ?? 0}\n• Vehículos Chequeados: ${p.vehChequeados ?? 0}\n• Denegaciones: ${p.denegaciones ?? 0}`);
+        }
+        const addKeyValueSection = (cfg, data) => { if (data && Object.keys(data).length > 0) addSection(cfg, Object.entries(data).map(([k,v]) => `• ${k.replace(/_/g, " ")}: ${v}`).join('\n')); };
+        addKeyValueSection(AppConfig.grupos.cecorex, resumen.cecorex);
+        addKeyValueSection(AppConfig.grupos.gestion, resumen.gestion);
+        addKeyValueSection(AppConfig.grupos.cie, resumen.cie);
+        out += `\n_Parte cerrado y generado automáticamente por SIREX._`;
+        return out;
+    },
 
-        // --- 5. Conclusión ---
-        doc.addPage();
-        addHeader('Conclusión');
-        doc.setFont("helvetica", "bold"); doc.setFontSize(16);
-        doc.setTextColor(40,58,90);
-        doc.text("Conclusión del Informe", pageW/2, 48, { align: "center" });
-        doc.setFont("helvetica", "normal"); doc.setFontSize(12);
-        doc.setTextColor(30,30,30);
-        const cierreText = doc.splitTextToSize(
-            "El presente informe se cierra sin incidencias extraordinarias, reflejando la eficacia y profesionalidad en las actuaciones policiales del periodo. Parte cerrado y generado por SIREX.",
-            pageW - margin * 2
-        );
-        doc.text(cierreText, margin, 66);
+    exportarPDF(resumen, desde, hasta) {
+        try {
+            if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
+                alert("Error fatal: El plugin 'jsPDF-AutoTable' no se ha cargado correctamente.");
+                return;
+            }
 
-        addFooter();
-        doc.save(`SIREX_Resumen_${desde}_a_${hasta}.pdf`);
-    } catch (error) {
-        console.error("Error al generar el PDF:", error);
-        alert("Se produjo un error al intentar generar el PDF. Por favor, revisa la consola para más detalles.");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let finalY = 0;
+            const logoURL = 'https://i.imgur.com/7dlqR3j.png'; // Logo corporativo
+
+            // --- PALETA DE COLORES Y FUENTES ---
+            const colors = {
+                primary: [40, 58, 90],   // Azul oscuro para textos principales
+                secondary: [108, 117, 125], // Gris para textos secundarios
+                background: [248, 249, 250], // Gris claro para fondos
+                ucrif: [13, 202, 240],   // Cian
+                grupo1: [13, 110, 253],  // Azul brillante
+                puerto: [25, 135, 84],   // Verde
+                cecorex: [255, 193, 7],  // Amarillo
+                gestion: [108, 117, 125], // Gris
+                cie: [220, 53, 69]       // Rojo
+            };
+            const fonts = {
+                title: "helvetica",
+                body: "helvetica"
+            };
+
+            // --- FUNCIONES AUXILIARES DE DISEÑO ---
+
+            const addHeader = (title, color) => {
+                doc.setFillColor(...color);
+                doc.rect(0, 0, pageW, 22, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(fonts.title, "bold");
+                doc.setFontSize(14);
+                doc.text(title, margin, 15);
+                
+                doc.setFont(fonts.body, "normal");
+                doc.setFontSize(9);
+                doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW - margin, 15, { align: "right" });
+                finalY = 32;
+            };
+
+            const addFooter = () => {
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    if (i === 1) continue; // No footer on cover page
+
+                    doc.setLineWidth(0.2);
+                    doc.setDrawColor(...colors.secondary);
+                    doc.line(margin, pageH - 15, pageW - margin, pageH - 15);
+                    
+                    doc.setFont(fonts.body, "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(...colors.secondary);
+                    doc.text(`Página ${i - 1} de ${pageCount - 1}`, pageW / 2, pageH - 10, { align: 'center' });
+                    doc.text(`Informe confidencial · Generado por SIREX el ${new Date().toLocaleDateString('es-ES')}`, margin, pageH - 10);
+                    try {
+                         doc.addImage(logoURL, 'PNG', pageW - margin - 8, pageH - 13.5, 8, 8);
+                    } catch(e) { console.error("Error al añadir el logo al pie de página."); }
+                }
+            };
+
+            const checkPageBreak = (currentY) => {
+                if (currentY > pageH - 25) { // Si el contenido se acerca al footer
+                    doc.addPage();
+                    return true;
+                }
+                return false;
+            };
+            
+            const createSectionTitle = (y, title, color) => {
+                finalY = y;
+                if (checkPageBreak(finalY)) {
+                    addHeader("Continuación", colors.primary);
+                    finalY = 32;
+                }
+                doc.setFont(fonts.title, "bold");
+                doc.setFontSize(13);
+                doc.setTextColor(...color);
+                doc.text(title, margin, finalY);
+                doc.setDrawColor(...color);
+                doc.setLineWidth(0.5);
+                doc.line(margin, finalY + 2, pageW - margin, finalY + 2);
+                finalY += 10;
+            };
+            
+             const createKPIBox = (x, y, label, value, color) => {
+                const boxWidth = (pageW - margin * 3) / 2;
+                const boxHeight = 25;
+                doc.setFillColor(...color);
+                doc.roundedRect(x, y, boxWidth, boxHeight, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(fonts.body, "bold");
+                doc.setFontSize(16);
+                doc.text(String(value), x + boxWidth - 10, y + 16, { align: "right" });
+                doc.setFont(fonts.body, "normal");
+                doc.setFontSize(10);
+                doc.text(label, x + 10, y + 16);
+            };
+
+            // --- 1. PORTADA ---
+            doc.setFillColor(...colors.primary);
+            doc.rect(0, 0, pageW, pageH, 'F');
+            try {
+                doc.addImage(logoURL, 'PNG', pageW / 2 - 25, 40, 50, 50);
+            } catch (e) { console.error("Error al añadir el logo a la portada."); }
+            doc.setTextColor(255, 255, 255);
+            doc.setFont(fonts.title, "bold");
+            doc.setFontSize(26);
+            doc.text("INFORME OPERATIVO GLOBAL", pageW / 2, 120, { align: 'center' });
+            doc.setFontSize(14);
+            doc.setFont(fonts.body, "normal");
+            doc.text("BRIGADA PROVINCIAL DE EXTRANJERÍA Y FRONTERAS", pageW / 2, 135, { align: 'center' });
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(255, 255, 255);
+            doc.line(margin, 145, pageW - margin, 145);
+            doc.setFontSize(12);
+            doc.text(`Periodo del ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, 155, { align: 'center' });
+            doc.setFontSize(10);
+            doc.setTextColor(180, 180, 180);
+            doc.text("Generado por el Sistema de Informes de Extranjería (SIREX)", pageW / 2, pageH - 30, { align: 'center' });
+            
+            // --- 2. RESUMEN EJECUTIVO (KPIs) ---
+            doc.addPage();
+            addHeader("Resumen Ejecutivo", colors.primary);
+            
+            const randomFraseApertura = AppConfig.frasesNarrativas.apertura[Math.floor(Math.random() * AppConfig.frasesNarrativas.apertura.length)];
+            doc.setFont(fonts.body, "italic");
+            doc.setFontSize(11);
+            doc.setTextColor(...colors.secondary);
+            const introText = doc.splitTextToSize(randomFraseApertura, pageW - margin * 2);
+            doc.text(introText, margin, finalY);
+            finalY += introText.length * 5 + 8;
+            
+            createSectionTitle(finalY, "Indicadores Clave (KPIs)", colors.primary);
+            
+            // Fila 1 de KPIs
+            createKPIBox(margin, finalY, "Detenidos por ILE", resumen.ucrif?.detenidosILE ?? 0, colors.ucrif);
+            createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Expulsiones Materializadas", resumen.grupo1?.expulsados?.length ?? 0, colors.grupo1);
+            finalY += 25 + 5; // alto de caja + espacio
+            
+            // Fila 2 de KPIs
+            createKPIBox(margin, finalY, "Inspecciones Totales", resumen.ucrif?.inspecciones?.length ?? 0, colors.ucrif);
+            createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Pasajeros Controlados (Puerto)", resumen.puerto?.numericos?.paxChequeadas ?? 0, colors.puerto);
+            finalY += 25 + 5;
+            
+            // Gráfico de Nacionalidades
+            if (resumen.ucrif && Object.keys(resumen.ucrif.nacionalidadesFiliados).length > 0) {
+                 createSectionTitle(finalY, "Top 5 Nacionalidades en Filiaciones", colors.primary);
+                 const nacionalidades = Object.entries(resumen.ucrif.nacionalidadesFiliados).sort(([,a],[,b]) => b - a).slice(0, 5);
+                 const maxCount = nacionalidades.length > 0 ? nacionalidades[0][1] : 0;
+                 const barWidth = pageW - margin * 2 - 30; // Ancho máximo de la barra
+                 
+                 nacionalidades.forEach(([nac, count]) => {
+                     doc.setFontSize(10);
+                     doc.setTextColor(...colors.primary);
+                     doc.text(nac, margin, finalY);
+                     
+                     const currentBarWidth = maxCount > 0 ? (count / maxCount) * barWidth : 0;
+                     doc.setFillColor(...colors.ucrif);
+                     doc.rect(margin + 30, finalY - 4, currentBarWidth, 6, 'F');
+                     
+                     doc.setFontSize(9);
+                     doc.setTextColor(...colors.secondary);
+                     doc.text(String(count), margin + 35 + currentBarWidth, finalY);
+                     
+                     finalY += 10;
+                 });
+            }
+
+            // --- 3. SECCIONES DETALLADAS ---
+            const autoTableConfig = {
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 2, font: fonts.body },
+                headStyles: { fontStyle: 'bold', halign: 'center', valign: 'middle' },
+                margin: { left: margin, right: margin }
+            };
+
+            // SECCIÓN UCRIF
+            if (resumen.ucrif) {
+                doc.addPage();
+                addHeader("UCRIF (Grupos 2, 3 y 4)", colors.ucrif);
+                
+                createSectionTitle(finalY, "Indicadores Principales", colors.ucrif);
+                doc.autoTable({
+                    ...autoTableConfig,
+                    startY: finalY,
+                    head: [['Indicador', 'Total']],
+                    body: [
+                        ['Detenciones por Infracción a la Ley de Extranjería', resumen.ucrif.detenidosILE ?? 0],
+                        ['Personas filiadas en diversos controles', resumen.ucrif.filiadosVarios ?? 0],
+                        ['Traslados materializados', resumen.ucrif.traslados ?? 0],
+                        ['Citaciones para trámites en CECOREX', resumen.ucrif.citadosCecorex ?? 0]
+                    ],
+                    headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
+                });
+                finalY = doc.autoTable.previous.finalY + 10;
+                
+                if (resumen.ucrif.inspecciones?.length > 0) {
+                    createSectionTitle(finalY, "Detalle de Inspecciones y Controles", colors.ucrif);
+                    doc.autoTable({
+                        ...autoTableConfig,
+                        startY: finalY,
+                        head: [['Fecha', 'Lugar', 'Tipo', 'Resultado']],
+                        body: resumen.ucrif.inspecciones.map(i => [UIRenderer.formatoFecha(i.fecha), i.lugar, i.tipo, i.resultado]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+
+                if (resumen.ucrif.detenidosDelito?.length > 0) {
+                    createSectionTitle(finalY, "Detalle de Detenidos por Otros Delitos", colors.ucrif);
+                    doc.autoTable({
+                         ...autoTableConfig,
+                         startY: finalY,
+                         head: [['Detenido', 'Nacionalidad', 'Motivo delictivo']],
+                         body: resumen.ucrif.detenidosDelito.map(d => [d.descripcion, d.nacionalidad, d.motivo]),
+                         headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+                 
+                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked')).map(cb => resumen.ucrif.dispositivos[parseInt(cb.value)]);
+                if (selectedDispositivos.length > 0) {
+                    createSectionTitle(finalY, "Dispositivos Operativos Especiales Relevantes", colors.ucrif);
+                    doc.autoTable({
+                        ...autoTableConfig,
+                        startY: finalY,
+                        head: [['Fecha', 'Operación', 'Descripción']],
+                        body: selectedDispositivos.map(d => [UIRenderer.formatoFecha(d.fecha), d.operacion || 'N/D', d.descripcion || 'N/D']),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+            }
+            
+            // SECCIÓN GRUPO 1
+            if (resumen.grupo1 && Object.values(resumen.grupo1).some(v => v?.length > 0)) {
+                doc.addPage();
+                addHeader("Grupo I - Expulsiones", colors.grupo1);
+                
+                const g1 = resumen.grupo1;
+                const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo?.trim() && d.motivo !== 'N/A');
+                const expulsadosValidos = g1.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad?.trim() && e.nacionalidad !== 'N/A');
+
+                if(detenidosValidos.length > 0) {
+                    createSectionTitle(finalY, "Detenidos", colors.grupo1);
+                    doc.autoTable({
+                        ...autoTableConfig, startY: finalY,
+                        head: [['Motivo', 'Nacionalidad']], body: detenidosValidos.map(d => [d.motivo, d.nacionalidad]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+                if(expulsadosValidos.length > 0) {
+                    createSectionTitle(finalY, "Expulsiones Materializadas", colors.grupo1);
+                    doc.autoTable({
+                        ...autoTableConfig, startY: finalY,
+                        head: [['Nombre', 'Nacionalidad']], body: expulsadosValidos.map(e => [e.nombre, e.nacionalidad]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+            }
+
+            // FUNCIÓN GENÉRICA PARA GRUPOS SIMPLES
+            const createSimpleKeyValuePage = (cfg, data) => {
+                 if (data && Object.keys(data).length > 0) {
+                    doc.addPage();
+                    const color = colors[cfg.label.split(' ')[1].toLowerCase()] || colors.secondary;
+                    addHeader(cfg.label, color);
+                    createSectionTitle(finalY, "Resumen de Actividad", color);
+                    doc.autoTable({
+                        ...autoTableConfig,
+                        startY: finalY,
+                        head: [['Concepto', 'Total']],
+                        body: Object.entries(data).map(([k, v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                        headStyles: { ...autoTableConfig.headStyles, fillColor: color }
+                    });
+                    finalY = doc.autoTable.previous.finalY + 10;
+                }
+            };
+            
+            // OTRAS SECCIONES
+            createSimpleKeyValuePage(AppConfig.grupos.puerto, resumen.puerto?.numericos);
+            createSimpleKeyValuePage(AppConfig.grupos.cecorex, resumen.cecorex);
+            createSimpleKeyValuePage(AppConfig.grupos.gestion, resumen.gestion);
+            createSimpleKeyValuePage(AppConfig.grupos.cie, resumen.cie);
+
+            // --- 4. PÁGINA DE CIERRE ---
+            doc.addPage();
+            addHeader("Conclusión del Informe", colors.primary);
+            const randomFraseCierre = AppConfig.frasesNarrativas.cierre[Math.floor(Math.random() * AppConfig.frasesNarrativas.cierre.length)];
+            doc.setFont(fonts.body, "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(...colors.primary);
+            const conclusionText = doc.splitTextToSize(randomFraseCierre, pageW - margin * 2 - 20);
+            doc.text(conclusionText, margin + 10, finalY + 10);
+
+            // --- FINALIZACIÓN Y GUARDADO ---
+            addFooter();
+            doc.deletePage(doc.internal.getNumberOfPages()); // Eliminar la última página en blanco si se crea
+            doc.save(`SIREX_Informe_Global_${desde}_a_${hasta}.pdf`);
+
+        } catch (error) {
+            console.error("Error catastrófico al generar el PDF:", error);
+            alert("Se produjo un error muy grave al intentar generar el PDF. Revisa la consola del navegador para ver los detalles técnicos.");
+        }
     }
-}
 };
 
     // --- 8. MANEJADOR PRINCIPAL DE EVENTOS ---
