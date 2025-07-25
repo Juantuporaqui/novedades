@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /* ========================= 📋 PARSERS POR GRUPO ========================= */
+/* ========================= 📋 PARSERS POR GRUPO ========================= */
 
 function parseGrupo1(html) {
     const root = document.createElement('div');
