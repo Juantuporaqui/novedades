@@ -1,18 +1,17 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.2
+// SIREX · Consulta Global / Resúmenes v3.3
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con rediseño completo de la exportación a PDF a un nivel superior.
-// MEJORAS CLAVE (v3.2):
-// 1. **PDF de Diseño Espectacular**: Inspirado en la referencia del usuario, el PDF
-//    ahora cuenta con un encabezado gráfico, un bloque de "Indicadores Clave" de
-//    alto impacto y un diseño de informe ejecutivo profesional.
-// 2. **Sección UCRIF Ultra-Detallada en PDF**: El apartado de UCRIF en el PDF se
-//    desglosa en múltiples tablas para Inspecciones, Dispositivos, Detenidos
-//    y Colaboraciones, ofreciendo un nivel de detalle sin precedentes.
-// 3. **Corrección Definitiva de Caracteres**: Se eliminan los emojis en la generación
-//    del PDF para evitar cualquier error de renderizado de caracteres.
-// 4. **Estabilidad y Precisión**: Se mantienen todas las correcciones de datos y filtros
-//    de versiones anteriores, asegurando la máxima fiabilidad de la información.
+// Descripción: Versión final con PDF de alto impacto y control de contenido.
+// MEJORAS CLAVE (v3.3):
+// 1. **PDF con Diseño Superior**: Se introduce un layout de 3 columnas para datos
+//    numéricos (Puerto, Cecorex, Gestión), logrando un diseño de dashboard.
+// 2. **Análisis de Nacionalidades**: El PDF ahora incluye una tabla resumen con el
+//    recuento de nacionalidades de las personas filiadas en inspecciones.
+// 3. **Control de Contenido**: Los "Dispositivos Operativos" se excluyen por defecto.
+//    Se ha añadido lógica para un checkbox (id="incluirDispositivos") que permite
+//    al usuario decidir si los incluye en los informes.
+// 4. **Precisión de Datos Mejorada**: Se ha perfeccionado la extracción y presentación
+//    de datos de nacionalidades en todas las secciones.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnExportarPDF: document.getElementById('btnExportarPDF'),
         fechaDesde: document.getElementById('fechaDesde'),
         fechaHasta: document.getElementById('fechaHasta'),
+        incluirDispositivos: document.getElementById('incluirDispositivos'), // Checkbox para control de contenido
     };
 
     // --- 4. ESTADO GLOBAL DE LA APLICACIÓN ---
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 5. LÓGICA DE CONSULTAS A FIRESTORE (QueryManager) ---
     const QueryManager = {
         getUcrifNovedades: async (desde, hasta) => {
-            const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo'];
+            const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo', 'control_casas_citas'];
             let rawData = [];
             for (const coll of collections) {
                 const snap = await db.collection(coll).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultado = {
                 detenidosILE: 0, filiadosVarios: 0, traslados: 0, citadosCecorex: 0,
                 inspecciones: [], detenidosDelito: [], observaciones: [],
-                colaboraciones: [], dispositivos: []
+                colaboraciones: [], dispositivos: [], nacionalidadesFiliados: {}
             };
 
             const isILE = (motivo = '') => String(motivo).toUpperCase().includes('ILE') || String(motivo).toUpperCase().includes('EXTRANJERÍA');
@@ -112,7 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         resultado.detenidosILE++;
                     } else if (motivo) {
                         resultado.detenidosDelito.push({
-                            descripcion: `${d.detenido || d.detenidos_g4 || 'N/A'} (${d.nacionalidad || d.nacionalidad_g4 || 'N/A'})`,
+                            descripcion: `${d.detenido || d.detenidos_g4 || 'N/A'}`,
+                            nacionalidad: `${d.nacionalidad || d.nacionalidad_g4 || 'N/A'}`,
                             motivo: motivo,
                         });
                     }
@@ -120,6 +121,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (data.inspecciones) resultado.inspecciones.push(...data.inspecciones);
                 if (data.actuaciones) resultado.dispositivos.push(...data.actuaciones);
+                
+                if (data.datos && Array.isArray(data.datos)) {
+                    data.datos.forEach(item => {
+                        if (item.casa) {
+                            resultado.inspecciones.push({
+                                lugar: item.casa,
+                                tipo: 'Casa de Citas',
+                                resultado: `${item.n_filiadas || 0} filiadas (${item.nacionalidades || 'N/D'}).`
+                            });
+                            if (item.nacionalidades) {
+                                const nacionalidades = item.nacionalidades.split(/, | y /);
+                                nacionalidades.forEach(nac => {
+                                    const cleanNac = nac.trim();
+                                    if (cleanNac) {
+                                        resultado.nacionalidadesFiliados[cleanNac] = (resultado.nacionalidadesFiliados[cleanNac] || 0) + 1;
+                                    }
+                                });
+                            }
+                        } else if (item.identificadas) {
+                             resultado.filiadosVarios += Number(item.identificadas) || 0;
+                             resultado.citadosCecorex += Number(item.citadas) || 0;
+                        }
+                    });
+                }
             });
             return resultado;
         },
@@ -217,8 +242,10 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<p class="mb-4">${frase}</p>`;
 
             html += this.renderListSection('Inspecciones y Controles', data.inspecciones, i => this.formatters.inspeccion(i));
-            html += this.renderListSection('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
-            html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} por <strong>${d.motivo}</strong>`);
+            if (DOM.incluirDispositivos?.checked) {
+                html += this.renderListSection('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
+            }
+            html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
             
             if (data.observaciones?.filter(o => o && o.trim()).length > 0) {
                 html += `<div class="alert alert-light mt-3"><strong>Observaciones Relevantes de los Grupos:</strong><br>${data.observaciones.filter(o => o && o.trim()).map(o => `<div><small>- ${o}</small></div>`).join("")}</div>`;
@@ -373,23 +400,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (resumen.ucrif) {
                 const u = resumen.ucrif;
-                let content = `*Resumen General:*\n`;
-                content += `• Detenidos ILE: ${u.detenidosILE ?? 0}\n`;
-                content += `• Filiados: ${u.filiadosVarios ?? 0}\n`;
-                content += `• Traslados: ${u.traslados ?? 0}\n`;
-
-                if (u.inspecciones?.length > 0) {
-                    content += `\n*Inspecciones Destacadas:*\n`;
-                    u.inspecciones.slice(0, 3).forEach(i => {
-                        const inspText = UIRenderer.formatters.inspeccion(i).replace(/<strong>|<\/strong>/g, '');
-                        content += `• ${inspText}\n`;
-                    });
-                }
+                let content = `Las novedades UCRIF son las siguientes:\n\n`;
+                content += `*${u.detenidosILE ?? 0}* detenidos por ILE, *${u.filiadosVarios ?? 0}* identificados, *${u.traslados ?? 0}* traslados y *${u.citadosCecorex ?? 0}* citados para CECOREX.\n`;
 
                 if (u.detenidosDelito?.length > 0) {
-                    content += `\n*Detenidos por Otros Delitos:*\n`;
+                    content += `\n`;
                     u.detenidosDelito.forEach(d => {
-                        content += `• ${d.descripcion} por _${d.motivo}_.\n`;
+                        content += `• 1 detenido por _${d.motivo}_ (${d.nacionalidad})\n`;
+                    });
+                }
+                
+                if (u.inspecciones?.length > 0) {
+                    content += `\n`;
+                    u.inspecciones.forEach(i => {
+                        const inspText = UIRenderer.formatters.inspeccion(i)
+                            .replace(/<strong>/g, '*')
+                            .replace(/<\/strong>/g, '*');
+                        content += `• Inspección en ${inspText}\n`;
                     });
                 }
                 
@@ -403,8 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
                          }
                     });
                 }
-                
-                if (u.dispositivos?.length > 0) {
+
+                if (DOM.incluirDispositivos?.checked && u.dispositivos?.length > 0) {
                     content += `\n*Dispositivos en Curso:*\n`;
                     u.dispositivos.slice(0, 5).forEach(d => {
                          const dispText = UIRenderer.formatters.dispositivo(d).replace(/<strong>|<\/strong>/g, '');
@@ -418,9 +445,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resumen.grupo1) {
                 const g1 = resumen.grupo1;
                 let content = '';
-                if(g1.detenidos?.length > 0) content += `• Detenidos: ${g1.detenidos.length}\n`;
-                if(g1.expulsados?.length > 0) content += `• Expulsados: ${g1.expulsados.length}\n`;
-                if(g1.frustradas?.length > 0) content += `• Frustradas: ${g1.frustradas.length}\n`;
+                const detenidosValidos = g1.detenidos.map(UIRenderer.normalizers.detenido).filter(d => d.motivo && d.motivo.trim() && d.motivo !== 'N/A');
+                if(detenidosValidos.length > 0) content += `• Detenidos: ${detenidosValidos.length}\n`;
+                const expulsadosValidos = g1.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad && e.nacionalidad.trim() && e.nacionalidad !== 'N/A');
+                if(expulsadosValidos.length > 0) content += `• Expulsados: ${expulsadosValidos.length}\n`;
+                const frustradasValidas = g1.frustradas.map(UIRenderer.normalizers.frustrada).filter(f => f.nombre && f.nombre.trim() && f.nombre !== 'N/A');
+                if(frustradasValidas.length > 0) content += `• Frustradas: ${frustradasValidas.length}\n`;
                 addSection(AppConfig.grupos.grupo1, content);
             }
              if (resumen.puerto?.numericos) {
@@ -501,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!callback) return;
                     checkPageBreak();
                     doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
-                    doc.text(cfg.label, margin, finalY); // Sin icono
+                    doc.text(cfg.label, margin, finalY);
                     finalY += 7;
                     doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
                     callback();
@@ -518,7 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     finalY = doc.autoTable.previous.finalY;
                 };
 
-                // SECCIÓN UCRIF DETALLADA
                 if (resumen.ucrif) {
                     addSection(AppConfig.grupos.ucrif, () => {
                         const u = resumen.ucrif;
@@ -526,12 +555,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             autoTable([['Inspecciones y Controles (Lugar)', 'Tipo', 'Resultado']], u.inspecciones.map(i => [i.lugar || 'N/D', i.tipo || 'N/D', i.resultado || 'N/D']), AppConfig.grupos.ucrif);
                             finalY += 5;
                         }
-                        if (u.dispositivos?.length > 0) {
+                        if (Object.keys(u.nacionalidadesFiliados).length > 0) {
+                             autoTable([['Resumen de Nacionalidades (Filiados)']], Object.entries(u.nacionalidadesFiliados).map(([nac, count]) => [`• ${count} ${nac}`]), AppConfig.grupos.ucrif);
+                             finalY += 5;
+                        }
+                        if (DOM.incluirDispositivos?.checked && u.dispositivos?.length > 0) {
                             autoTable([['Dispositivos Operativos (Operación)', 'Descripción']], u.dispositivos.map(d => [d.operacion || 'N/D', d.descripcion || 'N/D']), AppConfig.grupos.ucrif);
                             finalY += 5;
                         }
                         if (u.detenidosDelito?.length > 0) {
-                            autoTable([['Detenidos por Otros Delitos', 'Motivo']], u.detenidosDelito.map(d => [d.descripcion, d.motivo]), AppConfig.grupos.ucrif);
+                            autoTable([['Detenidos por Otros Delitos', 'Nacionalidad', 'Motivo']], u.detenidosDelito.map(d => [d.descripcion, d.nacionalidad, d.motivo]), AppConfig.grupos.ucrif);
                             finalY += 5;
                         }
                          if (u.colaboraciones?.length > 0) {
@@ -552,15 +585,54 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (fletadosValidos.length > 0) { finalY += 2; autoTable([['Vuelo Fletado (Destino)', 'PAX']], fletadosValidos.map(f => [f.destino, f.pax]), AppConfig.grupos.grupo1); }
                 });
 
-                const addKeyValueSectionToPdf = (cfg, data) => {
-                    if(data && Object.keys(data).length > 0) {
-                        addSection(cfg, () => autoTable(null, Object.entries(data).map(([k,v]) => [k.replace(/_/g, " "), v]), cfg));
+                const createThreeColumnTable = (cfg, data) => {
+                    if (!data || Object.keys(data).length === 0) return;
+                    
+                    const items = Object.entries(data).map(([key, value]) => ({
+                        label: key.replace(/_/g, " "),
+                        value: String(value)
+                    }));
+                    
+                    const body = [];
+                    for (let i = 0; i < items.length; i += 3) {
+                        body.push(items.slice(i, i + 3));
                     }
+
+                    doc.autoTable({
+                        startY: finalY,
+                        body: body,
+                        theme: 'plain',
+                        didParseCell: function (data) {
+                            if (data.cell.raw) {
+                                data.cell.styles.halign = 'center';
+                                data.cell.styles.valign = 'middle';
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.fontSize = 14;
+                                data.cell.styles.textColor = cfg.color;
+                                data.cell.text = data.cell.raw.value;
+                            }
+                        },
+                        willDrawCell: function(data) {
+                            if (data.cell.raw) {
+                                doc.setFontSize(8);
+                                doc.setTextColor(120);
+                                doc.text(data.cell.raw.label, data.cell.x + data.cell.width / 2, data.cell.y + 14, { align: 'center' });
+                            }
+                        },
+                        columnStyles: {
+                            0: { cellWidth: (pageW - margin * 2) / 3 },
+                            1: { cellWidth: (pageW - margin * 2) / 3 },
+                            2: { cellWidth: (pageW - margin * 2) / 3 },
+                        }
+                    });
+                    finalY = doc.autoTable.previous.finalY;
                 };
-                addKeyValueSectionToPdf(AppConfig.grupos.puerto, resumen.puerto?.numericos);
-                addKeyValueSectionToPdf(AppConfig.grupos.cecorex, resumen.cecorex);
-                addKeyValueSectionToPdf(AppConfig.grupos.gestion, resumen.gestion);
-                addKeyValueSectionToPdf(AppConfig.grupos.cie, resumen.cie);
+
+                if (resumen.puerto?.numericos) addSection(AppConfig.grupos.puerto, () => createThreeColumnTable(AppConfig.grupos.puerto, resumen.puerto.numericos));
+                if (resumen.cecorex) addSection(AppConfig.grupos.cecorex, () => createThreeColumnTable(AppConfig.grupos.cecorex, resumen.cecorex));
+                if (resumen.gestion) addSection(AppConfig.grupos.gestion, () => createThreeColumnTable(AppConfig.grupos.gestion, resumen.gestion));
+                if (resumen.cie) addSection(AppConfig.grupos.cie, () => autoTable(null, Object.entries(resumen.cie).map(([k,v]) => [k.replace(/_/g, " "), v]), AppConfig.grupos.cie));
+
 
                 addFooter();
                 doc.save(`SIREX_Resumen_${desde}_a_${hasta}.pdf`);
