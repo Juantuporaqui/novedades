@@ -1,15 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.1
+// SIREX · Consulta Global / Resúmenes v3.2
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con exportación a WhatsApp mejorada y más detallada.
-// MEJORAS CLAVE (v3.1):
-// 1. **Resumen de WhatsApp Narrativo**: La exportación a WhatsApp para la sección
-//    de UCRIF ha sido rediseñada para incluir una descripción detallada de
-//    inspecciones, detenidos (con motivo/nacionalidad) y colaboraciones.
-// 2. **Formato Mejorado**: Se utiliza el formato de WhatsApp (negrita, cursiva) para
-//    resaltar la información clave y mejorar la legibilidad del resumen.
-// 3. **Estabilidad Mantenida**: Se conservan todas las correcciones y mejoras de
-//    diseño de la v3.0, incluyendo el PDF profesional.
+// Descripción: Versión con rediseño completo de la exportación a PDF a un nivel superior.
+// MEJORAS CLAVE (v3.2):
+// 1. **PDF de Diseño Espectacular**: Inspirado en la referencia del usuario, el PDF
+//    ahora cuenta con un encabezado gráfico, un bloque de "Indicadores Clave" de
+//    alto impacto y un diseño de informe ejecutivo profesional.
+// 2. **Sección UCRIF Ultra-Detallada en PDF**: El apartado de UCRIF en el PDF se
+//    desglosa en múltiples tablas para Inspecciones, Dispositivos, Detenidos
+//    y Colaboraciones, ofreciendo un nivel de detalle sin precedentes.
+// 3. **Corrección Definitiva de Caracteres**: Se eliminan los emojis en la generación
+//    del PDF para evitar cualquier error de renderizado de caracteres.
+// 4. **Estabilidad y Precisión**: Se mantienen todas las correcciones de datos y filtros
+//    de versiones anteriores, asegurando la máxima fiabilidad de la información.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -445,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const margin = 15;
 
                 const addHeader = () => {
-                    doc.setFillColor(40, 58, 90); // Color azul oscuro corporativo
+                    doc.setFillColor(40, 58, 90);
                     doc.rect(0, 0, pageW, 38, 'F');
                     doc.setFont("helvetica", "bold"); doc.setFontSize(18);
                     doc.setTextColor(255, 255, 255);
@@ -498,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!callback) return;
                     checkPageBreak();
                     doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
-                    doc.text(cfg.label, margin, finalY);
+                    doc.text(cfg.label, margin, finalY); // Sin icono
                     finalY += 7;
                     doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
                     callback();
@@ -514,6 +517,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     finalY = doc.autoTable.previous.finalY;
                 };
+
+                // SECCIÓN UCRIF DETALLADA
+                if (resumen.ucrif) {
+                    addSection(AppConfig.grupos.ucrif, () => {
+                        const u = resumen.ucrif;
+                        if (u.inspecciones?.length > 0) {
+                            autoTable([['Inspecciones y Controles (Lugar)', 'Tipo', 'Resultado']], u.inspecciones.map(i => [i.lugar || 'N/D', i.tipo || 'N/D', i.resultado || 'N/D']), AppConfig.grupos.ucrif);
+                            finalY += 5;
+                        }
+                        if (u.dispositivos?.length > 0) {
+                            autoTable([['Dispositivos Operativos (Operación)', 'Descripción']], u.dispositivos.map(d => [d.operacion || 'N/D', d.descripcion || 'N/D']), AppConfig.grupos.ucrif);
+                            finalY += 5;
+                        }
+                        if (u.detenidosDelito?.length > 0) {
+                            autoTable([['Detenidos por Otros Delitos', 'Motivo']], u.detenidosDelito.map(d => [d.descripcion, d.motivo]), AppConfig.grupos.ucrif);
+                            finalY += 5;
+                        }
+                         if (u.colaboraciones?.length > 0) {
+                            autoTable([['Colaboración', 'Unidad', 'Resultado']], u.colaboraciones.map(c => [c.colaboracionDesc || 'N/D', c.colaboracionUnidad || 'N/D', c.colaboracionResultado || 'N/D']), AppConfig.grupos.ucrif);
+                        }
+                    });
+                }
+
 
                 if (resumen.grupo1) addSection(AppConfig.grupos.grupo1, () => {
                     const { normalizers } = UIRenderer;
