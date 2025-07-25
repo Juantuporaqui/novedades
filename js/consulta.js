@@ -644,9 +644,12 @@ const ExportManager = {
         
         createSectionTitle(finalY, "Indicadores Clave (KPIs)", colors.primary);
         
+        // CORRECCIÓN: Contamos correctamente los expulsados válidos para el KPI.
+        const expulsadosValidosParaKPI = resumen.grupo1?.expulsados.map(UIRenderer.normalizers.expulsado).filter(e => e.nacionalidad?.trim() && e.nacionalidad !== 'N/A' && e.nacionalidad !== 'cuenca') ?? [];
+
         // Fila 1 de KPIs
         createKPIBox(margin, finalY, "Detenidos por ILE", resumen.ucrif?.detenidosILE ?? 0, colors.ucrif);
-        createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Expulsiones Materializadas", resumen.grupo1?.expulsados?.length ?? 0, colors.grupo1);
+        createKPIBox(margin + (pageW - margin*3)/2 + margin, finalY, "Expulsiones Materializadas", expulsadosValidosParaKPI.length, colors.grupo1);
         finalY += 25 + 5; // alto de caja + espacio
         
         // Fila 2 de KPIs
@@ -772,16 +775,11 @@ const ExportManager = {
                 finalY = doc.autoTable.previous.finalY + 10;
             }
         }
-
-        // =========================================================================
-        // INICIO DE LA CORRECCIÓN
-        // =========================================================================
         
-        // FUNCIÓN GENÉRICA PARA GRUPOS SIMPLES (AHORA CORREGIDA)
+        // FUNCIÓN GENÉRICA PARA GRUPOS SIMPLES (YA CORREGIDA)
         const createSimpleKeyValuePage = (groupKey, cfg, data) => {
              if (data && Object.keys(data).length > 0) {
                 doc.addPage();
-                // CORRECCIÓN: Usamos la 'groupKey' para obtener el color, que es mucho más seguro.
                 const color = colors[groupKey] || colors.secondary;
                 addHeader(cfg.label, color);
                 createSectionTitle(finalY, "Resumen de Actividad", color);
@@ -797,15 +795,10 @@ const ExportManager = {
         };
         
         // OTRAS SECCIONES (LLAMADAS A LA FUNCIÓN CORREGIDA)
-        // CORRECCIÓN: Pasamos la clave del grupo ('puerto', 'cecorex', etc.) como primer argumento.
         createSimpleKeyValuePage('puerto', AppConfig.grupos.puerto, resumen.puerto?.numericos);
         createSimpleKeyValuePage('cecorex', AppConfig.grupos.cecorex, resumen.cecorex);
         createSimpleKeyValuePage('gestion', AppConfig.grupos.gestion, resumen.gestion);
         createSimpleKeyValuePage('cie', AppConfig.grupos.cie, resumen.cie);
-
-        // =========================================================================
-        // FIN DE LA CORRECCIÓN
-        // =========================================================================
 
         // --- 4. PÁGINA DE CIERRE ---
         doc.addPage();
@@ -819,10 +812,13 @@ const ExportManager = {
 
         // --- FINALIZACIÓN Y GUARDADO ---
         addFooter();
-        // Verificamos si la última página está casi vacía para eliminarla, por si acaso.
-        if (doc.getPage() > 2 && finalY < 50) {
-            doc.deletePage(doc.internal.getNumberOfPages());
+        
+        // CORRECCIÓN: Usamos doc.internal.getNumberOfPages() en lugar de la función inexistente doc.getPage()
+        const totalPages = doc.internal.getNumberOfPages();
+        if (totalPages > 2 && finalY < 50) {
+            doc.deletePage(totalPages);
         }
+        
         doc.save(`SIREX_Informe_Global_${desde}_a_${hasta}.pdf`);
 
     } catch (error) {
