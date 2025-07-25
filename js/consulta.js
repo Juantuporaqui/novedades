@@ -514,9 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- PORTADA ---
         // Fondo degradado moderno
-        var grad = doc.context2d.createLinearGradient(0, 0, pageW, pageH);
-        grad.addColorStop(0, "#101924");
-        grad.addColorStop(1, "#1177bb");
+        
         doc.setFillColor(17,119,187);
         doc.rect(0, 0, pageW, pageH, 'F');
         doc.setTextColor(255,255,255);
