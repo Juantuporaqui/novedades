@@ -446,138 +446,275 @@ document.addEventListener('DOMContentLoaded', () => {
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-      detenidos: [],
-      inspecciones: [],
-      actuaciones: [],
-      varios: ""
+        detenidos: [],
+        inspecciones: [],
+        actuaciones: [], // Cambiaremos la lógica para llenar este array
+        varios: ""
     };
 
+    let inGroup2Section = false;
+
     for (const tabla of tablas) {
-      const rows = Array.from(tabla.querySelectorAll('tr'));
-      if (!rows.length) continue;
-      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        if (!rows.length) continue;
 
-      if (header.includes("OPERACION D G2") && header.includes("DETENIDO G2")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
-          let rowObj = {};
-          header.forEach((col, idx) => {
-            if (col === "OPERACION D G2") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
-            if (col === "DETENIDO G2") rowObj.detenido = tds[idx]?.textContent.trim() || "";
-            if (col === "MOTIVO G2") rowObj.motivo = tds[idx]?.textContent.trim() || "";
-            if (col === "NACIONALIDAD G2") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
-            if (col === "OBSERVACIONES G2") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
-          });
-          if (rowObj.detenido) datos.detenidos.push(rowObj);
+        // Detectar el inicio de la sección del Grupo 2
+        const firstCellText = rows[0]?.cells[0]?.textContent.trim().toUpperCase();
+        if (firstCellText === 'GRUPO 2') {
+            inGroup2Section = true;
+            continue;
         }
-      } else if (header.includes("INSPECCION G2 LUGAR") && header.includes("IDENTIFICADAS")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
-          let rowObj = {};
-          header.forEach((col, idx) => {
-            if (col === "INSPECCION G2 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
-            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
-            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
-            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
-          });
-          if (rowObj.lugar) datos.inspecciones.push(rowObj);
+        // Salir si encontramos el siguiente grupo
+        if (inGroup2Section && (firstCellText === 'GRUPO 3' || firstCellText === 'GRUPO 1' || firstCellText === 'GRUPO 4')) {
+            inGroup2Section = false;
+            break; 
         }
-      } else if (header.includes("OPERACION G2") && header.includes("ACTUACION G2")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
-          datos.actuaciones.push({
-            operacion: tds[0]?.textContent.trim() || "",
-            delito: tds[1]?.textContent.trim() || "",
-            descripcion: tds[2]?.textContent.trim() || ""
-          });
-        }
-      } else if (header.includes("VARIOS GRUPO 2")) {
-        for (let i = 1; i < rows.length; i++) {
-          const txt = rows[i].cells[0]?.textContent.trim();
-          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
-        }
-      }
 
-      if (!fecha) {
-        let plain = tabla.innerText || tabla.textContent || "";
-        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-      }
+        if (inGroup2Section) {
+            const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+            // Tabla principal de Operaciones/Detenidos
+            if (header.includes("OPERACION D G2") && header.includes("MOTIVO G2")) {
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    // CORRECCIÓN: Comprobamos la columna 0 (Operación) en lugar de la 1 (Detenido)
+                    if (tds.length < 5 || !tds[0]?.textContent.trim()) continue;
+
+                    const operacion = tds[0]?.textContent.trim() || "";
+                    const detenido = tds[1]?.textContent.trim() || "";
+                    const motivo = tds[2]?.textContent.trim() || "";
+                    const nacionalidad = tds[3]?.textContent.trim() || "";
+                    const observaciones = tds[4]?.textContent.trim() || "";
+
+                    // Siempre añadimos la actuación
+                    datos.actuaciones.push({
+                        operacion: operacion,
+                        delito: motivo,
+                        descripcion: observaciones
+                    });
+
+                    // Si hay un detenido, lo añadimos a su lista
+                    if (detenido) {
+                        datos.detenidos.push({
+                            operacion_d: operacion,
+                            detenido: detenido,
+                            motivo: motivo,
+                            nacionalidad: nacionalidad,
+                            observaciones: observaciones
+                        });
+                    }
+                }
+            } else if (header.includes("INSPECCION G2 LUGAR")) {
+                // Esta parte ya funcionaba bien
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+                    datos.inspecciones.push({
+                        lugar: tds[0]?.textContent.trim() || "",
+                        identificadas: tds[1]?.textContent.trim() || "",
+                        citadas: tds[2]?.textContent.trim() || "",
+                        nacionalidades: tds[3]?.textContent.trim() || ""
+                    });
+                }
+            } else if (header.includes("VARIOS GRUPO 2")) {
+                // Esta parte también estaba bien
+                for (let i = 1; i < rows.length; i++) {
+                    const txt = rows[i].cells[0]?.textContent.trim();
+                    if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+                }
+            }
+        }
+        
+        if (!fecha) {
+            let plain = tabla.innerText || tabla.textContent || "";
+            let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
     }
     return { datos, fecha };
-  }
+}
 
+function parseGrupo3(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+        detenidos: [],
+        inspecciones: [],
+        actuaciones: [], // Lógica unificada
+        varios: ""
+    };
+
+    let inGroup3Section = false;
+
+    for (const tabla of tablas) {
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        if (!rows.length) continue;
+
+        const firstCellText = rows[0]?.cells[0]?.textContent.trim().toUpperCase();
+        if (firstCellText === 'GRUPO 3') {
+            inGroup3Section = true;
+            continue;
+        }
+        if (inGroup3Section && (firstCellText === 'GRUPO 4' || firstCellText === 'GRUPO 2' || firstCellText === 'PUERTO')) {
+            inGroup3Section = false;
+            break;
+        }
+        
+        if (inGroup3Section) {
+            const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+            if (header.includes("OPERACION D G3") && header.includes("MOTIVO G3")) {
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    // CORRECCIÓN: Comprobamos la columna 0 (Operación)
+                    if (tds.length < 5 || !tds[0]?.textContent.trim()) continue;
+                    
+                    const operacion = tds[0]?.textContent.trim() || "";
+                    const detenido = tds[1]?.textContent.trim() || "";
+                    const motivo = tds[2]?.textContent.trim() || "";
+                    const nacionalidad = tds[3]?.textContent.trim() || "";
+                    const observaciones = tds[4]?.textContent.trim() || "";
+
+                    datos.actuaciones.push({
+                        operacion: operacion,
+                        delito: motivo,
+                        descripcion: observaciones
+                    });
+                    
+                    if (detenido) {
+                        datos.detenidos.push({
+                            operacion_d: operacion,
+                            detenido: detenido,
+                            motivo: motivo,
+                            nacionalidad: nacionalidad,
+                            observaciones: observaciones
+                        });
+                    }
+                }
+            } else if (header.includes("INSPECCION G3 LUGAR")) {
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+                    datos.inspecciones.push({
+                        lugar: tds[0]?.textContent.trim() || "",
+                        identificadas: tds[1]?.textContent.trim() || "",
+                        citadas: tds[2]?.textContent.trim() || "",
+                        nacionalidades: tds[3]?.textContent.trim() || ""
+                    });
+                }
+            } else if (header.includes("VARIOS GRUPO 3")) {
+                for (let i = 1; i < rows.length; i++) {
+                    const txt = rows[i].cells[0]?.textContent.trim();
+                    if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+                }
+            }
+        }
+        
+        if (!fecha) {
+            let plain = tabla.innerText || tabla.textContent || "";
+            let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
+    }
+    return { datos, fecha };
+}
   function parseGrupo3(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-      detenidos: [],
-      inspecciones: [],
-      actuaciones: [],
-      varios: ""
+        detenidos: [],
+        inspecciones: [],
+        actuaciones: [], // Lógica unificada para capturar todas las filas
+        varios: ""
     };
+
+    let inGroup3Section = false;
+
     for (const tabla of tablas) {
-      const rows = Array.from(tabla.querySelectorAll('tr'));
-      if (!rows.length) continue;
-      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        if (!rows.length) continue;
 
-      if (header.includes("OPERACION D G3") && header.includes("DETENIDO G3")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
-          let rowObj = {};
-          header.forEach((col, idx) => {
-            if (col === "OPERACION D G3") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
-            if (col === "DETENIDO G3") rowObj.detenido = tds[idx]?.textContent.trim() || "";
-            if (col === "MOTIVO G3") rowObj.motivo = tds[idx]?.textContent.trim() || "";
-            if (col === "NACIONALIDAD G3") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
-            if (col === "OBSERVACIONES G3") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
-          });
-          if (rowObj.detenido) datos.detenidos.push(rowObj);
+        // Detectar el inicio de la sección del Grupo 3
+        const firstCellText = rows[0]?.cells[0]?.textContent.trim().toUpperCase();
+        if (firstCellText === 'GRUPO 3') {
+            inGroup3Section = true;
+            continue;
         }
-      } else if (header.includes("INSPECCION G3 LUGAR") && header.includes("IDENTIFICADAS")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
-          let rowObj = {};
-          header.forEach((col, idx) => {
-            if (col === "INSPECCION G3 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
-            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
-            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
-            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
-          });
-          if (rowObj.lugar) datos.inspecciones.push(rowObj);
+        // Salir de la sección si encontramos otro grupo principal
+        if (inGroup3Section && (firstCellText === 'GRUPO 4' || firstCellText === 'GRUPO 2' || firstCellText === 'PUERTO')) {
+            inGroup3Section = false;
+            break;
         }
-      } else if (header.includes("OPERACION G3") && header.includes("ACTUACION G3")) {
-        for (let i = 1; i < rows.length; i++) {
-          const tds = Array.from(rows[i].querySelectorAll('td'));
-          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
-          datos.actuaciones.push({
-            operacion: tds[0]?.textContent.trim() || "",
-            delito: tds[1]?.textContent.trim() || "",
-            descripcion: tds[2]?.textContent.trim() || ""
-          });
-        }
-      } else if (header.includes("VARIOS GRUPO 3")) {
-        for (let i = 1; i < rows.length; i++) {
-          const txt = rows[i].cells[0]?.textContent.trim();
-          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
-        }
-      }
+        
+        if (inGroup3Section) {
+            const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-      if (!fecha) {
-        let plain = tabla.innerText || tabla.textContent || "";
-        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-      }
+            // Procesar la tabla principal de operaciones y detenidos
+            if (header.includes("OPERACION D G3") && header.includes("MOTIVO G3")) {
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    
+                    // CORRECCIÓN CLAVE: Se valida la fila por la columna 0 ("OPERACION D G3"), que siempre tiene datos.
+                    if (tds.length < 5 || !tds[0]?.textContent.trim()) continue;
+                    
+                    const operacion = tds[0]?.textContent.trim() || "";
+                    const detenido = tds[1]?.textContent.trim() || "";
+                    const motivo = tds[2]?.textContent.trim() || "";
+                    const nacionalidad = tds[3]?.textContent.trim() || "";
+                    const observaciones = tds[4]?.textContent.trim() || "";
+
+                    // Siempre se añade la fila como una "actuación"
+                    datos.actuaciones.push({
+                        operacion: operacion,
+                        delito: motivo,
+                        descripcion: observaciones
+                    });
+                    
+                    // Si la columna "detenido" tiene datos, se añade a la lista de detenidos
+                    if (detenido) {
+                        datos.detenidos.push({
+                            operacion_d: operacion,
+                            detenido: detenido,
+                            motivo: motivo,
+                            nacionalidad: nacionalidad,
+                            observaciones: observaciones
+                        });
+                    }
+                }
+            } else if (header.includes("INSPECCION G3 LUGAR")) {
+                // Esta parte ya era funcional
+                for (let i = 1; i < rows.length; i++) {
+                    const tds = Array.from(rows[i].querySelectorAll('td'));
+                    if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+                    datos.inspecciones.push({
+                        lugar: tds[0]?.textContent.trim() || "",
+                        identificadas: tds[1]?.textContent.trim() || "",
+                        citadas: tds[2]?.textContent.trim() || "",
+                        nacionalidades: tds[3]?.textContent.trim() || ""
+                    });
+                }
+            } else if (header.includes("VARIOS GRUPO 3")) {
+                 // Esta parte ya era funcional
+                for (let i = 1; i < rows.length; i++) {
+                    const txt = rows[i].cells[0]?.textContent.trim();
+                    if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+                }
+            }
+        }
+        
+        // Extraer la fecha del documento
+        if (!fecha) {
+            let plain = tabla.innerText || tabla.textContent || "";
+            let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
     }
     return { datos, fecha };
-  }
+}
 
   function parseGrupo4(html) {
     const root = document.createElement('div');
@@ -826,35 +963,62 @@ document.addEventListener('DOMContentLoaded', () => {
     return { datos, fecha };
   }
 
-  function parseGrupoCIE(html) {
+ function parseGrupoCIE(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {};
+    
+    let inCieSection = false;
+
     for (const tabla of tablas) {
-      const rows = Array.from(tabla.querySelectorAll('tr'));
-      if (!rows.length) continue;
-      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-      if (header[0] === "N. INTERNOS" && header[1] === "SALIDAS") {
-        const rowData = rows[1]?.children;
-        if (rowData) {
-          datos = {
-            n_internos: rowData[0]?.textContent.trim() || '',
-            salidas: rowData[1]?.textContent.trim() || '',
-            entradas: rowData[2]?.textContent.trim() || '',
-            observaciones_cie: rowData[3]?.textContent.trim() || ''
-          };
+        const rows = Array.from(tabla.querySelectorAll('tr'));
+        if (!rows.length) continue;
+        
+        const firstCellText = rows[0]?.cells[0]?.textContent.trim().toUpperCase();
+        if (firstCellText === 'CIE') {
+            inCieSection = true;
+            continue;
         }
-      }
-      if (!fecha) {
-        let plain = tabla.innerText || tabla.textContent || "";
-        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-      }
+        if (inCieSection && firstCellText === 'GESTION') { // Si empieza otra sección, paramos
+            inCieSection = false;
+            break;
+        }
+
+        if (inCieSection) {
+            const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+            
+            // CORRECCIÓN: Buscamos los encabezados correctos de forma más flexible
+            if (header.includes("INTERNOS") && header.includes("ENTRADAS") && header.includes("SALIDAS")) {
+                const rowData = rows[1]?.children;
+                if (rowData) {
+                    datos = {
+                        // CORRECCIÓN: Asignamos los datos según el orden del documento
+                        internos: rowData[0]?.textContent.trim() || '',
+                        entradas: rowData[1]?.textContent.trim() || '',
+                        salidas: rowData[2]?.textContent.trim() || '',
+                        // Mantenemos la estructura original si hay más columnas
+                        incidencias_cie: rowData[3]?.textContent.trim() || '' 
+                    };
+                }
+            } else if (header.includes("INCIDENCIAS CIE")) {
+                const rowData = rows[1]?.cells[0];
+                 if (rowData && rowData.textContent.trim()) {
+                    // Si ya tenemos datos, añadimos las incidencias. Si no, las creamos.
+                    datos.incidencias_cie = (datos.incidencias_cie ? datos.incidencias_cie + '\n' : '') + rowData.textContent.trim();
+                }
+            }
+        }
+
+        if (!fecha) {
+            let plain = tabla.innerText || tabla.textContent || "";
+            let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
     }
     return { datos, fecha };
-  }
+}
 
   /* ===========================  VALIDACIÓN  ================================ */
   function validarDatos(data, grupo, fecha) {
