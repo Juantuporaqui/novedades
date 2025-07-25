@@ -1,414 +1,880 @@
-// SIREX · Consulta Global / Resúmenes (Versión Pro 2025 · Narrativo, Extensible, Sin Omisiones)
+/* ---------------------------------------------------------------------------
+   SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, CIE)
+   Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
+   Versión 2.2: Añadido control de duplicados en sincronización con G2/G3.
+--------------------------------------------------------------------------- */
+let parsedDataForConfirmation = null;
 
-// =========================== 1. CONFIGURACIÓN FIREBASE ===========================
-const firebaseConfig = {
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* ===========================  CONFIG FIREBASE  ============================ */
+  const firebaseConfig = {
     apiKey: "AIzaSyDTvriR7KjlAINO44xhDDvIDlc4T_4nilo",
     authDomain: "ucrif-5bb75.firebaseapp.com",
     projectId: "ucrif-5bb75",
     storageBucket: "ucrif-5bb75.appspot.com",
     messagingSenderId: "241698436443",
     appId: "1:241698436443:web:1f333b3ae3f813b755167e"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const FieldPath = firebase.firestore.FieldPath;
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-// ============================== 2. DOM Y GRUPOS ==============================
-const form = document.getElementById('consultaForm');
-const spinner = document.getElementById('spinner');
-const resumenVentana = document.getElementById('resumenVentana');
-const exportBtns = document.getElementById('exportBtns');
+  /* =============================  CONSTANTES  =============================== */
+  const GROUP1 = "grupo1_expulsiones";
+  const GROUP2 = "grupo2";
+  const GROUP3 = "grupo3";
+  const GROUP4 = "grupo4_operativo";
+  const GROUPPUERTO = "grupoPuerto";
+  const GROUPCECOREX = "cecorex";
+  const GROUPGESTION = "gestion";
+  const GROUPCIE = "grupoCIE";
 
-const GRUPOS_CONFIG = {
-    ucrif: { label: 'UCRIF (Grupos 2, 3 y 4)', icon: '🛡️', color: 'info' },
-    grupo1: { label: 'Expulsiones', icon: '🚔', color: 'primary' },
-    puerto: { label: 'Puerto', icon: '⚓', color: 'success' },
-    cecorex: { label: 'CECOREX', icon: '📡', color: 'warning' },
-    gestion: { label: 'Gestión', icon: '📋', color: 'secondary' },
-    cie: { label: 'CIE', icon: '🏢', color: 'danger' }
-};
+  /* ============================  ELEMENTOS DOM  ============================= */
+  const $ = id => document.getElementById(id);
+  const inputDocx = $('inputDocx');
+  const statusContainer = $('status-container');
+  const resultsContainer = $('results-container');
+  const confirmationButtons = $('confirmation-buttons');
+  const btnConfirmarGuardado = $('btnConfirmarGuardado');
+  const btnCancelar = $('btnCancelar');
+  const fechaEdicionDiv = $('fecha-edicion');
+  const fechaManualInput = $('fechaManualInput');
+  const fechaDetectadaBadge = $('fechaDetectadaBadge');
+  const spinnerArea = $('spinner-area');
 
-// ============= 3. QUERIES FIRESTORE: RECOPILA TODO LO POSIBLE, SIN OMITIR =============
-
-const QUERY_STRATEGIES = {
-    // --- UCRIF: Inspecciones, Detenidos, Citados, Colaboraciones, Observaciones, etc.
-    getUcrifNovedades: async (desde, hasta) => {
-        const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo'];
-        let rawData = [];
-        for (const coll of collections) {
-            const snap = await db.collection(coll).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-            snap.forEach(doc => rawData.push(doc.data()));
+  /* ==============================  EVENTOS  ================================= */
+  if (fechaManualInput) {
+    fechaManualInput.addEventListener('input', () => {
+      const fechaFinal = obtenerFechaFormateada();
+      if (parsedDataForConfirmation && parsedDataForConfirmation.datos) {
+        const errores = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+        if (!errores.length) {
+          btnConfirmarGuardado.disabled = false;
+          showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
+        } else {
+          btnConfirmarGuardado.disabled = true;
+          showStatus('<ul>' + errores.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
         }
-        // Estructura TOTAL
-        const resultado = {
-            detenidosILE: 0, filiadosVarios: 0, traslados: 0, citadosCecorex: 0,
-            inspeccionesCasasCitas: [], detenidosDelito: [], observaciones: [],
-            colaboraciones: [], dispositivos: [], // Nuevos campos extraídos
-            todasNacionalidades: [], // para suma global
-        };
-        const isILE = (motivo = '') => motivo.toUpperCase().includes('ILE') || motivo.toUpperCase().includes('EXTRANJERÍA');
-
-        rawData.forEach(data => {
-            resultado.filiadosVarios += Number(data.identificados_g4) || 0;
-            resultado.citadosCecorex += Number(data.citadosCecorex_g4) || 0;
-            if (data.traslados_g4) resultado.traslados += (String(data.traslados_g4).match(/\d+/) || [0])[0] * 1;
-            if (data.colaboraciones_g4) resultado.colaboraciones.push(...data.colaboraciones_g4.map(c => c.colaboracionDesc));
-            if (data.colaboraciones) resultado.colaboraciones.push(...data.colaboraciones.map(c => c.colaboracionDesc || c));
-            if (data.observaciones_g4) resultado.observaciones.push(data.observaciones_g4);
-            if (data.observaciones) resultado.observaciones.push(data.observaciones);
-
-            // Detenidos (ILE y DELITO)
-            const todosDetenidos = [...(data.detenidos || []), ...(data.detenidos_g4 || [])];
-            todosDetenidos.forEach(d => {
-                const motivo = d.motivo || d.motivo_g4 || '';
-                if (isILE(motivo)) resultado.detenidosILE++;
-                else resultado.detenidosDelito.push({
-                    nombre: d.detenido || d.detenidos_g4 || '',
-                    nacionalidad: d.nacionalidad || d.nacionalidad_g4 || '',
-                    motivo: motivo,
-                });
-            });
-
-            // Inspecciones: sumar todas y todas las nacionalidades
-            if (data.inspecciones) {
-                resultado.inspeccionesCasasCitas.push(...data.inspecciones.map(i => {
-                    // Añade cada nacionalidad para sumatorio global
-                    if (i.nacionalidades)
-                        i.nacionalidades.split(/[ ,;]+/).map(n=>n.trim()).filter(Boolean).forEach(nac => resultado.todasNacionalidades.push(nac));
-                    return {
-                        tipo: i.tipo || '', lugar: i.lugar || '', filiadas: Number(i.identificadas) || 0,
-                        citadas: Number(i.citadas) || 0, nacionalidades: i.nacionalidades || ''
-                    };
-                }));
-            }
-            // Dispositivos/macroperativos: actuaciones
-            if (data.actuaciones) resultado.dispositivos.push(...data.actuaciones.map(a => a.descripcion));
-        });
-
-        return resultado;
-    },
-    // --- Expulsiones Grupo 1
-    getGrupo1Detalles: async (desde, hasta) => {
-        const snap = await db.collection('grupo1_expulsiones').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        const res = { detenidos: [], expulsados: [], frustradas: [], fletados: [] };
-        snap.forEach(doc => {
-            const data = doc.data();
-            if (data.detenidos_g1) res.detenidos.push(...data.detenidos_g1);
-            if (data.expulsados_g1) res.expulsados.push(...data.expulsados_g1);
-            if (data.exp_frustradas_g1) res.frustradas.push(...data.exp_frustradas_g1);
-            if (data.fletados_g1) res.fletados.push(...data.fletados_g1);
-        });
-        return res;
-    },
-    // --- Puerto
-    getPuertoDetalles: async (desde, hasta) => {
-        const snap = await db.collection('grupoPuerto_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        let res = { incidencias: [] };
-        snap.forEach(doc => {
-            const data = doc.data();
-            Object.keys(data).forEach(key => {
-                if (key === 'ferrys') {
-                    data.ferrys.forEach(f => { if(f.incidencias) res.incidencias.push(f.incidencias) });
-                } else if (key !== 'fecha') {
-                    res[key] = (res[key] || 0) + (Number(data[key]) || 0);
-                }
-            });
-        });
-        return res;
-    },
-    // --- Cecorex
-    getCecorexDetalles: async (desde, hasta) => {
-        const snap = await db.collection('cecorex_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        let res = { incidencias: [] };
-        snap.forEach(doc => {
-            const data = doc.data();
-            Object.keys(data).forEach(key => {
-                if (key === 'detenidos_cc') res['detenidos'] = (res['detenidos'] || 0) + (data.detenidos_cc?.length || 0);
-                else if (key === 'gestiones_cecorex') data.gestiones_cecorex.forEach(g => res.incidencias.push(g.gestion));
-                else if (key !== 'fecha') res[key] = (res[key] || 0) + (Number(data[key]) || 0);
-            });
-        });
-        return res;
-    },
-    // --- Genérico: sumar todos los campos de cualquier colección (gestión, cie...)
-    sumarCampos: async (collection, desde, hasta) => {
-        const snap = await db.collection(collection).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-        let res = {};
-        snap.forEach(doc => {
-            const data = doc.data();
-            Object.keys(data).forEach(key => {
-                if (key !== 'fecha') res[key] = (res[key] || 0) + (Number(data[key]) || 0);
-            });
-        });
-        return res;
-    },
-    // --- CIE: añade dato "internos a fin de periodo"
-    async getCIE(desde, hasta) {
-        const rangeTotals = await this.sumarCampos('cie_registros', desde, hasta);
-        const snapLastDay = await db.collection('cie_registros').where(FieldPath.documentId(), '<=', hasta).orderBy(FieldPath.documentId(), 'desc').limit(1).get();
-        const finalCount = snapLastDay.empty ? "N/D" : (snapLastDay.docs[0].data().n_internos || 0);
-        return { ...rangeTotals, "Internos (fin)": finalCount };
-    }
-};
-
-// ========== 4. SUBMIT: RECOPILA TODO Y PINTA EN PANTALLA ==========
-
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    resumenVentana.innerHTML = '';
-    spinner.classList.remove('d-none');
-    exportBtns.classList.add('d-none');
-    const desde = form.fechaDesde.value;
-    const hasta = form.fechaHasta.value;
-    if (desde > hasta) {
-        resumenVentana.innerHTML = `<div class="alert alert-danger">La fecha de inicio no puede ser posterior a la de fin.</div>`;
-        spinner.classList.add('d-none');
-        return;
-    }
-    try {
-        const promesas = {
-            ucrif: QUERY_STRATEGIES.getUcrifNovedades(desde, hasta),
-            grupo1: QUERY_STRATEGIES.getGrupo1Detalles(desde, hasta),
-            puerto: QUERY_STRATEGIES.getPuertoDetalles(desde, hasta),
-            cecorex: QUERY_STRATEGIES.getCecorexDetalles(desde, hasta),
-            gestion: QUERY_STRATEGIES.sumarCampos('gestion_registros', desde, hasta),
-            cie: QUERY_STRATEGIES.getCIE(desde, hasta),
-        };
-        const resultados = await Promise.all(Object.values(promesas));
-        const resumen = Object.keys(promesas).reduce((acc, key, index) => { acc[key] = resultados[index]; return acc; }, {});
-        window._ultimoResumen = { resumen, desde, hasta };
-        resumenVentana.innerHTML = renderizarResumenNarrativoHTML(resumen, desde, hasta);
-        exportBtns.classList.remove('d-none');
-    } catch (err) {
-        console.error("Error al generar resumen:", err);
-        resumenVentana.innerHTML = `<div class="alert alert-danger">Error al consultar los datos: ${err.message}</div>`;
-    } finally { spinner.classList.add('d-none'); }
-});
-
-// ================== 5. AGRUPADOR UCRIF: SUMATORIO, NACIONALIDADES, ETC ==================
-
-function agruparResumenUCRIF(ucrifData) {
-    // Agrupa inspecciones por tipología, suma nacionalidades, y todos los totales
-    const tipologias = {};
-    const nacionalidadesTotales = {};
-    let totalInspecciones = 0, totalFiliados = 0, totalCitados = 0;
-    let totalDetenidosILE = ucrifData.detenidosILE || 0;
-    let totalFiliadosVarios = ucrifData.filiadosVarios || 0;
-    let totalTraslados = ucrifData.traslados || 0;
-    let totalCitadosCecorex = ucrifData.citadosCecorex || 0;
-    let colaboraciones = ucrifData.colaboraciones?.filter(Boolean) || [];
-    let dispositivos = ucrifData.dispositivos?.filter(Boolean) || [];
-    let observaciones = ucrifData.observaciones?.filter(Boolean) || [];
-    let avisoNac = '';
-
-    function clasificarTipo(lugar) {
-        if (!lugar) return "Otros";
-        lugar = lugar.toLowerCase();
-        if (/(cita|escort|prost|put|piso)/.test(lugar)) return "Casas de citas";
-        if (/masaj/.test(lugar)) return "Salones de masaje";
-        if (/estaci[óo]n|autob[úu]s|ave|metro/.test(lugar)) return "Estaciones/Transporte";
-        if (/mendicidad/.test(lugar)) return "Mendicidad";
-        if (/textil|empresa/.test(lugar)) return "Empresa textil";
-        if (/puerto|maritima/.test(lugar)) return "Puerto";
-        return "Otros";
-    }
-    // Inspecciones
-    if (ucrifData.inspeccionesCasasCitas) {
-        ucrifData.inspeccionesCasasCitas.forEach(insp => {
-            const tipo = clasificarTipo(insp.lugar);
-            if (!tipologias[tipo]) tipologias[tipo] = { inspecciones: 0, filiados: 0, citados: 0, locales: [] };
-            tipologias[tipo].inspecciones++;
-            tipologias[tipo].filiados += insp.filiadas || 0;
-            tipologias[tipo].citados += insp.citadas || 0;
-            totalInspecciones++;
-            totalFiliados += insp.filiadas || 0;
-            totalCitados += insp.citadas || 0;
-            // Nacionalidades individuales por local
-            if (insp.nacionalidades) {
-                insp.nacionalidades.split(/[ ,;]+/).map(x=>x.trim()).filter(Boolean).forEach(nac=>{
-                    nacionalidadesTotales[nac] = (nacionalidadesTotales[nac]||0)+1;
-                });
-            }
-            tipologias[tipo].locales.push({
-                lugar: insp.lugar,
-                filiados: insp.filiadas,
-                citados: insp.citadas,
-                nacionalidades: insp.nacionalidades
-            });
-        });
-    }
-    // Nacionalidades globales (de todas las inspecciones)
-    (ucrifData.todasNacionalidades||[]).forEach(nac => {
-        if (nac) nacionalidadesTotales[nac] = (nacionalidadesTotales[nac]||0)+1;
+      }
     });
-    if (Object.keys(nacionalidadesTotales).length === 0) avisoNac = "No se han podido extraer nacionalidades automáticamente, revisa los partes para completarlas manualmente.";
-    // Detenidos por delito: agrupados por motivo
-    const detenidosPorDelito = {};
-    if (ucrifData.detenidosDelito && ucrifData.detenidosDelito.length) {
-        for (const d of ucrifData.detenidosDelito) {
-            const motivo = (d.motivo || "Delito no especificado").toLowerCase();
-            if (!detenidosPorDelito[motivo]) detenidosPorDelito[motivo] = [];
-            let desc = '';
-            if (d.nombre && d.nacionalidad) desc = `${d.nombre} (${d.nacionalidad})`;
-            else if (d.nombre) desc = d.nombre;
-            else desc = d.nacionalidad;
-            detenidosPorDelito[motivo].push(desc);
-        }
-    }
-    return {
-        tipologias, nacionalidadesTotales, avisoNac, totalInspecciones, totalFiliados, totalCitados,
-        totalDetenidosILE, totalFiliadosVarios, totalTraslados, totalCitadosCecorex,
-        detenidosPorDelito, colaboraciones, dispositivos, observaciones
+  }
+  if (inputDocx) inputDocx.addEventListener('change', handleDocxUpload);
+  if (btnConfirmarGuardado) btnConfirmarGuardado.addEventListener('click', onConfirmSave);
+  if (btnCancelar) btnCancelar.addEventListener('click', onCancel);
+
+  /* ============================  UI HELPERS  ================================ */
+  const showStatus = (msg, type = 'info') => {
+    const cls = {
+      info: 'alert-info',
+      success: 'alert-success',
+      warning: 'alert-warning',
+      danger: 'alert-danger',
+      error: 'alert-danger'
     };
-}
+    statusContainer.innerHTML = `<div class="alert ${cls[type]||cls.info}" role="alert">${msg}</div>`;
+  };
+  const showSpinner = v => spinnerArea.style.display = v ? 'flex' : 'none';
+  const showConfirmationUI = v => confirmationButtons.style.display = v ? 'block' : 'none';
 
-// =================== 6. RENDER UCRIF (Narrativo, profesional, jugoso) ===================
+  const showResults = obj => {
+    resultsContainer.innerHTML = '<h3><i class="bi bi-card-checklist"></i> Datos extraídos</h3>';
+    Object.entries(obj).forEach(([k, datos]) => {
+      if (k === 'fecha') return;
+      const hasData = Object.values(datos).some(val => (Array.isArray(val) && val.length > 0) || (typeof val === 'string' && val) || (typeof val === 'number' && val > 0));
+      if (!hasData) return;
 
-function renderizarResumenNarrativoHTML(resumen, desde, hasta) {
-    let html = `<div class="alert alert-dark text-center my-2 p-2" style="font-size:1.3rem;">
-        <b>RESUMEN OPERATIVO SIREX</b><br>
-        <span>Periodo: <b>${desde}</b> a <b>${hasta}</b></span>
-    </div>`;
-    if (resumen.ucrif) html += renderizarUCRIFNarrativo(resumen.ucrif, desde, hasta);
-    if (resumen.grupo1) html += renderizarResumenDetalladoGrupo1(resumen, desde, hasta);
-    if (resumen.puerto) html += renderizarResumenDetalladoPuerto(resumen, desde, hasta);
-    if (resumen.cecorex) html += renderizarResumenDetalladoCecorex(resumen, desde, hasta);
-    if (resumen.gestion) html += renderizarResumenDetalladoBasico(resumen, 'gestion');
-    if (resumen.cie) html += renderizarResumenDetalladoBasico(resumen, 'cie');
-    return html;
-}
+      const card = document.createElement('div');
+      card.className = 'card mb-3 shadow-sm';
+      card.innerHTML =
+        `<div class="card-header bg-light"><strong>${k.toUpperCase()}</strong></div>
+         <div class="card-body"><pre class="results-card">${JSON.stringify(datos,null,2)}</pre></div>`;
+      resultsContainer.appendChild(card);
+    });
+  };
 
-function renderizarUCRIFNarrativo(ucrif, desde, hasta) {
-    const ag = agruparResumenUCRIF(ucrif);
-    let out = `<div class="card border-info mb-4 shadow"><div class="card-header bg-info text-white text-center">
-        <h4>${GRUPOS_CONFIG.ucrif.icon} NOVEDADES UCRIF</h4></div><div class="card-body p-3">`;
-    out += `<div class="alert alert-info"><b>Operativo UCRIF Valencia (${desde} a ${hasta})</b><br>`;
-    if (ag.totalInspecciones > 0) {
-        out += `Durante este periodo se han realizado <b>${ag.totalInspecciones}</b> inspecciones en locales de distintas tipologías:`;
-        Object.entries(ag.tipologias).forEach(([tipo, val]) => {
-            out += `<br>• <b>${tipo}:</b> ${val.inspecciones} locales (${val.locales.map(l => l.lugar).join("; ")})`;
-            val.locales.forEach(l => {
-                out += `<br style="margin-left:1em"/>- ${l.lugar}: ${l.filiados ?? 0} filiadas`;
-                if (l.citados) out += `, ${l.citados} citadas`;
-                if (l.nacionalidades) out += ` (${l.nacionalidades})`;
-            });
+  const showFechaEditable = iso => {
+    fechaEdicionDiv.style.display = "flex";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) {
+      fechaManualInput.value = iso;
+      fechaDetectadaBadge.textContent = "Detectada: " + iso.split('-').reverse().join('/');
+      fechaDetectadaBadge.className = "badge bg-success";
+    } else {
+      fechaManualInput.value = "";
+      fechaDetectadaBadge.textContent = "No detectada";
+      fechaDetectadaBadge.className = "badge bg-secondary";
+    }
+  };
+
+  function normalizarOperacion(nombre) {
+    if (!nombre) return "";
+    return nombre
+      .toUpperCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/^[A-Z]\.\s*/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  const obtenerFechaFormateada = () => fechaManualInput.value || "";
+
+  function onCancel() {
+    parsedDataForConfirmation = null;
+    resultsContainer.innerHTML = "";
+    fechaEdicionDiv.style.display = "none";
+    showConfirmationUI(false);
+    statusContainer.innerHTML = "";
+    inputDocx.value = '';
+    showSpinner(false);
+  }
+
+  /* ==========================  SUBIR Y PARSEAR  ============================= */
+  async function handleDocxUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    onCancel();
+    showSpinner(true);
+    showStatus('Procesando archivo …', 'info');
+
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      showStatus('Solo se admiten archivos DOCX.', 'danger');
+      showSpinner(false);
+      return;
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const { value: html } = await mammoth.convertToHtml({ arrayBuffer });
+
+      const r1 = parseGrupo1(html);
+      const r2 = parseGrupo2(html);
+      const r3 = parseGrupo3(html);
+      const r4 = parseGrupo4(html);
+      const rp = parseGrupoPuerto(html);
+      const rc = parseGrupoCECOREX(html);
+      const rgestion = parseGestion(html);
+      const rcie = parseGrupoCIE(html);
+
+      const resultados = {};
+      const checkHasData = dataObj => Object.values(dataObj).some(val => (Array.isArray(val) && val.length > 0) || (typeof val === 'string' && val) || (typeof val === 'number' && val > 0));
+
+      if (r1 && checkHasData(r1.datos)) resultados[GROUP1] = r1.datos;
+      if (r2 && checkHasData(r2.datos)) resultados[GROUP2] = r2.datos;
+      if (r3 && checkHasData(r3.datos)) resultados[GROUP3] = r3.datos;
+      if (r4 && checkHasData(r4.datos)) resultados[GROUP4] = r4.datos;
+      if (rp && checkHasData(rp.datos)) resultados[GROUPPUERTO] = rp.datos;
+      if (rc && checkHasData(rc.datos)) resultados[GROUPCECOREX] = rc.datos;
+      if (rgestion && checkHasData(rgestion.datos)) resultados[GROUPGESTION] = rgestion.datos;
+      if (rcie && checkHasData(rcie.datos)) resultados[GROUPCIE] = rcie.datos;
+
+      const fecha = r1.fecha || r2.fecha || r3.fecha || r4.fecha || rp.fecha || rc.fecha || rcie.fecha || "";
+
+      if (!Object.keys(resultados).length) {
+        throw new Error("No se reconoció el formato del parte DOCX o está completamente vacío.");
+      }
+
+      parsedDataForConfirmation = { datos: resultados, fecha };
+      showFechaEditable(fecha);
+      showResults({ ...resultados, fecha });
+
+      let erroresValidacion = validarDatosPorTodos(resultados, fecha);
+      if (erroresValidacion.length) {
+        showStatus('<ul>' + erroresValidacion.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+        btnConfirmarGuardado.disabled = true;
+      } else {
+        showStatus('Datos extraídos. Revisa/corrige la fecha y confirma para guardar.', 'info');
+        btnConfirmarGuardado.disabled = false;
+      }
+      showConfirmationUI(true);
+
+    } catch (err) {
+      console.error(err);
+      showStatus('Error: ' + err.message, 'danger');
+    } finally {
+      showSpinner(false);
+      inputDocx.value = '';
+    }
+  }
+
+  /* ==========================  CONFIRMAR GUARDADO  ========================= */
+  async function onConfirmSave() {
+    if (!parsedDataForConfirmation || !parsedDataForConfirmation.datos) {
+      showStatus('No hay datos para guardar.', 'danger');
+      return;
+    }
+    const fechaFinal = obtenerFechaFormateada();
+    if (!fechaFinal) {
+      showStatus('Selecciona una fecha válida.', 'danger');
+      fechaManualInput.focus();
+      return;
+    }
+    const erroresFinal = validarDatosPorTodos(parsedDataForConfirmation.datos, fechaFinal);
+    if (erroresFinal.length) {
+      showStatus('<ul>' + erroresFinal.map(e => `<li>${e}</li>`).join('') + '</ul>', 'danger');
+      showConfirmationUI(true);
+      return;
+    }
+
+    showSpinner(true);
+    showConfirmationUI(false);
+    statusContainer.innerHTML = '';
+
+    const datosParaGuardar = parsedDataForConfirmation.datos;
+    const collectionMap = {
+      [GROUP1]: "grupo1_expulsiones",
+      [GROUP2]: "grupo2_registros",
+      [GROUP3]: "grupo3_registros",
+      [GROUP4]: "grupo4_operativo",
+      [GROUPPUERTO]: "grupoPuerto_registros",
+      [GROUPCECOREX]: "cecorex_registros",
+      [GROUPGESTION]: "gestion_registros",
+      [GROUPCIE]: "cie_registros",
+    };
+    const errores = [];
+    const exitos = [];
+
+    for (const grupo in datosParaGuardar) {
+      if (!collectionMap[grupo]) continue;
+      const collectionName = collectionMap[grupo];
+      let datosDelGrupo = { ...datosParaGuardar[grupo], fecha: fechaFinal };
+
+      try {
+        // 1. GUARDADO DEL PARTE DIARIO (SOBRESCRIBE POR FECHA)
+        const ref = db.collection(collectionName).doc(fechaFinal);
+        await ref.set(datosDelGrupo, { merge: false });
+        exitos.push(`Parte diario de <b>${grupo.toUpperCase()}</b> guardado para la fecha <b>${fechaFinal}</b>.`);
+
+        // 2. LÓGICA DE SINCRONIZACIÓN PARA GRUPO 2 Y 3
+        if ([GROUP2, GROUP3].includes(grupo)) {
+          const coleccionOp = grupo === GROUP2 ? "grupo2_operaciones" : "grupo3_operaciones";
+          let actuacionesSincronizadas = 0;
+          let actuacionesOmitidas = 0;
+          let detenidosSincronizados = 0;
+          let detenidosOmitidos = 0;
+
+          // --- 2.1 Sincronizar ACTUACIONES con CRONOLOGÍA (CON CONTROL DE DUPLICADOS) ---
+          if (Array.isArray(datosDelGrupo.actuaciones) && datosDelGrupo.actuaciones.length) {
+            for (const actuacion of datosDelGrupo.actuaciones) {
+              const nombreOperacion = normalizarOperacion(actuacion.operacion);
+              if (!nombreOperacion) continue;
+              const opRef = db.collection(coleccionOp).doc(nombreOperacion);
+              const doc = await opRef.get();
+              if (doc.exists) {
+                // Comprobar si ya existe una entrada idéntica para la misma fecha
+                const q = opRef.collection("cronologia")
+                  .where("fecha", "==", fechaFinal)
+                  .where("descripcionCronologia", "==", actuacion.descripcion || "Actuación sin descripción");
+                const existing = await q.get();
+
+                if (existing.empty) {
+                  await opRef.collection("cronologia").add({
+                    descripcionCronologia: actuacion.descripcion || "Actuación sin descripción",
+                    fecha: fechaFinal,
+                    origen: 'Parte Diario',
+                    ts: new Date().toISOString()
+                  });
+                  actuacionesSincronizadas++;
+                } else {
+                  actuacionesOmitidas++;
+                }
+              }
+            }
+            if (actuacionesSincronizadas > 0) exitos.push(`&nbsp;&nbsp;&nbsp;↳ Sincronizadas ${actuacionesSincronizadas} actuaciones nuevas con sus operaciones.`);
+            if (actuacionesOmitidas > 0) exitos.push(`&nbsp;&nbsp;&nbsp;↳ Omitidas ${actuacionesOmitidas} actuaciones por ser duplicados.`);
+          }
+
+          // --- 2.2 Sincronizar DETENIDOS con la operación (CON CONTROL DE DUPLICADOS) ---
+          if (Array.isArray(datosDelGrupo.detenidos) && datosDelGrupo.detenidos.length) {
+            for (const detenido of datosDelGrupo.detenidos) {
+              const nombreOperacion = normalizarOperacion(detenido.operacion_d);
+              if (nombreOperacion) {
+                const opRef = db.collection(coleccionOp).doc(nombreOperacion);
+                const doc = await opRef.get();
+                if (doc.exists) {
+                   // Comprobar si ya existe un detenido con el mismo nombre en la misma fecha
+                   const q = opRef.collection("detenidos")
+                     .where("fechaDetenido", "==", fechaFinal)
+                     .where("nombreDetenido", "==", detenido.detenido || "N/A");
+                   const existing = await q.get();
+
+                   if(existing.empty){
+                      await opRef.collection("detenidos").add({
+                        nombreDetenido: detenido.detenido || "N/A",
+                        fechaDetenido: fechaFinal,
+                        delitoDetenido: detenido.motivo || "",
+                        nacionalidadDetenido: detenido.nacionalidad || "",
+                        observaciones: detenido.observaciones || "",
+                        origen: 'Parte Diario',
+                        ts: new Date().toISOString()
+                      });
+                      detenidosSincronizados++;
+                   } else {
+                      detenidosOmitidos++;
+                   }
+                }
+              }
+            }
+            if (detenidosSincronizados > 0) exitos.push(`&nbsp;&nbsp;&nbsp;↳ Sincronizados ${detenidosSincronizados} detenidos nuevos con sus operaciones.`);
+            if (detenidosOmitidos > 0) exitos.push(`&nbsp;&nbsp;&nbsp;↳ Omitidos ${detenidosOmitidos} detenidos por ser duplicados.`);
+          }
+
+          // --- 2.3 Sincronizar INSPECCIONES con el control de casas de citas ---
+          if (Array.isArray(datosDelGrupo.inspecciones) && datosDelGrupo.inspecciones.length) {
+            const docRef = db.collection('control_casas_citas').doc(fechaFinal);
+            const dataToUnion = datosDelGrupo.inspecciones.map(insp => ({
+              casa: insp.lugar,
+              numFiliadas: parseInt(insp.identificadas) || 0,
+              numCitadas: parseInt(insp.citadas) || 0,
+              nacionalidadesFiliadas: insp.nacionalidades.split(',').map(n => n.trim()).filter(Boolean),
+              origen: 'Parte Diario',
+              idEntrada: `parte_${Date.now()}_${Math.random()}`,
+              ts: new Date().toISOString()
+            }));
+
+            await docRef.set({ datos: firebase.firestore.FieldValue.arrayUnion(...dataToUnion) }, { merge: true });
+            exitos.push(`&nbsp;&nbsp;&nbsp;↳ Sincronizadas ${datosDelGrupo.inspecciones.length} inspecciones rutinarias.`);
+          }
+        }
+      } catch (err) {
+        console.error(`Error procesando ${grupo}:`, err);
+        errores.push(`Error al guardar/sincronizar ${grupo}: ${err.message}`);
+      }
+    }
+
+    showSpinner(false);
+    if (errores.length === 0) {
+      showStatus('Todos los grupos han sido guardados y sincronizados correctamente.', 'success');
+      parsedDataForConfirmation = null;
+      fechaEdicionDiv.style.display = "none";
+    } else {
+      let finalMessage = "";
+      if (exitos.length) finalMessage += `<div class="alert alert-success">${exitos.join('<br>')}</div>`;
+      if (errores.length) finalMessage += `<div class="alert alert-danger">${errores.join('<br>')}</div>`;
+      statusContainer.innerHTML = finalMessage;
+      showConfirmationUI(true);
+    }
+  }
+
+  /* ========================= 📋 PARSERS POR GRUPO ========================= */
+
+  function parseGrupo1(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos_g1: [],
+      expulsados_g1: [],
+      exp_frustradas_g1: [],
+      fletados_g1: [],
+      pendientes_g1: []
+    };
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header[0] === "DETENIDOS-DG1" && header[1] === "MOTIVO-DG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 5 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_g1.push({
+            detenidos_g1: tds[0].textContent.trim(),
+            motivo_g1: tds[1].textContent.trim(),
+            nacionalidad_g1: tds[2].textContent.trim(),
+            diligencias_g1: tds[3].textContent.trim(),
+            observaciones_g1: tds[4].textContent.trim()
+          });
+        }
+      } else if (header[0] === "EXPULSADOS" && header[1] === "NACIONALIDAD-EG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 6 || !tds[0].textContent.trim()) continue;
+          datos.expulsados_g1.push({
+            expulsados_g1: tds[0].textContent.trim(),
+            nacionalidad_eg1: tds[1].textContent.trim(),
+            diligencias_eg1: tds[2].textContent.trim(),
+            conduc_pos_eg1: tds[3].textContent.trim(),
+            conduc_neg_eg1: tds[4].textContent.trim(),
+            observaciones_eg1: tds[5].textContent.trim()
+          });
+        }
+      } else if (header[0] === "EXP. FRUSTRADAS" && header[1] === "NACIONALIDAD-FG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.exp_frustradas_g1.push({
+            exp_frustradas_g1: tds[0].textContent.trim(),
+            nacionalidad_fg1: tds[1].textContent.trim(),
+            diligencias_fg1: tds[2].textContent.trim(),
+            motivo_fg1: tds[3].textContent.trim()
+          });
+        }
+      } else if (header[0] === "FLETADOS" && header[1] === "DESTINO") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.fletados_g1.push({
+            fletados_g1: tds[0].textContent.trim(),
+            destino_flg1: tds[1].textContent.trim(),
+            pax_flg1: tds[2].textContent.trim(),
+            observaciones_flg1: tds[3].textContent.trim()
+          });
+        }
+      } else if (header[0] === "GESTIONES") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (!tds.length || !tds[0].textContent.trim()) continue;
+          datos.pendientes_g1.push({
+            descripcion: tds[0].textContent.trim()
+          });
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupo2(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos: [],
+      inspecciones: [],
+      actuaciones: [],
+      varios: ""
+    };
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header.includes("OPERACION D G2") && header.includes("DETENIDO G2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "OPERACION D G2") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+            if (col === "DETENIDO G2") rowObj.detenido = tds[idx]?.textContent.trim() || "";
+            if (col === "MOTIVO G2") rowObj.motivo = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDAD G2") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+            if (col === "OBSERVACIONES G2") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.detenido) datos.detenidos.push(rowObj);
+        }
+      } else if (header.includes("INSPECCION G2 LUGAR") && header.includes("IDENTIFICADAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "INSPECCION G2 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
+            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
+            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.lugar) datos.inspecciones.push(rowObj);
+        }
+      } else if (header.includes("OPERACION G2") && header.includes("ACTUACION G2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+          datos.actuaciones.push({
+            operacion: tds[0]?.textContent.trim() || "",
+            delito: tds[1]?.textContent.trim() || "",
+            descripcion: tds[2]?.textContent.trim() || ""
+          });
+        }
+      } else if (header.includes("VARIOS GRUPO 2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const txt = rows[i].cells[0]?.textContent.trim();
+          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupo3(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos: [],
+      inspecciones: [],
+      actuaciones: [],
+      varios: ""
+    };
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header.includes("OPERACION D G3") && header.includes("DETENIDO G3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "OPERACION D G3") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+            if (col === "DETENIDO G3") rowObj.detenido = tds[idx]?.textContent.trim() || "";
+            if (col === "MOTIVO G3") rowObj.motivo = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDAD G3") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+            if (col === "OBSERVACIONES G3") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.detenido) datos.detenidos.push(rowObj);
+        }
+      } else if (header.includes("INSPECCION G3 LUGAR") && header.includes("IDENTIFICADAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "INSPECCION G3 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
+            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
+            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.lugar) datos.inspecciones.push(rowObj);
+        }
+      } else if (header.includes("OPERACION G3") && header.includes("ACTUACION G3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+          datos.actuaciones.push({
+            operacion: tds[0]?.textContent.trim() || "",
+            delito: tds[1]?.textContent.trim() || "",
+            descripcion: tds[2]?.textContent.trim() || ""
+          });
+        }
+      } else if (header.includes("VARIOS GRUPO 3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const txt = rows[i].cells[0]?.textContent.trim();
+          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupo4(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos_g4: [],
+      colaboraciones_g4: [],
+      inspecciones_g4: [],
+      gestiones_varias_g4: [],
+      identificados_g4: 0,
+      citadosCecorex_g4: 0,
+      traslados_g4: "",
+      observaciones_g4: ""
+    };
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header.includes("N. DETENIDOS-G4") && header.includes("MOTIVO–G4")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_g4.push({
+            detenidos_g4: tds[0].textContent.trim(),
+            motivo_g4: tds[1].textContent.trim(),
+            nacionalidad_g4: tds[2].textContent.trim(),
+            observaciones_dg4: tds[3].textContent.trim()
+          });
+        }
+      } else if (header.includes("IDENTIFICADOS") && header.includes("CITADOS CECOREX")) {
+        const rowData = rows[1]?.querySelectorAll('td');
+        if (rowData) {
+          datos.identificados_g4 = parseInt(rowData[0]?.textContent.trim() || "0", 10);
+          datos.citadosCecorex_g4 = parseInt(rowData[1]?.textContent.trim() || "0", 10);
+          datos.traslados_g4 = rowData[2]?.textContent.trim() || "";
+          datos.observaciones_g4 = rowData[3]?.textContent.trim() || "";
+        }
+      } else if (header.includes("COLABORACION") && header.includes("UNIDAD C.")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+          datos.colaboraciones_g4.push({
+            colaboracionDesc: tds[0].textContent.trim(),
+            colaboracionUnidad: tds[1].textContent.trim(),
+            colaboracionResultado: tds[2].textContent.trim()
+          });
+        }
+      } else if (header.includes("INS.TRABAJO") && header.includes("LUGAR INS.")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+          datos.inspecciones_g4.push({
+            inspeccion: tds[0].textContent.trim(),
+            lugar: tds[1].textContent.trim(),
+            resultado: tds[2].textContent.trim()
+          });
+        }
+      } else if (header.includes("GESTIONES VARIAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (!tds.length || !tds[0].textContent.trim()) continue;
+          datos.gestiones_varias_g4.push({
+            gestionDesc: tds[0].textContent.trim()
+          });
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupoPuerto(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      ctrlMarinos: 0, marinosArgos: 0, cruceros: 0, cruceristas: 0,
+      visadosCg: 0, visadosVal: 0, visadosExp: 0, vehChequeados: 0, persChequeadas: 0,
+      detenidos: 0, denegaciones: 0, entrExcep: 0, eixics: 0, ptosDeportivos: 0,
+      ferrys: [], gestiones_puerto: []
+    };
+    const mapCampos = {
+      ctrlMarinos: /^CTRL\.MARINOS$/i, marinosArgos: /^MARINOS ARGOS$/i, cruceros: /^CRUCEROS$/i, cruceristas: /^CRUCERISTAS$/i,
+      visadosCg: /^VISAS\. CG$/i, visadosVal: /^VISAS VAL\.$/i, visadosExp: /^VISAS\. EXP$/i, vehChequeados: /^VEH\. CHEQUEADOS$/i, persChequeadas: /^PERS\. CHEQUEADAS$/i,
+      detenidos: /^DETENIDOS$/i, denegaciones: /^DENEGACIONES$/i, entrExcep: /^ENTR\. EXCEP$/i, eixics: /^EIXICS$/i, ptosDeportivos: /^PTOS\. DEPORTIVOS$/i
+    };
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (rows.length < 2) continue;
+      const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
+      const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+      cabeceras.forEach((cab, idx) => {
+        for (const clave in mapCampos) {
+          if (mapCampos[clave].test(cab)) {
+            datos[clave] = parseInt(valores[idx]) || 0;
+            break;
+          }
+        }
+      });
+      const tituloTabla = (rows[0].cells?.[0]?.textContent || "").trim().toUpperCase();
+      if (tituloTabla === 'FERRYS' || (cabeceras.includes('DESTINO') && cabeceras.includes('PASAJEROS'))) {
+        for (let i = 1; i < rows.length; i++) {
+          const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+          if (ftds.every(td => td === '')) continue;
+          const ferryData = {};
+          cabeceras.forEach((cab, idx) => {
+            if (/^DESTINO$/i.test(cab)) ferryData.destino = ftds[idx] || "";
+            if (/^HORA$/i.test(cab)) ferryData.hora = ftds[idx] || "";
+            if (/^PASAJEROS$/i.test(cab)) ferryData.pasajeros = ftds[idx] || "";
+            if (/^VEHICULOS$/i.test(cab)) ferryData.vehiculos = ftds[idx] || "";
+            if (/^INCIDENCIAS$/i.test(cab)) ferryData.incidencias = ftds[idx] || "";
+          });
+          if (ferryData.destino || ferryData.pasajeros) datos.ferrys.push(ferryData);
+        }
+      } else if (tituloTabla === 'GESTIONES PUERTO') {
+        for (let i = 1; i < rows.length; i++) {
+          const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+          if (gtds[0]) datos.gestiones_puerto.push({ gestion: gtds[0] });
+        }
+      }
+      if (!fecha) {
+        const plainText = tabla.innerText || tabla.textContent || "";
+        const match = plainText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (match) fecha = `${match[3]}-${match[2]}-${match[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupoCECOREX(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos_cc: [], cons_tfno: '', cons_presc: '', cons_equip: '', citados: '',
+      notificaciones: '', al_abogados: '', rem_subdelegacion: '', decretos_exp: '',
+      tramites_audiencia: '', cie_concedido: '', cies_denegado: '', proh_entrada: '',
+      menas: '', dil_informe: '', gestiones_cecorex: []
+    };
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header[0] === "DETENIDOS-CC") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 5 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_cc.push({
+            detenidos_cc: tds[0].textContent.trim(), motivo_cc: tds[1].textContent.trim(),
+            nacionalidad_cc: tds[2].textContent.trim(), presenta: tds[3].textContent.trim(),
+            observaciones_cc: tds[4].textContent.trim()
+          });
+        }
+      } else if (header[0] === "CONS.TFNO") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.cons_tfno = tds[0]?.textContent.trim() || '';
+          datos.cons_presc = tds[1]?.textContent.trim() || '';
+          datos.cons_equip = tds[2]?.textContent.trim() || '';
+          datos.citados = tds[3]?.textContent.trim() || '';
+          datos.notificaciones = tds[4]?.textContent.trim() || '';
+          datos.al_abogados = tds[5]?.textContent.trim() || '';
+        }
+      } else if (header[0] === "REM. SUBDELEGACIÓN") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.rem_subdelegacion = tds[0]?.textContent.trim() || '';
+          datos.decretos_exp = tds[1]?.textContent.trim() || '';
+          datos.tramites_audiencia = tds[2]?.textContent.trim() || '';
+        }
+      } else if (header[0] === "CIE CONCEDIDO") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.cie_concedido = tds[0]?.textContent.trim() || '';
+          datos.cies_denegado = tds[1]?.textContent.trim() || '';
+          datos.proh_entrada = tds[2]?.textContent.trim() || '';
+          datos.menas = tds[3]?.textContent.trim() || '';
+          datos.dil_informe = tds[4]?.textContent.trim() || '';
+        }
+      } else if (/GESTIONES CECOREX/i.test(header[0])) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length > 0 && tds[0].textContent.trim()) {
+            datos.gestiones_cecorex.push({ gestion: tds[0].textContent.trim() });
+          }
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGestion(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let datos = {};
+    let fecha = '';
+    let gestionEncontrada = false;
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const primercelda = rows[0].cells[0]?.textContent.trim().toUpperCase();
+
+      if (primercelda === 'GESTION') {
+        gestionEncontrada = true;
+        continue;
+      }
+      if (gestionEncontrada) {
+        if (['GRUPO 1', 'GRUPO 2', 'GRUPO 3', 'GRUPO 4', 'PUERTO', 'CECOREX', 'CIE'].includes(primercelda)) {
+          break;
+        }
+        const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const valores = Array.from(rows[1]?.querySelectorAll('td,th') || []).map(td => td.textContent.trim());
+        cabeceras.forEach((cab, idx) => {
+          if (valores[idx] && valores[idx] !== '') {
+            datos[cab] = parseInt(valores[idx]) || valores[idx];
+          }
         });
+        if (!fecha) {
+          let plain = tabla.innerText || tabla.textContent || "";
+          let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+          if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
+      }
     }
-    if (Object.keys(ag.nacionalidadesTotales).length > 0) {
-        out += `<br><br><u><b>Totales por nacionalidad:</b></u> `;
-        let nacString = Object.entries(ag.nacionalidadesTotales)
-            .filter(([n]) => !n.startsWith('_'))
-            .map(([n, v]) => `${v} ${n}`)
-            .join(', ');
-        out += nacString || "<span class='text-muted'>Sin nacionalidades extraídas automáticamente.</span>";
-    } else if (ag.avisoNac) {
-        out += `<br><span class="text-danger"><b>Aviso:</b> ${ag.avisoNac}</span>`;
-    }
-    if (ag.totalDetenidosILE > 0) out += `<br><br><b>${ag.totalDetenidosILE}</b> personas detenidas por infracción a la Ley de Extranjería (ILE).`;
-    if (Object.keys(ag.detenidosPorDelito).length > 0) {
-        out += `<br><u><b>Detenidos por delito:</b></u>`;
-        Object.entries(ag.detenidosPorDelito).forEach(([delito, lista]) => {
-            out += `<br>• ${lista.length} por ${delito}:<ul style="margin-bottom:0">${lista.map(d => `<li>${d}</li>`).join('')}</ul>`;
-        });
-    }
-    if (ag.dispositivos?.length) {
-        out += `<br><u><b>Dispositivos especiales:</b></u>`;
-        ag.dispositivos.forEach(d => out += `<br>• ${d}`);
-    }
-    if (ag.colaboraciones?.length) {
-        out += `<br><u><b>Colaboraciones realizadas con:</b></u> `;
-        out += ag.colaboraciones.map(c => `<span>${c}</span>`).join(', ');
-    }
-    if (ag.totalCitadosCecorex > 0) out += `<br><b>${ag.totalCitadosCecorex} personas citadas para comparecencia en CECOREX.</b>`;
-    if (ag.observaciones?.length) {
-        out += `<br><u><b>Observaciones y comentarios relevantes:</b></u>`;
-        ag.observaciones.forEach(o => out += `<br>• ${o}`);
-    }
-    out += `<br><br><i>Operativo coordinado por UCRIF Valencia. Parte cerrado.</i>`;
-    out += `</div></div></div>`;
-    return out;
-}
+    return { datos, fecha };
+  }
 
-// =================== 7. EXPORTACIÓN WHATSAPP (Narrativo, detallado) ===================
-document.getElementById('btnWhatsapp').addEventListener('click', () => {
-    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    const msg = generarTextoWhatsappNarrativo(resumen, desde, hasta);
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-});
+  function parseGrupoCIE(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {};
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      if (header[0] === "N. INTERNOS" && header[1] === "SALIDAS") {
+        const rowData = rows[1]?.children;
+        if (rowData) {
+          datos = {
+            n_internos: rowData[0]?.textContent.trim() || '',
+            salidas: rowData[1]?.textContent.trim() || '',
+            entradas: rowData[2]?.textContent.trim() || '',
+            observaciones_cie: rowData[3]?.textContent.trim() || ''
+          };
+        }
+      }
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
 
-function generarTextoWhatsappNarrativo(resumen, desde, hasta) {
-    const ag = agruparResumenUCRIF(resumen.ucrif);
-    let out = `🛡️ *NOVEDADES UCRIF* (${desde} a ${hasta})\n\n`;
-    if (ag.totalInspecciones > 0) {
-        out += `Durante este periodo se han realizado *${ag.totalInspecciones}* inspecciones:\n`;
-        Object.entries(ag.tipologias).forEach(([tipo, val]) => {
-            out += `  • *${tipo}:* ${val.inspecciones} locales (${val.locales.map(l => l.lugar).join("; ")})\n`;
-            val.locales.forEach(l => {
-                out += `      - ${l.lugar}: ${l.filiados ?? 0} filiadas`;
-                if (l.citados) out += `, ${l.citados} citadas`;
-                if (l.nacionalidades) out += ` (${l.nacionalidades})`;
-                out += `\n`;
-            });
-        });
+  /* ===========================  VALIDACIÓN  ================================ */
+  function validarDatos(data, grupo, fecha) {
+    if (!data || typeof data !== 'object') {
+      return [`No se han extraído datos válidos para ${grupo.toUpperCase()}.`];
     }
-    if (Object.keys(ag.nacionalidadesTotales).length > 0) {
-        out += `\n_Totales por nacionalidad:_ `;
-        out += Object.entries(ag.nacionalidadesTotales)
-            .filter(([n]) => !n.startsWith('_'))
-            .map(([n, v]) => `${v} ${n}`).join(', ') || "Sin nacionalidades auto-extraídas.";
-        out += `\n`;
+    const errores = [];
+    if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      errores.push('La fecha es obligatoria y debe ser válida.');
     }
-    if (ag.totalDetenidosILE > 0) out += `\n*${ag.totalDetenidosILE}* detenidos por ILE.\n`;
-    if (Object.keys(ag.detenidosPorDelito).length > 0) {
-        out += `\n_Detenidos por delito:_\n`;
-        Object.entries(ag.detenidosPorDelito).forEach(([delito, lista]) => {
-            out += ` • ${lista.length} por ${delito}:\n`;
-            lista.forEach(d => out += `    - ${d}\n`);
-        });
-    }
-    if (ag.dispositivos?.length) {
-        out += `\n_Dispositivos especiales:_\n`;
-        ag.dispositivos.forEach(d => out += ` • ${d}\n`);
-    }
-    if (ag.colaboraciones?.length) {
-        out += `\n_Colaboraciones:_ `;
-        out += ag.colaboraciones.join(', ') + "\n";
-    }
-    if (ag.totalCitadosCecorex > 0) out += `\n*${ag.totalCitadosCecorex}* personas citadas para CECOREX.\n`;
-    if (ag.observaciones?.length) {
-        out += `\n_Observaciones:_\n`;
-        ag.observaciones.forEach(o => out += ` • ${o}\n`);
-    }
-    out += `\n_Operativo coordinado por UCRIF Valencia. Parte cerrado._\n`;
-    return out;
-}
+    return errores;
+  }
 
-// =================== 8. EXPORTACIÓN PDF (Texto narrativo, idéntico a WhatsApp) ===================
-document.getElementById('btnExportarPDF').addEventListener('click', () => {
-    if (!window._ultimoResumen) return alert("Primero genera un resumen.");
-    const { resumen, desde, hasta } = window._ultimoResumen;
-    const doc = new window.jspdf.jsPDF({ unit: "pt", format: "a4" });
-    let y = 40;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.text("SIREX - Resumen Operativo Global", 300, y, { align: "center" });
-    y += 20;
-    doc.setFontSize(11);
-    doc.text(`Periodo: ${desde} a ${hasta}`, 300, y, { align: "center" });
-    y += 25;
-    // UCRIF narrativo
-    const ucrifText = generarTextoWhatsappNarrativo(resumen, desde, hasta).replace(/\n/g, '\n');
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(ucrifText, 40, y, { maxWidth: 520 });
-    y += 150;
-    // Puedes añadir otros grupos con tabla si quieres
-    doc.save(`SIREX-Resumen-Operativo_${desde}_a_${hasta}.pdf`);
-});
+  function validarDatosPorTodos(datosPorGrupo, fecha) {
+    let errores = [];
+    for (const grupo in datosPorGrupo) {
+      const errs = validarDatos(datosPorGrupo[grupo], grupo, fecha);
+      if (errs.length) errores = [...errores, ...errs];
+    }
+    return [...new Set(errores)];
+  }
 
-// =================== 9. RESTO DE GRUPOS ===================
-// Puedes mantener su renderizado clásico (usa tu render actual para grupo1, puerto, cecorex, etc.)
-
-// =================== FIN. CODIGO DE CONSULTA DEFINITIVO SIREX ===================
-
+}); // DOMContentLoaded
