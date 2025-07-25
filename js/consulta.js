@@ -1,17 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.4
+// SIREX · Consulta Global / Resúmenes v3.5
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión de corrección con visibilidad de datos restaurada y PDF reparado.
-// MEJORAS CLAVE (v3.4):
-// 1. **Visibilidad de Dispositivos Restaurada**: La lista de "Dispositivos Operativos"
-//    ahora es siempre visible en la página web. El checkbox ya no la oculta.
-// 2. **Control de Exportación Funcional**: El checkbox "incluirDispositivos" ahora
-//    controla exclusivamente la inclusión de dispositivos en los exports (PDF/WhatsApp).
-// 3. **Reparación del PDF**: Se ha refactorizado la función que genera las tablas de
-//    3 columnas para hacerla más robusta y evitar los errores de cálculo de ancho,
-//    haciendo la exportación a PDF estable.
-// 4. **Estabilidad General**: Mantiene todas las mejoras de diseño y precisión de
-//    datos de las versiones anteriores.
+// Descripción: Versión final con selección individual de dispositivos y WhatsApp narrativo.
+// MEJORAS CLAVE (v3.5):
+// 1. **Selección Individual de Dispositivos**: La lista de Dispositivos Operativos
+//    ahora muestra un checkbox por cada item, permitiendo al usuario seleccionar
+//    cuáles incluir en los informes de PDF y WhatsApp.
+// 2. **WhatsApp Narrativo Avanzado**: El resumen para WhatsApp ha sido completamente
+//    rediseñado para seguir el formato solicitado, agrupando detenidos por motivo
+//    y detallando los resultados de las inspecciones.
+// 3. **PDF Estable y Mejorado**: Se ha corregido el error de renderizado en las tablas
+//    de 3 columnas, asegurando una exportación a PDF robusta y visualmente atractiva.
+// 4. **Precisión de Datos**: Se ha mejorado la lógica para agregar y presentar
+//    correctamente los datos de nacionalidades y otros detalles en los informes.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnExportarPDF: document.getElementById('btnExportarPDF'),
         fechaDesde: document.getElementById('fechaDesde'),
         fechaHasta: document.getElementById('fechaHasta'),
-        incluirDispositivos: document.getElementById('incluirDispositivos'),
     };
 
     // --- 4. ESTADO GLOBAL DE LA APLICACIÓN ---
@@ -242,8 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<p class="mb-4">${frase}</p>`;
 
             html += this.renderListSection('Inspecciones y Controles', data.inspecciones, i => this.formatters.inspeccion(i));
-            // **CORRECCIÓN**: La lista de dispositivos ahora siempre se renderiza en la web.
-            html += this.renderListSection('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
+            html += this.renderListSectionWithCheckboxes('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
             html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
             
             if (data.observaciones?.filter(o => o && o.trim()).length > 0) {
@@ -355,6 +354,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return html;
         },
 
+        renderListSectionWithCheckboxes(title, data, formatter) {
+            if (!data || data.length === 0) return '';
+            let html = `<h5 class="mt-4 mb-2 fw-bold text-primary-emphasis" style="font-size: 1.1rem;">${title} (${data.length})</h5><ul class="list-group list-group-flush">`;
+            data.forEach((item, index) => {
+                html += `<li class="list-group-item d-flex align-items-center">
+                            <div class="form-check">
+                                <input class="form-check-input dispositivo-checkbox" type="checkbox" value="${index}" id="dispositivo-${index}">
+                                <label class="form-check-label" for="dispositivo-${index}">
+                                    ${formatter(item)}
+                                </label>
+                            </div>
+                         </li>`;
+            });
+            html += `</ul>`;
+            return html;
+        },
+
         formatoFecha: (fechaStr) => fechaStr ? fechaStr.split('-').reverse().join('/') : "N/A",
 
         formatters: {
@@ -401,12 +417,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const u = resumen.ucrif;
                 let content = `Las novedades UCRIF son las siguientes:\n\n`;
                 content += `*${u.detenidosILE ?? 0}* detenidos por ILE, *${u.filiadosVarios ?? 0}* identificados, *${u.traslados ?? 0}* traslados y *${u.citadosCecorex ?? 0}* citados para CECOREX.\n`;
+                
+                const detenidosAgrupados = u.detenidosDelito.reduce((acc, d) => {
+                    acc[d.motivo] = acc[d.motivo] || [];
+                    acc[d.motivo].push(d.nacionalidad);
+                    return acc;
+                }, {});
 
-                if (u.detenidosDelito?.length > 0) {
+                if (Object.keys(detenidosAgrupados).length > 0) {
                     content += `\n`;
-                    u.detenidosDelito.forEach(d => {
-                        content += `• 1 detenido por _${d.motivo}_ (${d.nacionalidad})\n`;
-                    });
+                    for (const motivo in detenidosAgrupados) {
+                        content += `• ${detenidosAgrupados[motivo].length} detenido/s por _${motivo}_ (${detenidosAgrupados[motivo].join(', ')})\n`;
+                    }
                 }
                 
                 if (u.inspecciones?.length > 0) {
@@ -430,9 +452,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                if (DOM.incluirDispositivos?.checked && u.dispositivos?.length > 0) {
-                    content += `\n*Dispositivos en Curso:*\n`;
-                    u.dispositivos.slice(0, 5).forEach(d => {
+                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked'))
+                    .map(cb => u.dispositivos[parseInt(cb.value)]);
+
+                if (selectedDispositivos.length > 0) {
+                    content += `\n*En el marco de las investigaciones de UCRIF destacan los siguientes avances:*\n`;
+                    selectedDispositivos.forEach(d => {
                          const dispText = UIRenderer.formatters.dispositivo(d).replace(/<strong>|<\/strong>/g, '');
                          content += `• ${dispText}\n`;
                     });
@@ -558,8 +583,12 @@ document.addEventListener('DOMContentLoaded', () => {
                              autoTable([['Resumen de Nacionalidades (Filiados)']], Object.entries(u.nacionalidadesFiliados).map(([nac, count]) => [`• ${count} ${nac}`]), AppConfig.grupos.ucrif);
                              finalY += 5;
                         }
-                        if (DOM.incluirDispositivos?.checked && u.dispositivos?.length > 0) {
-                            autoTable([['Dispositivos Operativos (Operación)', 'Descripción']], u.dispositivos.map(d => [d.operacion || 'N/D', d.descripcion || 'N/D']), AppConfig.grupos.ucrif);
+                        
+                        const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked'))
+                            .map(cb => u.dispositivos[parseInt(cb.value)]);
+
+                        if (selectedDispositivos.length > 0) {
+                            autoTable([['Dispositivos Operativos Seleccionados (Operación)', 'Descripción']], selectedDispositivos.map(d => [d.operacion || 'N/D', d.descripcion || 'N/D']), AppConfig.grupos.ucrif);
                             finalY += 5;
                         }
                         if (u.detenidosDelito?.length > 0) {
@@ -601,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         startY: finalY,
                         body: body,
                         theme: 'plain',
-                        styles: { cellPadding: 2, minCellHeight: 25 },
+                        styles: { cellPadding: { top: 8, right: 2, bottom: 8, left: 2 }, minCellHeight: 25 },
                         didDrawCell: function (data) {
                             const item = data.cell.raw;
                             if (item && data.section === 'body') {
@@ -617,11 +646,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const labelText = doc.splitTextToSize(item.label, data.cell.width - 6);
                                 doc.text(labelText, data.cell.x + data.cell.width / 2, data.cell.y + 18, { align: 'center' });
                             }
-                        },
-                        columnStyles: {
-                            0: { cellWidth: (pageW - margin * 2) / 3 },
-                            1: { cellWidth: (pageW - margin * 2) / 3 },
-                            2: { cellWidth: (pageW - margin * 2) / 3 },
                         }
                     });
                     finalY = doc.autoTable.previous.finalY;
