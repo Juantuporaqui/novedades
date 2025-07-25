@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
    SIREX – Procesamiento de novedades (Grupo 1, Grupo 4 Operativo, Puerto, CECOREX, CIE)
    Profesional 2025 – Auto-importa partes oficiales en DOCX y los guarda en Firebase.
-   Versión 2.3: Corregidos parsers para G2, G3 y CIE para compatibilidad con formato actual.
+   Versión 2.4: Añadida retrocompatibilidad para leer formatos de partes antiguos y nuevos de G2/G3.
 --------------------------------------------------------------------------- */
 let parsedDataForConfirmation = null;
 
@@ -454,6 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * CORREGIDO: Parsea Grupo 2.
    * Unifica la extracción de detenidos y actuaciones de la misma tabla.
    * Las filas con la columna "DETENIDO G2" vacía se consideran "actuaciones".
+   * AÑADIDO: Lee también el formato antiguo con tabla de actuaciones separada.
    */
   function parseGrupo2(html) {
     const root = document.createElement('div');
@@ -472,6 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!rows.length) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
+        // Lógica para formato nuevo (y detenidos del formato antiguo)
         if (header.includes("OPERACION D G2") && header.includes("OBSERVACIONES G2")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
@@ -491,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nacionalidad: nacionalidad,
                         observaciones: observaciones
                     });
-                } else if (observaciones) {
+                } else if (observaciones) { // Esto es para el formato nuevo
                     datos.actuaciones.push({
                         operacion: operacion,
                         delito: motivo,
@@ -499,7 +501,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             }
-        } else if (header.includes("INSPECCION G2 LUGAR") && header.includes("IDENTIFICADAS")) {
+        } 
+        // Lógica para formato antiguo (tabla de actuaciones)
+        else if (header.includes("OPERACION G2") && header.includes("ACTUACION G2")) {
+            for (let i = 1; i < rows.length; i++) {
+                const tds = Array.from(rows[i].querySelectorAll('td'));
+                if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+                datos.actuaciones.push({
+                    operacion: tds[0]?.textContent.trim() || "",
+                    delito: tds[1]?.textContent.trim() || "",
+                    descripcion: tds[2]?.textContent.trim() || ""
+                });
+            }
+        }
+        else if (header.includes("INSPECCION G2 LUGAR") && header.includes("IDENTIFICADAS")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
                 if (tds.length < 1 || tds.every(td => !td.textContent.trim())) continue;
@@ -531,6 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * CORREGIDO: Parsea Grupo 3.
    * Lógica idéntica a parseGrupo2 para unificar detenidos y actuaciones.
+   * AÑADIDO: Lee también el formato antiguo con tabla de actuaciones separada.
    */
   function parseGrupo3(html) {
     const root = document.createElement('div');
@@ -548,6 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!rows.length) continue;
         const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
+        // Lógica para formato nuevo (y detenidos del formato antiguo)
         if (header.includes("OPERACION D G3") && header.includes("OBSERVACIONES G3")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
@@ -567,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nacionalidad: nacionalidad,
                         observaciones: observaciones
                     });
-                } else if (observaciones) {
+                } else if (observaciones) { // Esto es para el formato nuevo
                     datos.actuaciones.push({
                         operacion: operacion,
                         delito: motivo,
@@ -575,7 +592,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             }
-        } else if (header.includes("INSPECCION G3 LUGAR") && header.includes("IDENTIFICADAS")) {
+        } 
+        // Lógica para formato antiguo (tabla de actuaciones)
+        else if (header.includes("OPERACION G3") && header.includes("ACTUACION G3")) {
+            for (let i = 1; i < rows.length; i++) {
+                const tds = Array.from(rows[i].querySelectorAll('td'));
+                if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+                datos.actuaciones.push({
+                    operacion: tds[0]?.textContent.trim() || "",
+                    delito: tds[1]?.textContent.trim() || "",
+                    descripcion: tds[2]?.textContent.trim() || ""
+                });
+            }
+        }
+        else if (header.includes("INSPECCION G3 LUGAR") && header.includes("IDENTIFICADAS")) {
             for (let i = 1; i < rows.length; i++) {
                 const tds = Array.from(rows[i].querySelectorAll('td'));
                 if (tds.length < 1 || tds.every(td => !td.textContent.trim())) continue;
