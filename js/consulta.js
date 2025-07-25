@@ -513,60 +513,50 @@ document.addEventListener('DOMContentLoaded', () => {
         let finalY = margin;
 
         // --- PORTADA ---
-        // Fondo degradado moderno
-        
         doc.setFillColor(17,119,187);
         doc.rect(0, 0, pageW, pageH, 'F');
         doc.setTextColor(255,255,255);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(29);
-        doc.text("INFORME OPERATIVO GLOBAL SIREX", pageW/2, 56, { align: "center" });
-        doc.setFontSize(16); doc.setFont("helvetica", "normal");
-        doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW/2, 75, { align: "center" });
-        doc.setFontSize(11); doc.text("Brigada Provincial de Extranjería y Fronteras", pageW/2, 87, { align: "center" });
+        doc.setFont("helvetica", "bold"); doc.setFontSize(27);
+        doc.text("INFORME OPERATIVO GLOBAL SIREX", pageW/2, 54, { align: "center" });
+        doc.setFontSize(14); doc.setFont("helvetica", "normal");
+        doc.text("Brigada Provincial de Extranjería y Fronteras · Valencia", pageW/2, 68, { align: "center" });
+        doc.setFontSize(11);
+        doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW/2, 77, { align: "center" });
 
-        // Logo central grande, no repitas URLs: cámbialo si tienes otro de mejor calidad
-        const logoURL = 'https://i.imgur.com/7dlqR3j.png'; 
+        // LOGO NUEVO
+        const logoURL = 'https://i.imgur.com/3ZWSJnc.png'; // Cambia por la ruta local si lo descargas
         try {
-            doc.addImage(logoURL, 'PNG', pageW/2-22, 97, 44, 44, '', 'FAST');
+            doc.addImage(logoURL, 'PNG', pageW/2-30, 87, 60, 60, '', 'FAST');
         } catch(e) {}
 
-        doc.setFontSize(13); doc.text('Expediente generado automáticamente por SIREX', pageW/2, 153, { align: "center" });
+        doc.setFontSize(13); doc.text('Expediente generado automáticamente por SIREX', pageW/2, 156, { align: "center" });
 
-        // Breve índice
-        doc.setFontSize(12);
-        doc.setTextColor(235,235,235);
-        doc.text('Índice', pageW/2, 180, { align: 'center' });
+        // ÍNDICE simplificado y visual
+        doc.setFontSize(12); doc.setTextColor(235,235,235);
+        doc.text('Índice', pageW/2, 178, { align: 'center' });
         doc.setFontSize(10);
-        let yIdx = 190;
+        let yIdx = 186;
         const indices = [
             "Resumen Ejecutivo",
-            "Indicadores Clave UCRIF",
-            "Inspecciones & Dispositivos",
-            "Grupo 1 - Expulsiones",
-            "Puerto",
-            "CECOREX / Gestión / CIE",
-            "Conclusiones"
+            "Indicadores UCRIF",
+            "Actuaciones detalladas",
+            "Resumen de otros grupos",
+            "Conclusión"
         ];
         indices.forEach((txt,i)=>{ doc.text(`${i+1}. ${txt}`, pageW/2, yIdx, { align: "center" }); yIdx+=7; });
         doc.addPage();
 
         // --- FUNCIONES AUXILIARES PDF ---
-        const addWatermark = () => {
-            doc.setFontSize(40);
-            doc.setTextColor(230,238,255, 0.08);
-            doc.text("SIREX", pageW/2, pageH/2+20, { align: "center", angle: 30 });
-            doc.setTextColor(0,0,0);
-        };
         const addHeader = (seccion) => {
             doc.setFillColor(17,119,187);
-            doc.rect(0, 0, pageW, 24, 'F');
+            doc.rect(0, 0, pageW, 20, 'F');
             doc.setTextColor(255,255,255);
-            doc.setFont("helvetica", "bold"); doc.setFontSize(17);
-            doc.text(`SIREX · ${seccion || 'Resumen Operativo'}`, margin, 16);
-            doc.setFontSize(11); doc.setFont("helvetica", "normal");
-            doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW - margin, 16, { align: "right" });
+            doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+            doc.text(`SIREX · ${seccion || 'Resumen Operativo'}`, margin, 14);
+            doc.setFontSize(10); doc.setFont("helvetica", "normal");
+            doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} – ${UIRenderer.formatoFecha(hasta)}`, pageW - margin, 14, { align: "right" });
             doc.setTextColor(0,0,0);
-            finalY = 30;
+            finalY = 28;
         };
         const addFooter = () => {
             const pageCount = doc.internal.getNumberOfPages();
@@ -587,21 +577,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // --- 1. Resumen Ejecutivo ---
-        addWatermark();
         addHeader('Resumen Ejecutivo');
         doc.setFont("helvetica", "normal"); doc.setFontSize(12);
         doc.setTextColor(30,35,55);
         const introText = doc.splitTextToSize(
-            "En este informe se recopila de forma exhaustiva y ejecutiva toda la operativa desarrollada en el periodo analizado, ofreciendo una visión detallada por grupos y áreas clave.", 
+            "En este informe se detalla la operativa policial desarrollada por la Brigada Provincial de Extranjería y Fronteras de Valencia en el periodo seleccionado. Se resumen indicadores clave y actuaciones agrupadas de forma ejecutiva y clara.",
             pageW - margin * 2
         );
         doc.text(introText, margin, finalY+3);
-        finalY += introText.length * 5 + 8;
+        finalY += introText.length * 5 + 10;
         doc.setTextColor(0,0,0);
 
-        // --- 2. Indicadores Clave UCRIF ---
+        // --- 2. Indicadores UCRIF (en la misma página si cabe) ---
         if (resumen.ucrif) {
-            doc.addPage(); addWatermark(); addHeader('Indicadores UCRIF');
+            doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+            doc.setTextColor(17,119,187);
+            doc.text("Indicadores clave UCRIF", margin, finalY+3);
+            finalY += 8;
             const u = resumen.ucrif;
             const ucrifStats = [
                 ["Detenidos ILE", String(u.detenidosILE ?? 0)],
@@ -614,28 +606,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 head: [["Indicador", "Total"]],
                 body: ucrifStats,
                 theme: 'striped',
-                styles: { fillColor: [240,248,255], textColor: 20, minCellHeight: 10, fontSize: 11, fontStyle: 'bold' },
+                styles: { fillColor: [240,248,255], textColor: 20, minCellHeight: 9, fontSize: 11, fontStyle: 'bold' },
                 headStyles: { fillColor: [0, 164, 204], textColor: 255, fontStyle: "bold" },
                 margin: { left: margin, right: margin }
             });
-            finalY = doc.autoTable.previous.finalY + 8;
+            finalY = doc.autoTable.previous.finalY + 6;
         }
 
-        // --- 3. Inspecciones, Dispositivos y Detenidos UCRIF ---
+        // --- 3. Actuaciones Detalladas UCRIF (agrupadas, mismo color de cabecera, sin saltar de página salvo que sea necesario) ---
         if (resumen.ucrif) {
             const u = resumen.ucrif;
             const addSubSectionTable = (title, head, body, color) => {
                 if (!body || body.length === 0) return;
-                doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+                doc.setFont("helvetica", "bold"); doc.setFontSize(12);
                 doc.setTextColor(...color); doc.text(title, margin, finalY+2);
                 finalY += 6;
                 doc.autoTable({
                     startY: finalY, head: head, body: body, theme: 'grid',
-                    styles: { fontSize: 10, minCellHeight: 9 },
+                    styles: { fontSize: 10, minCellHeight: 8 },
                     headStyles: { fillColor: color, textColor: 255 },
                     margin: { left: margin, right: margin }
                 });
-                finalY = doc.autoTable.previous.finalY + 9;
+                finalY = doc.autoTable.previous.finalY + 8;
             };
             // Inspecciones y controles
             addSubSectionTable(
@@ -683,13 +675,18 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
 
-        // --- 4. Grupo 1, Puerto, CECOREX, Gestión, CIE ---
+        // --- 4. Otros Grupos (todas las tablas en una o dos páginas máximo) ---
+        doc.addPage();
+        addHeader('Resumen otros grupos');
         const printSection = (nombre, colorRGB, datos) => {
             if (!datos || Object.keys(datos).length === 0) return;
-            doc.addPage(); addWatermark(); addHeader(nombre);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+            doc.setTextColor(...colorRGB);
+            doc.text(nombre, margin, finalY+3);
+            finalY += 6;
             const arr = Object.entries(datos).map(([k,v]) => [k.replace(/_/g,' ').toUpperCase(), String(v)]);
-            doc.autoTable({ startY: finalY, head: [["Clave", "Valor"]], body: arr, theme: 'striped', headStyles: { fillColor: colorRGB, textColor: 255 }, styles: { fontSize: 10, minCellHeight: 9 }, margin: { left: margin, right: margin } });
-            finalY = doc.autoTable.previous.finalY + 6;
+            doc.autoTable({ startY: finalY, head: [["Clave", "Valor"]], body: arr, theme: 'striped', headStyles: { fillColor: colorRGB, textColor: 255 }, styles: { fontSize: 10, minCellHeight: 8 }, margin: { left: margin, right: margin } });
+            finalY = doc.autoTable.previous.finalY + 5;
         };
         printSection('Grupo 1 - Expulsiones', [13,110,253], resumen.grupo1);
         printSection('Puerto', [25,135,84], resumen.puerto?.numericos);
@@ -697,18 +694,19 @@ document.addEventListener('DOMContentLoaded', () => {
         printSection('Gestión', [108,117,125], resumen.gestion);
         printSection('CIE', [220,53,69], resumen.cie);
 
-        // --- 5. CIERRE ---
-        doc.addPage(); addWatermark(); addHeader('Conclusión');
-        doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+        // --- 5. Conclusión ---
+        doc.addPage();
+        addHeader('Conclusión');
+        doc.setFont("helvetica", "bold"); doc.setFontSize(16);
         doc.setTextColor(40,58,90);
-        doc.text("Conclusión del Informe", pageW/2, 50, { align: "center" });
-        doc.setFont("helvetica", "normal"); doc.setFontSize(13);
+        doc.text("Conclusión del Informe", pageW/2, 48, { align: "center" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(12);
         doc.setTextColor(30,30,30);
         const cierreText = doc.splitTextToSize(
-            "El presente informe cierra sin incidencias extraordinarias, reflejando la eficacia y profesionalidad en las actuaciones policiales del periodo. Parte cerrado por SIREX.",
+            "El presente informe se cierra sin incidencias extraordinarias, reflejando la eficacia y profesionalidad en las actuaciones policiales del periodo. Parte cerrado y generado por SIREX.",
             pageW - margin * 2
         );
-        doc.text(cierreText, margin, 70);
+        doc.text(cierreText, margin, 66);
 
         addFooter();
         doc.save(`SIREX_Resumen_${desde}_a_${hasta}.pdf`);
