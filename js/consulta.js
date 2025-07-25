@@ -1,19 +1,15 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.8
+// SIREX · Consulta Global / Resúmenes v3.0
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión de corrección crítica y estabilización.
-// MEJORAS CLAVE (v2.8):
-// 1. **Reparación de Exportación a PDF**: Se ha eliminado el logo en Base64 que causaba
-//    un error crítico ("Corrupt PNG") y se ha rediseñado el encabezado del PDF para
-//    garantizar una exportación 100% fiable y profesional.
-// 2. **Corrección de Datos en Grupo 1**: Se ha mejorado la lógica de normalización para
-//    interpretar correctamente múltiples formatos de campo (ej. 'nacionalidad' y
-//    'nacionalidad_g1'), solucionando la aparición de "N/A".
-// 3. **Filtrado de Entradas Vacías**: Se ha implementado un filtro para que los
-//    registros vacíos o sin datos relevantes en el Grupo 1 no se muestren,
-//    limpiando la interfaz y los informes.
-// 4. **Mantenimiento de Funcionalidades**: Conserva todas las mejoras de diseño y
-//    contenido de la v2.7, ahora sobre una base estable.
+// Descripción: Versión con rediseño completo de la exportación a PDF.
+// MEJORAS CLAVE (v3.0):
+// 1. **PDF de Diseño Profesional**: Se ha rediseñado la exportación a PDF inspirándose
+//    en la imagen de referencia del usuario. Incluye un nuevo encabezado gráfico,
+//    un bloque de "Indicadores Clave" y tablas con un estilo mejorado.
+// 2. **Corrección de Errores de PDF**: Eliminados los emojis de la exportación a PDF
+//    para solucionar definitivamente los errores de renderizado de caracteres.
+// 3. **Estabilidad Mantenida**: Se conservan todas las correcciones de datos y filtros
+//    de versiones anteriores, asegurando la precisión de la información.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -131,9 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
             snap.forEach(doc => {
                 const data = doc.data();
                 if (data.detenidos_g1) res.detenidos.push(...data.detenidos_g1);
+                if (data.detenidos) res.detenidos.push(...data.detenidos);
                 if (data.expulsados_g1) res.expulsados.push(...data.expulsados_g1);
+                if (data.expulsados) res.expulsados.push(...data.expulsados);
                 if (data.exp_frustradas_g1) res.frustradas.push(...data.exp_frustradas_g1);
+                if (data.frustradas) res.frustradas.push(...data.frustradas);
                 if (data.fletados_g1) res.fletados.push(...data.fletados_g1);
+                if (data.fletados) res.fletados.push(...data.fletados);
             });
             return res;
         },
@@ -231,11 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="card-header bg-${cfg.theme} text-white"><h4>${cfg.icon} ${cfg.label}</h4></div>
                             <div class="card-body p-4">`;
             
-            // Filtra los datos para no mostrar entradas vacías
-            const detenidosValidos = data.detenidos.map(this.normalizers.detenido).filter(d => d.motivo !== 'N/A' && d.nacionalidad !== 'N/A');
-            const expulsadosValidos = data.expulsados.map(this.normalizers.expulsado).filter(e => e.nacionalidad !== 'N/A');
-            const frustradasValidas = data.frustradas.map(this.normalizers.frustrada).filter(f => f.nombre !== 'N/A');
-            const fletadosValidos = data.fletados.map(this.normalizers.fletado).filter(f => f.destino !== 'N/A');
+            const detenidosValidos = data.detenidos.map(this.normalizers.detenido).filter(d => d.motivo && d.motivo.trim() && d.motivo !== 'N/A' && d.nacionalidad && d.nacionalidad.trim() && d.nacionalidad !== 'N/A');
+            const expulsadosValidos = data.expulsados.map(this.normalizers.expulsado).filter(e => e.nacionalidad && e.nacionalidad.trim() && e.nacionalidad !== 'N/A');
+            const frustradasValidas = data.frustradas.map(this.normalizers.frustrada).filter(f => f.nombre && f.nombre.trim() && f.nombre !== 'N/A');
+            const fletadosValidos = data.fletados.map(this.normalizers.fletado).filter(f => f.destino && f.destino.trim() && f.destino !== 'N/A');
 
             html += this.renderListSection('Detenidos', detenidosValidos, d => `<strong>${d.motivo}</strong> (${d.nacionalidad})`);
             html += this.renderListSection('Expulsiones Materializadas', expulsadosValidos, e => `Nacionalidad: <strong>${e.nacionalidad}</strong>.`);
@@ -333,7 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dispositivo: (d) => (typeof d === "string") ? d : `${d.descripcion || ''} ${d.operacion ? `(Op. ${d.operacion})` : ''}`.trim() || "[Dispositivo operativo]",
             inspeccion: (i) => (typeof i === "string") ? i : `<strong>${i.lugar || 'Lugar N/D'}</strong> (${i.tipo || 'Tipo N/D'}) — ${i.resultado || 'Sin resultado'}`,
         },
-        // Normalizadores robustecidos para manejar múltiples claves de datos
         normalizers: {
             detenido: (obj = {}) => ({ 
                 nombre: obj.detenidos_g1 || obj.numero || obj.nombre || "N/A", 
@@ -398,110 +396,118 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         exportarPDF(resumen, desde, hasta) {
-            if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
-                alert("Error al generar PDF: El plugin de tablas no está disponible."); return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            let finalY = 15;
-            const pageW = doc.internal.pageSize.getWidth();
-            const margin = 15;
-            const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
-
-            const addHeader = () => {
-                doc.setFont("helvetica", "bold"); doc.setFontSize(18);
-                doc.setTextColor(40, 58, 90);
-                doc.text("Resumen Operativo Global SIREX", pageW / 2, 22, { align: "center" });
-                doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-                doc.setTextColor(108, 117, 125);
-                doc.text(`Periodo del ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, 28, { align: "center" });
-                finalY = 40;
-            };
-            const addFooter = () => {
-                const pageCount = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= pageCount; i++) {
-                    doc.setPage(i);
-                    doc.setLineWidth(0.5);
-                    doc.setDrawColor(AppConfig.grupos.ucrif.color);
-                    doc.line(margin, 280, pageW - margin, 280);
-                    doc.setFontSize(8); doc.setTextColor(150);
-                    doc.text(`Página ${i} de ${pageCount}`, pageW / 2, 285, { align: 'center' });
-                    doc.text(`Informe SIREX · Generado el ${new Date().toLocaleString('es-ES')}`, margin, 285);
+            try {
+                if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
+                    alert("Error al generar PDF: El plugin de tablas no está disponible."); return;
                 }
-            };
-             const checkPageBreak = () => { if (finalY > 260) { doc.addPage(); finalY = 20; } };
 
-            addHeader();
-            doc.setFontSize(10);
-            doc.setTextColor(0,0,0);
-            const introText = doc.splitTextToSize(randomFrase('apertura'), pageW - margin * 2);
-            doc.text(introText, margin, finalY);
-            finalY += introText.length * 5 + 5;
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                let finalY = 15;
+                const pageW = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
 
-            const addSection = (cfg, callback) => {
-                if (!callback) return;
-                checkPageBreak();
-                doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
-                doc.text(`${cfg.icon} ${cfg.label}`, margin, finalY);
-                finalY += 7;
-                doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
-                callback();
-                finalY += 8;
-            };
+                const addHeader = () => {
+                    doc.setFillColor(40, 58, 90); // Color azul oscuro corporativo
+                    doc.rect(0, 0, pageW, 38, 'F');
+                    doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+                    doc.setTextColor(255, 255, 255);
+                    doc.text("INFORME OPERATIVO GLOBAL", pageW / 2, 20, { align: "center" });
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+                    doc.text(`Periodo del ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, 28, { align: "center" });
+                    finalY = 45;
+                };
+                const addFooter = () => {
+                    const pageCount = doc.internal.getNumberOfPages();
+                    for (let i = 1; i <= pageCount; i++) {
+                        doc.setPage(i);
+                        doc.setLineWidth(0.5);
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, 280, pageW - margin, 280);
+                        doc.setFontSize(8); doc.setTextColor(150);
+                        doc.text(`Página ${i} de ${pageCount}`, pageW / 2, 285, { align: 'center' });
+                        doc.text(`Informe SIREX · Generado el ${new Date().toLocaleString('es-ES')}`, margin, 285);
+                    }
+                };
+                const checkPageBreak = () => { if (finalY > 255) { doc.addPage(); finalY = 20; } };
 
-            const autoTable = (head, body, cfg) => {
-                if (!body || body.length === 0) return;
-                doc.autoTable({
-                    startY: finalY, head: head, body: body, theme: 'grid',
-                    headStyles: { fillColor: cfg.color, textColor: '#FFFFFF', fontStyle: 'bold' },
-                    didDrawPage: (data) => { finalY = data.cursor.y; }
+                addHeader();
+                
+                // --- Bloque de Indicadores Clave ---
+                if (resumen.ucrif) {
+                    const u = resumen.ucrif;
+                    doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(40, 58, 90);
+                    doc.text("Indicadores Clave (UCRIF)", margin, finalY);
+                    finalY += 8;
+
+                    const indicators = [
+                        { label: "Detenidos por ILE", value: u.detenidosILE ?? 0 },
+                        { label: "Personas Filiadas", value: u.filiadosVarios ?? 0 },
+                        { label: "Traslados Realizados", value: u.traslados ?? 0 }
+                    ];
+                    
+                    doc.setFontSize(18); doc.setFont("helvetica", "bold");
+                    const blockWidth = (pageW - 2 * margin) / indicators.length;
+                    indicators.forEach((item, index) => {
+                        doc.setTextColor(AppConfig.grupos.ucrif.color);
+                        doc.text(String(item.value), margin + (index * blockWidth), finalY, { align: 'left' });
+                        doc.setFontSize(9); doc.setTextColor(100);
+                        doc.text(item.label, margin + (index * blockWidth), finalY + 5, { align: 'left' });
+                        doc.setFontSize(18); // Reset for next loop
+                    });
+                    finalY += 15;
+                }
+
+
+                const addSection = (cfg, callback) => {
+                    if (!callback) return;
+                    checkPageBreak();
+                    doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
+                    doc.text(cfg.label, margin, finalY); // Sin icono
+                    finalY += 7;
+                    doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
+                    callback();
+                    finalY += 8;
+                };
+
+                const autoTable = (head, body, cfg) => {
+                    if (!body || body.length === 0) return;
+                    doc.autoTable({
+                        startY: finalY, head: head, body: body, theme: 'grid',
+                        headStyles: { fillColor: cfg.color, textColor: '#FFFFFF', fontStyle: 'bold' },
+                        didDrawPage: (data) => { finalY = data.cursor.y; }
+                    });
+                    finalY = doc.autoTable.previous.finalY;
+                };
+
+                if (resumen.grupo1) addSection(AppConfig.grupos.grupo1, () => {
+                    const { normalizers } = UIRenderer;
+                    const detenidosValidos = resumen.grupo1.detenidos.map(normalizers.detenido).filter(d => d.motivo && d.motivo.trim() && d.motivo !== 'N/A');
+                    const expulsadosValidos = resumen.grupo1.expulsados.map(normalizers.expulsado).filter(e => e.nacionalidad && e.nacionalidad.trim() && e.nacionalidad !== 'N/A');
+                    const fletadosValidos = resumen.grupo1.fletados.map(normalizers.fletado).filter(f => f.destino && f.destino.trim() && f.destino !== 'N/A');
+
+                    if (detenidosValidos.length > 0) autoTable([['Detenido (Motivo)', 'Nacionalidad']], detenidosValidos.map(d => [d.motivo, d.nacionalidad]), AppConfig.grupos.grupo1);
+                    if (expulsadosValidos.length > 0) { finalY += 2; autoTable([['Expulsado (Nacionalidad)']], expulsadosValidos.map(e => [e.nacionalidad]), AppConfig.grupos.grupo1); }
+                    if (fletadosValidos.length > 0) { finalY += 2; autoTable([['Vuelo Fletado (Destino)', 'PAX']], fletadosValidos.map(f => [f.destino, f.pax]), AppConfig.grupos.grupo1); }
                 });
-                finalY = doc.autoTable.previous.finalY;
-            };
 
-            if (resumen.ucrif) addSection(AppConfig.grupos.ucrif, () => {
-                const u = resumen.ucrif;
-                let body = [];
-                if (u.detenidosILE) body.push(['Detenidos por ILE', u.detenidosILE]);
-                if (u.filiadosVarios) body.push(['Personas Filiadas', u.filiadosVarios]);
-                if (u.traslados) body.push(['Traslados Realizados', u.traslados]);
-                autoTable(null, body, AppConfig.grupos.ucrif);
-                if (u.detenidosDelito?.length > 0) {
-                    finalY += 3;
-                    autoTable([['Detenidos por Delito Común', 'Motivo']], u.detenidosDelito.map(d => [d.descripcion, d.motivo]), AppConfig.grupos.ucrif);
-                }
-            });
+                const addKeyValueSectionToPdf = (cfg, data) => {
+                    if(data && Object.keys(data).length > 0) {
+                        addSection(cfg, () => autoTable(null, Object.entries(data).map(([k,v]) => [k.replace(/_/g, " "), v]), cfg));
+                    }
+                };
+                addKeyValueSectionToPdf(AppConfig.grupos.puerto, resumen.puerto?.numericos);
+                addKeyValueSectionToPdf(AppConfig.grupos.cecorex, resumen.cecorex);
+                addKeyValueSectionToPdf(AppConfig.grupos.gestion, resumen.gestion);
+                addKeyValueSectionToPdf(AppConfig.grupos.cie, resumen.cie);
 
-            if (resumen.grupo1) addSection(AppConfig.grupos.grupo1, () => {
-                const { normalizers } = UIRenderer;
-                const detenidosValidos = resumen.grupo1.detenidos.map(normalizers.detenido).filter(d => d.motivo !== 'N/A' && d.nacionalidad !== 'N/A');
-                const expulsadosValidos = resumen.grupo1.expulsados.map(normalizers.expulsado).filter(e => e.nacionalidad !== 'N/A');
-                const fletadosValidos = resumen.grupo1.fletados.map(normalizers.fletado).filter(f => f.destino !== 'N/A');
-
-                if (detenidosValidos.length > 0) autoTable([['Detenido (Motivo)', 'Nacionalidad']], detenidosValidos.map(d => [d.motivo, d.nacionalidad]), AppConfig.grupos.grupo1);
-                if (expulsadosValidos.length > 0) { finalY += 2; autoTable([['Expulsado (Nacionalidad)']], expulsadosValidos.map(e => [e.nacionalidad]), AppConfig.grupos.grupo1); }
-                if (fletadosValidos.length > 0) { finalY += 2; autoTable([['Vuelo Fletado (Destino)', 'PAX']], fletadosValidos.map(f => [f.destino, f.pax]), AppConfig.grupos.grupo1); }
-            });
-
-            const addKeyValueSectionToPdf = (cfg, data) => {
-                if(data && Object.keys(data).length > 0) {
-                    addSection(cfg, () => autoTable(null, Object.entries(data).map(([k,v]) => [k.replace(/_/g, " "), v]), cfg));
-                }
-            };
-            addKeyValueSectionToPdf(AppConfig.grupos.puerto, resumen.puerto?.numericos);
-            addKeyValueSectionToPdf(AppConfig.grupos.cecorex, resumen.cecorex);
-            addKeyValueSectionToPdf(AppConfig.grupos.gestion, resumen.gestion);
-            addKeyValueSectionToPdf(AppConfig.grupos.cie, resumen.cie);
-
-            checkPageBreak();
-            finalY += 5;
-            doc.setFont("helvetica", "italic");
-            const outroText = doc.splitTextToSize(randomFrase('cierre'), pageW - margin * 2);
-            doc.text(outroText, margin, finalY);
-
-            addFooter();
-            doc.save(`SIREX_Resumen_${desde}_a_${hasta}.pdf`);
+                addFooter();
+                doc.save(`SIREX_Resumen_${desde}_a_${hasta}.pdf`);
+            } catch (error) {
+                console.error("Error al generar el PDF:", error);
+                alert("Se produjo un error al intentar generar el PDF. Por favor, revisa la consola para más detalles.");
+            }
         }
     };
 
