@@ -354,352 +354,527 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-/* ========================= 📋 PARSERS POR GRUPO ========================= */
+  /* ========================= 📋 PARSERS POR GRUPO ========================= */
 
-function parseGrupo1(html) {
+  function parseGrupo1(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-        exp_frustradas_g1: [],
-        pendientes_g1: []
+      detenidos_g1: [],
+      expulsados_g1: [],
+      exp_frustradas_g1: [],
+      fletados_g1: [],
+      pendientes_g1: []
     };
 
     for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("EXP. FRUSTRADAS")) {
-            for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length >= 4 && tds[0].textContent.trim()) {
-                    datos.exp_frustradas_g1.push({
-                        exp_frustradas_g1: tds[0].textContent.trim(),
-                        nacionalidad_fg1: tds[1].textContent.trim(),
-                        diligencias_fg1: tds[2].textContent.trim(),
-                        motivo_fg1: tds[3].textContent.trim()
-                    });
-                }
-            }
-        } else if (header.includes("GESTIONES")) {
-             for (let i = 1; i < rows.length; i++) {
-                const cellText = rows[i].cells[0]?.textContent.trim();
-                if (cellText) {
-                    datos.pendientes_g1.push({ descripcion: cellText });
-                }
-            }
+      if (header[0] === "DETENIDOS-DG1" && header[1] === "MOTIVO-DG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 5 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_g1.push({
+            detenidos_g1: tds[0].textContent.trim(),
+            motivo_g1: tds[1].textContent.trim(),
+            nacionalidad_g1: tds[2].textContent.trim(),
+            diligencias_g1: tds[3].textContent.trim(),
+            observaciones_g1: tds[4].textContent.trim()
+          });
         }
+      } else if (header[0] === "EXPULSADOS" && header[1] === "NACIONALIDAD-EG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 6 || !tds[0].textContent.trim()) continue;
+          datos.expulsados_g1.push({
+            expulsados_g1: tds[0].textContent.trim(),
+            nacionalidad_eg1: tds[1].textContent.trim(),
+            diligencias_eg1: tds[2].textContent.trim(),
+            conduc_pos_eg1: tds[3].textContent.trim(),
+            conduc_neg_eg1: tds[4].textContent.trim(),
+            observaciones_eg1: tds[5].textContent.trim()
+          });
+        }
+      } else if (header[0] === "EXP. FRUSTRADAS" && header[1] === "NACIONALIDAD-FG1") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.exp_frustradas_g1.push({
+            exp_frustradas_g1: tds[0].textContent.trim(),
+            nacionalidad_fg1: tds[1].textContent.trim(),
+            diligencias_fg1: tds[2].textContent.trim(),
+            motivo_fg1: tds[3].textContent.trim()
+          });
+        }
+      } else if (header[0] === "FLETADOS" && header[1] === "DESTINO") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.fletados_g1.push({
+            fletados_g1: tds[0].textContent.trim(),
+            destino_flg1: tds[1].textContent.trim(),
+            pax_flg1: tds[2].textContent.trim(),
+            observaciones_flg1: tds[3].textContent.trim()
+          });
+        }
+      } else if (header[0] === "GESTIONES") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (!tds.length || !tds[0].textContent.trim()) continue;
+          datos.pendientes_g1.push({
+            descripcion: tds[0].textContent.trim()
+          });
+        }
+      }
 
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
     }
     return { datos, fecha };
-}
+  }
 
-function parseGrupo2(html) {
+  function parseGrupo2(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-        detenidos: [],
-        actuaciones: []
+      detenidos: [],
+      inspecciones: [],
+      actuaciones: [],
+      varios: ""
     };
 
     for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("OPERACION D G2") && header.includes("MOTIVO G2")) {
-            for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 5 || !tds[0]?.textContent.trim()) continue;
-
-                const operacion = tds[0]?.textContent.trim() || "";
-                const detenido = tds[1]?.textContent.trim() || "";
-                const motivo = tds[2]?.textContent.trim() || "";
-                const nacionalidad = tds[3]?.textContent.trim() || "";
-                const observaciones = tds[4]?.textContent.trim() || "";
-
-                datos.actuaciones.push({ operacion: operacion, delito: motivo, descripcion: observaciones });
-                if (detenido) {
-                    datos.detenidos.push({ operacion_d: operacion, detenido: detenido, motivo: motivo, nacionalidad: nacionalidad, observaciones: observaciones });
-                }
-            }
+      if (header.includes("OPERACION D G2") && header.includes("DETENIDO G2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "OPERACION D G2") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+            if (col === "DETENIDO G2") rowObj.detenido = tds[idx]?.textContent.trim() || "";
+            if (col === "MOTIVO G2") rowObj.motivo = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDAD G2") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+            if (col === "OBSERVACIONES G2") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.detenido) datos.detenidos.push(rowObj);
         }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      } else if (header.includes("INSPECCION G2 LUGAR") && header.includes("IDENTIFICADAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "INSPECCION G2 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
+            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
+            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.lugar) datos.inspecciones.push(rowObj);
         }
+      } else if (header.includes("OPERACION G2") && header.includes("ACTUACION G2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+          datos.actuaciones.push({
+            operacion: tds[0]?.textContent.trim() || "",
+            delito: tds[1]?.textContent.trim() || "",
+            descripcion: tds[2]?.textContent.trim() || ""
+          });
+        }
+      } else if (header.includes("VARIOS GRUPO 2")) {
+        for (let i = 1; i < rows.length; i++) {
+          const txt = rows[i].cells[0]?.textContent.trim();
+          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
     }
     return { datos, fecha };
-}
+  }
 
-function parseGrupo3(html) {
+  function parseGrupo3(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-        detenidos: [],
-        actuaciones: []
+      detenidos: [],
+      inspecciones: [],
+      actuaciones: [],
+      varios: ""
     };
-
     for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("OPERACION D G3") && header.includes("MOTIVO G3")) {
-            for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length < 5 || !tds[0]?.textContent.trim()) continue;
-
-                const operacion = tds[0]?.textContent.trim() || "";
-                const detenido = tds[1]?.textContent.trim() || "";
-                const motivo = tds[2]?.textContent.trim() || "";
-                const nacionalidad = tds[3]?.textContent.trim() || "";
-                const observaciones = tds[4]?.textContent.trim() || "";
-
-                datos.actuaciones.push({ operacion: operacion, delito: motivo, descripcion: observaciones });
-                if (detenido) {
-                    datos.detenidos.push({ operacion_d: operacion, detenido: detenido, motivo: motivo, nacionalidad: nacionalidad, observaciones: observaciones });
-                }
-            }
+      if (header.includes("OPERACION D G3") && header.includes("DETENIDO G3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[1]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "OPERACION D G3") rowObj.operacion_d = tds[idx]?.textContent.trim() || "";
+            if (col === "DETENIDO G3") rowObj.detenido = tds[idx]?.textContent.trim() || "";
+            if (col === "MOTIVO G3") rowObj.motivo = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDAD G3") rowObj.nacionalidad = tds[idx]?.textContent.trim() || "";
+            if (col === "OBSERVACIONES G3") rowObj.observaciones = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.detenido) datos.detenidos.push(rowObj);
         }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      } else if (header.includes("INSPECCION G3 LUGAR") && header.includes("IDENTIFICADAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 1 || !tds[0]?.textContent.trim()) continue;
+          let rowObj = {};
+          header.forEach((col, idx) => {
+            if (col === "INSPECCION G3 LUGAR") rowObj.lugar = tds[idx]?.textContent.trim() || "";
+            if (col === "IDENTIFICADAS") rowObj.identificadas = tds[idx]?.textContent.trim() || "";
+            if (col === "CITADAS") rowObj.citadas = tds[idx]?.textContent.trim() || "";
+            if (col === "NACIONALIDADES") rowObj.nacionalidades = tds[idx]?.textContent.trim() || "";
+          });
+          if (rowObj.lugar) datos.inspecciones.push(rowObj);
         }
+      } else if (header.includes("OPERACION G3") && header.includes("ACTUACION G3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[2]?.textContent.trim()) continue;
+          datos.actuaciones.push({
+            operacion: tds[0]?.textContent.trim() || "",
+            delito: tds[1]?.textContent.trim() || "",
+            descripcion: tds[2]?.textContent.trim() || ""
+          });
+        }
+      } else if (header.includes("VARIOS GRUPO 3")) {
+        for (let i = 1; i < rows.length; i++) {
+          const txt = rows[i].cells[0]?.textContent.trim();
+          if (txt) datos.varios += (datos.varios ? "\n" : "") + txt;
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
     }
     return { datos, fecha };
-}
+  }
 
-function parseGrupo4(html) {
+  function parseGrupo4(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {
-        detenidos_g4: [],
-        colaboraciones_g4: []
+      detenidos_g4: [],
+      colaboraciones_g4: [],
+      inspecciones_g4: [],
+      gestiones_varias_g4: [],
+      identificados_g4: 0,
+      citadosCecorex_g4: 0,
+      traslados_g4: "",
+      observaciones_g4: ""
     };
 
     for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
 
-        if (header.includes("N. DETENIDOS-G4")) {
-            for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length >= 4 && tds[0].textContent.trim()) {
-                    datos.detenidos_g4.push({
-                        detenidos_g4: tds[0].textContent.trim(),
-                        motivo_g4: tds[1].textContent.trim(),
-                        nacionalidad_g4: tds[2].textContent.trim(),
-                        observaciones_dg4: tds[3].textContent.trim()
-                    });
-                }
-            }
-        } else if (header.includes("COLABORACION")) {
-             for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length >= 3 && tds[0].textContent.trim()) {
-                    datos.colaboraciones_g4.push({
-                        colaboracionDesc: tds[0].textContent.trim(),
-                        colaboracionUnidad: tds[1].textContent.trim(),
-                        colaboracionResultado: tds[2].textContent.trim()
-                    });
-                }
-            }
+      if (header.includes("N. DETENIDOS-G4") && header.includes("MOTIVO–G4")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 4 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_g4.push({
+            detenidos_g4: tds[0].textContent.trim(),
+            motivo_g4: tds[1].textContent.trim(),
+            nacionalidad_g4: tds[2].textContent.trim(),
+            observaciones_dg4: tds[3].textContent.trim()
+          });
         }
+      } else if (header.includes("IDENTIFICADOS") && header.includes("CITADOS CECOREX")) {
+        const rowData = rows[1]?.querySelectorAll('td');
+        if (rowData) {
+          datos.identificados_g4 = parseInt(rowData[0]?.textContent.trim() || "0", 10);
+          datos.citadosCecorex_g4 = parseInt(rowData[1]?.textContent.trim() || "0", 10);
+          datos.traslados_g4 = rowData[2]?.textContent.trim() || "";
+          datos.observaciones_g4 = rowData[3]?.textContent.trim() || "";
+        }
+      } else if (header.includes("COLABORACION") && header.includes("UNIDAD C.")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+          datos.colaboraciones_g4.push({
+            colaboracionDesc: tds[0].textContent.trim(),
+            colaboracionUnidad: tds[1].textContent.trim(),
+            colaboracionResultado: tds[2].textContent.trim()
+          });
+        }
+      } else if (header.includes("INS.TRABAJO") && header.includes("LUGAR INS.")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 3 || !tds[0].textContent.trim()) continue;
+          datos.inspecciones_g4.push({
+            inspeccion: tds[0].textContent.trim(),
+            lugar: tds[1].textContent.trim(),
+            resultado: tds[2].textContent.trim()
+          });
+        }
+      } else if (header.includes("GESTIONES VARIAS")) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (!tds.length || !tds[0].textContent.trim()) continue;
+          datos.gestiones_varias_g4.push({
+            gestionDesc: tds[0].textContent.trim()
+          });
+        }
+      }
 
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
     }
     return { datos, fecha };
-}
+  }
 
-function parseGrupoPuerto(html) {
+  function parseGrupoPuerto(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      ctrlMarinos: 0, marinosArgos: 0, cruceros: 0, cruceristas: 0,
+      visadosCg: 0, visadosVal: 0, visadosExp: 0, vehChequeados: 0, persChequeadas: 0,
+      detenidos: 0, denegaciones: 0, entrExcep: 0, eixics: 0, ptosDeportivos: 0,
+      ferrys: [], gestiones_puerto: []
+    };
+    const mapCampos = {
+      ctrlMarinos: /^CTRL\.MARINOS$/i, marinosArgos: /^MARINOS ARGOS$/i, cruceros: /^CRUCEROS$/i, cruceristas: /^CRUCERISTAS$/i,
+      visadosCg: /^VISAS\. CG$/i, visadosVal: /^VISAS VAL\.$/i, visadosExp: /^VISAS\. EXP$/i, vehChequeados: /^VEH\. CHEQUEADOS$/i, persChequeadas: /^PERS\. CHEQUEADAS$/i,
+      detenidos: /^DETENIDOS$/i, denegaciones: /^DENEGACIONES$/i, entrExcep: /^ENTR\. EXCEP$/i, eixics: /^EIXICS$/i, ptosDeportivos: /^PTOS\. DEPORTIVOS$/i
+    };
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (rows.length < 2) continue;
+      const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim());
+      const valores = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
+      cabeceras.forEach((cab, idx) => {
+        for (const clave in mapCampos) {
+          if (mapCampos[clave].test(cab)) {
+            datos[clave] = parseInt(valores[idx]) || 0;
+            break;
+          }
+        }
+      });
+      const tituloTabla = (rows[0].cells?.[0]?.textContent || "").trim().toUpperCase();
+      if (tituloTabla === 'FERRYS' || (cabeceras.includes('DESTINO') && cabeceras.includes('PASAJEROS'))) {
+        for (let i = 1; i < rows.length; i++) {
+          const ftds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+          if (ftds.every(td => td === '')) continue;
+          const ferryData = {};
+          cabeceras.forEach((cab, idx) => {
+            if (/^DESTINO$/i.test(cab)) ferryData.destino = ftds[idx] || "";
+            if (/^HORA$/i.test(cab)) ferryData.hora = ftds[idx] || "";
+            if (/^PASAJEROS$/i.test(cab)) ferryData.pasajeros = ftds[idx] || "";
+            if (/^VEHICULOS$/i.test(cab)) ferryData.vehiculos = ftds[idx] || "";
+            if (/^INCIDENCIAS$/i.test(cab)) ferryData.incidencias = ftds[idx] || "";
+          });
+          if (ferryData.destino || ferryData.pasajeros) datos.ferrys.push(ferryData);
+        }
+      } else if (tituloTabla === 'GESTIONES PUERTO') {
+        for (let i = 1; i < rows.length; i++) {
+          const gtds = Array.from(rows[i].querySelectorAll('td,th')).map(td => td.textContent.trim());
+          if (gtds[0]) datos.gestiones_puerto.push({ gestion: gtds[0] });
+        }
+      }
+      if (!fecha) {
+        const plainText = tabla.innerText || tabla.textContent || "";
+        const match = plainText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (match) fecha = `${match[3]}-${match[2]}-${match[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupoCECOREX(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let fecha = '';
+    let datos = {
+      detenidos_cc: [], cons_tfno: '', cons_presc: '', cons_equip: '', citados: '',
+      notificaciones: '', al_abogados: '', rem_subdelegacion: '', decretos_exp: '',
+      tramites_audiencia: '', cie_concedido: '', cies_denegado: '', proh_entrada: '',
+      menas: '', dil_informe: '', gestiones_cecorex: []
+    };
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+
+      if (header[0] === "DETENIDOS-CC") {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length < 5 || !tds[0].textContent.trim()) continue;
+          datos.detenidos_cc.push({
+            detenidos_cc: tds[0].textContent.trim(), motivo_cc: tds[1].textContent.trim(),
+            nacionalidad_cc: tds[2].textContent.trim(), presenta: tds[3].textContent.trim(),
+            observaciones_cc: tds[4].textContent.trim()
+          });
+        }
+      } else if (header[0] === "CONS.TFNO") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.cons_tfno = tds[0]?.textContent.trim() || '';
+          datos.cons_presc = tds[1]?.textContent.trim() || '';
+          datos.cons_equip = tds[2]?.textContent.trim() || '';
+          datos.citados = tds[3]?.textContent.trim() || '';
+          datos.notificaciones = tds[4]?.textContent.trim() || '';
+          datos.al_abogados = tds[5]?.textContent.trim() || '';
+        }
+      } else if (header[0] === "REM. SUBDELEGACIÓN") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.rem_subdelegacion = tds[0]?.textContent.trim() || '';
+          datos.decretos_exp = tds[1]?.textContent.trim() || '';
+          datos.tramites_audiencia = tds[2]?.textContent.trim() || '';
+        }
+      } else if (header[0] === "CIE CONCEDIDO") {
+        const tds = Array.from(rows[1]?.querySelectorAll('td'));
+        if (tds) {
+          datos.cie_concedido = tds[0]?.textContent.trim() || '';
+          datos.cies_denegado = tds[1]?.textContent.trim() || '';
+          datos.proh_entrada = tds[2]?.textContent.trim() || '';
+          datos.menas = tds[3]?.textContent.trim() || '';
+          datos.dil_informe = tds[4]?.textContent.trim() || '';
+        }
+      } else if (/GESTIONES CECOREX/i.test(header[0])) {
+        for (let i = 1; i < rows.length; i++) {
+          const tds = Array.from(rows[i].querySelectorAll('td'));
+          if (tds.length > 0 && tds[0].textContent.trim()) {
+            datos.gestiones_cecorex.push({ gestion: tds[0].textContent.trim() });
+          }
+        }
+      }
+
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGestion(html) {
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const tablas = Array.from(root.querySelectorAll('table'));
+    let datos = {};
+    let fecha = '';
+    let gestionEncontrada = false;
+
+    for (const tabla of tablas) {
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const primercelda = rows[0].cells[0]?.textContent.trim().toUpperCase();
+
+      if (primercelda === 'GESTION') {
+        gestionEncontrada = true;
+        continue;
+      }
+      if (gestionEncontrada) {
+        if (['GRUPO 1', 'GRUPO 2', 'GRUPO 3', 'GRUPO 4', 'PUERTO', 'CECOREX', 'CIE'].includes(primercelda)) {
+          break;
+        }
+        const cabeceras = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+        const valores = Array.from(rows[1]?.querySelectorAll('td,th') || []).map(td => td.textContent.trim());
+        cabeceras.forEach((cab, idx) => {
+          if (valores[idx] && valores[idx] !== '') {
+            datos[cab] = parseInt(valores[idx]) || valores[idx];
+          }
+        });
+        if (!fecha) {
+          let plain = tabla.innerText || tabla.textContent || "";
+          let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+          if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+        }
+      }
+    }
+    return { datos, fecha };
+  }
+
+  function parseGrupoCIE(html) {
     const root = document.createElement('div');
     root.innerHTML = html;
     const tablas = Array.from(root.querySelectorAll('table'));
     let fecha = '';
     let datos = {};
-
     for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (rows.length < 2) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-        const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
-
-        if(header.includes('CTRL.MARINOS')) {
-            datos.ctrlMarinos = parseInt(values[0]) || 0;
-            datos.marinosArgos = parseInt(values[1]) || 0;
-            datos.cruceros = parseInt(values[2]) || 0;
-            datos.cruceristas = parseInt(values[3]) || 0;
-        } else if (header.includes('VISAS. CG')) {
-            datos.visadosCg = parseInt(values[0]) || 0;
-            datos.visadosExp = parseInt(values[2]) || 0;
-        } else if (header.includes('PTOS. DEPORTIVOS')) {
-            datos.ptosDeportivos = parseInt(values[4]) || 0;
-        } else if (header.includes('GESTIONES PUERTO')) {
-            datos.gestiones_puerto = values[0] || '';
+      const rows = Array.from(tabla.querySelectorAll('tr'));
+      if (!rows.length) continue;
+      const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
+      if (header[0] === "N. INTERNOS" && header[1] === "SALIDAS") {
+        const rowData = rows[1]?.children;
+        if (rowData) {
+          datos = {
+            n_internos: rowData[0]?.textContent.trim() || '',
+            salidas: rowData[1]?.textContent.trim() || '',
+            entradas: rowData[2]?.textContent.trim() || '',
+            observaciones_cie: rowData[3]?.textContent.trim() || ''
+          };
         }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
+      }
+      if (!fecha) {
+        let plain = tabla.innerText || tabla.textContent || "";
+        let m = plain.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+        if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
+      }
     }
     return { datos, fecha };
-}
+  }
 
-function parseGrupoCECOREX(html) {
-    const root = document.createElement('div');
-    root.innerHTML = html;
-    const tablas = Array.from(root.querySelectorAll('table'));
-    let fecha = '';
-    let datos = {};
-
-    for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (rows.length < 2) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-        const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
-
-        if (header.includes("DETENIDOS-CC")) {
-            datos.detenidos_cc = [];
-            for (let i = 1; i < rows.length; i++) {
-                const tds = Array.from(rows[i].querySelectorAll('td'));
-                if (tds.length >= 5 && tds[0].textContent.trim()) {
-                     datos.detenidos_cc.push({
-                        detenidos_cc: tds[0].textContent.trim(),
-                        motivo_cc: tds[1].textContent.trim(),
-                        nacionalidad_cc: tds[2].textContent.trim(),
-                        presenta: tds[3].textContent.trim(),
-                        observaciones_cc: tds[4].textContent.trim()
-                    });
-                }
-            }
-        } else if (header.includes("CONS.TFNO")) {
-            datos.cons_tfno = parseInt(values[0]) || 0;
-            datos.notificaciones = parseInt(values[4]) || 0;
-        } else if (header.includes("REM. SUBDELEGACIÓN")) {
-            datos.rem_subdelegacion = parseInt(values[0]) || 0;
-            datos.decretos_exp = parseInt(values[1]) || 0;
-            datos.tramites_audiencia = parseInt(values[2]) || 0;
-        } else if (header.includes("PROH. ENTRADA")) {
-            datos.proh_entrada = parseInt(values[2]) || 0;
-            datos.menas = parseInt(values[3]) || 0;
-            datos.dil_informe = parseInt(values[4]) || 0;
-        } else if (header.includes("GESTIONES CECOREX")) {
-            if (rows[1] && rows[1].cells[0]) {
-                datos.gestiones_cecorex = rows[1].cells[0].textContent.trim();
-            }
-        }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
-    }
-    return { datos, fecha };
-}
-
-function parseGestion(html) {
-    const root = document.createElement('div');
-    root.innerHTML = html;
-    const tablas = Array.from(root.querySelectorAll('table'));
-    let datos = {};
-    let fecha = '';
-
-    for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (rows.length < 2) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-        const values = Array.from(rows[1].querySelectorAll('td,th')).map(td => td.textContent.trim());
-
-        if(header.includes('CITAS-G')) {
-            datos.citas_g = parseInt(values[0]) || 0;
-            datos.fallos_asilo = parseInt(values[3]) || 0;
-            datos.asilos_concedidos = parseInt(values[4]) || 0;
-        } else if (header.includes('CARTAS CONCEDIDAS')) {
-            datos.cartas_concedidas = parseInt(values[0]) || 0;
-            datos.tarjet_subdeleg = parseInt(values[4]) || 0;
-        } else if (header.includes('NOTIFICACIONES DENEGADAS')) {
-            datos.notificaciones_denegadas = parseInt(values[1]) || 0;
-            datos.presentados = parseInt(values[2]) || 0;
-            datos.correos_ucrania = parseInt(values[3]) || 0;
-        } else if (header.includes('TELE. FAVO')) {
-             datos.tele_favo = parseInt(values[0]) || 0;
-             datos.tele_desfav = parseInt(values[1]) || 0;
-             datos.citas_tlfn_asilo = parseInt(values[2]) || 0;
-        }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
-    }
-    return { datos, fecha };
-}
-
-function parseGrupoCIE(html) {
-    const root = document.createElement('div');
-    root.innerHTML = html;
-    const tablas = Array.from(root.querySelectorAll('table'));
-    let fecha = '';
-    let datos = {};
-
-    for (const tabla of tablas) {
-        const rows = Array.from(tabla.querySelectorAll('tr'));
-        if (!rows.length) continue;
-        const header = Array.from(rows[0].querySelectorAll('td,th')).map(td => td.textContent.trim().toUpperCase());
-
-        if (header.includes("INTERNOS")) {
-            const rowData = rows[1]?.children;
-            if (rowData && rowData[0]) {
-                datos.internos = rowData[0].textContent.trim();
-            }
-        }
-        
-        if (!fecha) {
-            let m = tabla.innerText.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-            if (m) fecha = `${m[3]}-${m[2]}-${m[1]}`;
-        }
-    }
-    return { datos, fecha };
-}
-
-/* =========================== VALIDACIÓN ================================ */
-function validarDatos(data, grupo, fecha) {
+  /* ===========================  VALIDACIÓN  ================================ */
+  function validarDatos(data, grupo, fecha) {
     if (!data || typeof data !== 'object') {
-        return [`No se han extraído datos válidos para ${grupo.toUpperCase()}.`];
+      return [`No se han extraído datos válidos para ${grupo.toUpperCase()}.`];
     }
     const errores = [];
     if (!fecha || !fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        errores.push('La fecha es obligatoria y debe ser válida.');
+      errores.push('La fecha es obligatoria y debe ser válida.');
     }
     return errores;
-}
+  }
 
-function validarDatosPorTodos(datosPorGrupo, fecha) {
+  function validarDatosPorTodos(datosPorGrupo, fecha) {
     let errores = [];
     for (const grupo in datosPorGrupo) {
-        const errs = validarDatos(datosPorGrupo[grupo], grupo, fecha);
-        if (errs.length) errores = [...errores, ...errs];
+      const errs = validarDatos(datosPorGrupo[grupo], grupo, fecha);
+      if (errs.length) errores = [...errores, ...errs];
     }
     return [...new Set(errores)];
-}
+  }
+
 }); // DOMContentLoaded
