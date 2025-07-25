@@ -1,17 +1,17 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.3
+// SIREX · Consulta Global / Resúmenes v3.4
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión final con PDF de alto impacto y control de contenido.
-// MEJORAS CLAVE (v3.3):
-// 1. **PDF con Diseño Superior**: Se introduce un layout de 3 columnas para datos
-//    numéricos (Puerto, Cecorex, Gestión), logrando un diseño de dashboard.
-// 2. **Análisis de Nacionalidades**: El PDF ahora incluye una tabla resumen con el
-//    recuento de nacionalidades de las personas filiadas en inspecciones.
-// 3. **Control de Contenido**: Los "Dispositivos Operativos" se excluyen por defecto.
-//    Se ha añadido lógica para un checkbox (id="incluirDispositivos") que permite
-//    al usuario decidir si los incluye en los informes.
-// 4. **Precisión de Datos Mejorada**: Se ha perfeccionado la extracción y presentación
-//    de datos de nacionalidades en todas las secciones.
+// Descripción: Versión de corrección con visibilidad de datos restaurada y PDF reparado.
+// MEJORAS CLAVE (v3.4):
+// 1. **Visibilidad de Dispositivos Restaurada**: La lista de "Dispositivos Operativos"
+//    ahora es siempre visible en la página web. El checkbox ya no la oculta.
+// 2. **Control de Exportación Funcional**: El checkbox "incluirDispositivos" ahora
+//    controla exclusivamente la inclusión de dispositivos en los exports (PDF/WhatsApp).
+// 3. **Reparación del PDF**: Se ha refactorizado la función que genera las tablas de
+//    3 columnas para hacerla más robusta y evitar los errores de cálculo de ancho,
+//    haciendo la exportación a PDF estable.
+// 4. **Estabilidad General**: Mantiene todas las mejoras de diseño y precisión de
+//    datos de las versiones anteriores.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnExportarPDF: document.getElementById('btnExportarPDF'),
         fechaDesde: document.getElementById('fechaDesde'),
         fechaHasta: document.getElementById('fechaHasta'),
-        incluirDispositivos: document.getElementById('incluirDispositivos'), // Checkbox para control de contenido
+        incluirDispositivos: document.getElementById('incluirDispositivos'),
     };
 
     // --- 4. ESTADO GLOBAL DE LA APLICACIÓN ---
@@ -242,9 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<p class="mb-4">${frase}</p>`;
 
             html += this.renderListSection('Inspecciones y Controles', data.inspecciones, i => this.formatters.inspeccion(i));
-            if (DOM.incluirDispositivos?.checked) {
-                html += this.renderListSection('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
-            }
+            // **CORRECCIÓN**: La lista de dispositivos ahora siempre se renderiza en la web.
+            html += this.renderListSection('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
             html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
             
             if (data.observaciones?.filter(o => o && o.trim()).length > 0) {
@@ -589,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!data || Object.keys(data).length === 0) return;
                     
                     const items = Object.entries(data).map(([key, value]) => ({
-                        label: key.replace(/_/g, " "),
+                        label: key.replace(/_/g, " ").toUpperCase(),
                         value: String(value)
                     }));
                     
@@ -602,21 +601,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         startY: finalY,
                         body: body,
                         theme: 'plain',
-                        didParseCell: function (data) {
-                            if (data.cell.raw) {
-                                data.cell.styles.halign = 'center';
-                                data.cell.styles.valign = 'middle';
-                                data.cell.styles.fontStyle = 'bold';
-                                data.cell.styles.fontSize = 14;
-                                data.cell.styles.textColor = cfg.color;
-                                data.cell.text = data.cell.raw.value;
-                            }
-                        },
-                        willDrawCell: function(data) {
-                            if (data.cell.raw) {
+                        styles: { cellPadding: 2, minCellHeight: 25 },
+                        didDrawCell: function (data) {
+                            const item = data.cell.raw;
+                            if (item && data.section === 'body') {
+                                doc.setDrawColor(220, 220, 220);
+                                doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+                                doc.setFontSize(16);
+                                doc.setFont('helvetica', 'bold');
+                                doc.setTextColor(cfg.color);
+                                doc.text(item.value, data.cell.x + data.cell.width / 2, data.cell.y + 12, { align: 'center' });
                                 doc.setFontSize(8);
+                                doc.setFont('helvetica', 'normal');
                                 doc.setTextColor(120);
-                                doc.text(data.cell.raw.label, data.cell.x + data.cell.width / 2, data.cell.y + 14, { align: 'center' });
+                                const labelText = doc.splitTextToSize(item.label, data.cell.width - 6);
+                                doc.text(labelText, data.cell.x + data.cell.width / 2, data.cell.y + 18, { align: 'center' });
                             }
                         },
                         columnStyles: {
