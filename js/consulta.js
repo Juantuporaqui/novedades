@@ -1,15 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v3.6
+// SIREX · Consulta Global / Resúmenes v3.2
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con fechas detalladas por actuación y mejoras de precisión.
-// MEJORAS CLAVE (v3.6):
-// 1. **Fechas por Actuación**: Se ha modificado la lógica de consulta para que cada
-//    item individual (inspección, detenido, dispositivo) almacene y muestre su
-//    fecha original, tanto en la web como en los informes.
-// 2. **Precisión de Datos Mejorada**: Se ha refinado la forma en que se procesan
-//    y agrupan los datos para los resúmenes narrativos, especialmente en WhatsApp.
-// 3. **Visibilidad y Control Mantenidos**: Se conserva la funcionalidad de selección
-//    individual de dispositivos y el diseño de PDF de la versión anterior.
+// Descripción: Versión con rediseño completo de la exportación a PDF a un nivel superior.
+// MEJORAS CLAVE (v3.2):
+// 1. **PDF de Diseño Espectacular**: Inspirado en la referencia del usuario, el PDF
+//    ahora cuenta con un encabezado gráfico, un bloque de "Indicadores Clave" de
+//    alto impacto y un diseño de informe ejecutivo profesional.
+// 2. **Sección UCRIF Ultra-Detallada en PDF**: El apartado de UCRIF en el PDF se
+//    desglosa en múltiples tablas para Inspecciones, Dispositivos, Detenidos
+//    y Colaboraciones, ofreciendo un nivel de detalle sin precedentes.
+// 3. **WhatsApp Narrativo**: El resumen para WhatsApp ahora es mucho más detallado
+//    y sigue una estructura de informe, como solicitó el usuario.
+// 4. **Consulta de Datos Ampliada**: Se consultan nuevas colecciones como 
+//    'control_casas_citas' para enriquecer los resúmenes.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,8 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let rawData = [];
             for (const coll of collections) {
                 const snap = await db.collection(coll).where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
-                // Adjuntamos la fecha (ID del documento) a cada registro
-                snap.forEach(doc => rawData.push({ ...doc.data(), fecha: doc.id }));
+                snap.forEach(doc => rawData.push(doc.data()));
             }
 
             const resultado = {
@@ -100,9 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (!isNaN(Number(data.traslados_g4))) resultado.traslados += Number(data.traslados_g4);
                 }
 
-                if (data.colaboraciones_g4) {
-                    resultado.colaboraciones.push(...data.colaboraciones_g4.map(c => (typeof c === 'object' ? { ...c, fecha: data.fecha } : { colaboracionDesc: c, fecha: data.fecha })));
-                }
+                if (data.colaboraciones_g4) resultado.colaboraciones.push(...data.colaboraciones_g4);
                 if (data.observaciones_g4) resultado.observaciones.push(data.observaciones_g4);
 
                 const todosDetenidos = [...(data.detenidos || []), ...(data.detenidos_g4 || [])];
@@ -115,26 +115,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             descripcion: `${d.detenido || d.detenidos_g4 || 'N/A'}`,
                             nacionalidad: `${d.nacionalidad || d.nacionalidad_g4 || 'N/A'}`,
                             motivo: motivo,
-                            fecha: data.fecha // Añadimos fecha al detenido
                         });
                     }
                 });
                 
-                if (data.inspecciones) {
-                    resultado.inspecciones.push(...data.inspecciones.map(i => ({ ...i, fecha: data.fecha })));
-                }
-                if (data.actuaciones) {
-                    resultado.dispositivos.push(...data.actuaciones.map(a => ({ ...a, fecha: data.fecha })));
-                }
+                if (data.inspecciones) resultado.inspecciones.push(...data.inspecciones);
+                if (data.actuaciones) resultado.dispositivos.push(...data.actuaciones);
                 
+                // Integración de datos de 'control_casas_citas'
                 if (data.datos && Array.isArray(data.datos)) {
                     data.datos.forEach(item => {
-                        if (item.casa) {
+                        if (item.casa) { // Es una inspección de casa de citas
                             resultado.inspecciones.push({
                                 lugar: item.casa,
                                 tipo: 'Casa de Citas',
-                                resultado: `${item.n_filiadas || 0} filiadas (${item.nacionalidades || 'N/D'}).`,
-                                fecha: data.fecha
+                                resultado: `${item.n_filiadas || 0} filiadas (${item.nacionalidades || 'N/D'}).`
                             });
                             if (item.nacionalidades) {
                                 const nacionalidades = item.nacionalidades.split(/, | y /);
@@ -145,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 });
                             }
-                        } else if (item.identificadas) {
+                        } else if (item.identificadas) { // Es un control genérico
                              resultado.filiadosVarios += Number(item.identificadas) || 0;
                              resultado.citadosCecorex += Number(item.citadas) || 0;
                         }
@@ -249,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             html += this.renderListSection('Inspecciones y Controles', data.inspecciones, i => this.formatters.inspeccion(i));
             html += this.renderListSectionWithCheckboxes('Dispositivos Operativos Especiales', data.dispositivos, d => this.formatters.dispositivo(d));
-            html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `[${this.formatoFecha(d.fecha)}] ${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
+            html += this.renderListSection('Detenidos por otros delitos', data.detenidosDelito, d => `${d.descripcion} (${d.nacionalidad}) por <strong>${d.motivo}</strong>`);
             
             if (data.observaciones?.filter(o => o && o.trim()).length > 0) {
                 html += `<div class="alert alert-light mt-3"><strong>Observaciones Relevantes de los Grupos:</strong><br>${data.observaciones.filter(o => o && o.trim()).map(o => `<div><small>- ${o}</small></div>`).join("")}</div>`;
