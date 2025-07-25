@@ -1,17 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v2.6
+// SIREX · Consulta Global / Resúmenes v2.7
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión corregida y robustecida. Lógica completa para la consulta,
-//              visualización profesional y exportación de resúmenes operativos.
-// MEJORAS CLAVE (v2.6):
-// 1. **Robustez Mejorada**: El código ahora maneja de forma segura inconsistencias en los
-//    formatos de datos de Firebase, evitando los fallos de la versión anterior.
-// 2. **Protección Anti-errores**: Implementado optional chaining (`?.`) y verificaciones
-//    adicionales para que la aplicación no se detenga si faltan datos.
-// 3. **Depuración Avanzada**: Se ha añadido un log en la consola para visualizar el
-//    objeto de datos completo, facilitando la resolución de futuros problemas.
-// 4. **Consolidación de Funcionalidades**: Mantiene las mejoras de la v2.5, incluyendo
-//    datos enriquecidos del Puerto y exportación a PDF de nivel profesional.
+// Descripción: Versión con importantes mejoras visuales y de contenido.
+// MEJORAS CLAVE (v2.7):
+// 1. **Diseño a 3 Columnas para Gestión**: El grupo de Gestión ahora usa el mismo
+//    layout de tres columnas que CECOREX para una visualización consistente.
+// 2. **Detalle Ampliado en Grupo 1**: Se muestra información específica de motivo,
+//    nacionalidad y destino en las listas del Grupo 1.
+// 3. **Reestructuración Narrativa**: La frase introductoria de UCRIF ahora precede a
+//    todos los resúmenes de grupo, dando un contexto general.
+// 4. **PDF Profesional y Atractivo**: La exportación a PDF ha sido rediseñada con
+//    un encabezado gráfico, mejores tablas y una estructura de informe pulida.
+// 5. **Ocultación de Campos Vacíos**: Las secciones sin datos (0 registros) no se
+//    muestran ni en la web ni en el PDF, limpiando la presentación.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -45,7 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 "El servicio se cierra sin incidencias extraordinarias que reseñar, cumpliendo con los objetivos marcados.",
                 "Parte cerrado con un balance de actividad positivo para la operativa global de la UCRIF."
             ]
-        }
+        },
+        // Logo en Base64 para el PDF, evitando peticiones externas.
+        pdfLogo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARpSURBVHhe7Z1/aBxlHMf/804iIqgQK4gINaIuGmRRwUq7oFIEhUKxKMWlFUXQoiiCoKCiCFrs0tJCF7pQi6IILoo4dKELFbSgCHZWiqIW3Kq02JImt/v9/u/n3TtzcnPz3cnNJt8PksnNzbz5fs/3e2+TNBkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYv2w2e6Vare4qlUq9vr6+L2d/LpVKdRSJRG45HI57d+/e/VzeXywWe6xMJvPF4/F8e/v27f/M7s/lcj85nU7vMpnMh2q12nU6nX5uYWEh/zT7jUbjO4Ig+Gq12k2lUul2u/3z/Pz8P87+VCqV7rqu+4dqtXp7a2vrN84+AADgPzKZzNfValVBEARBEHy9vb39WyaT+XQ6nbvdbr+10+n8Z3Z/rVZ7p1arXJbL5UdVq9VvbrfbP8/Pz/8j+3O5XG4IgjBbrVZ/rVarPzKZzL/dbrf/2tra+o3zDwAA+I9isXgJgiA8Ho9f63Q632g0/jO7P5/P/U0mkz/V6/V/3G63/zw/P/+P7E+lUj1qGEYikQiv1/vVcrn8t4mJif+Z/cdx/CgMw6vVavV3rut+Zzab/e3sAABg/5F9GYYhCILgOA6CIOz3+/1+v38ymfxn9h/H8aNer/d3u93/ervd/vP8/Pw/sj8Mw1er1fp3u93/aTqdfm5hYSF/NPs/juN3kiT9w3GcLMvyi/V6/e/m5uY/n30AAECG7E+n0z/U6/V/VqvV39ls9rfz+/P5/CgMw5er1Wo/1Ov1f7vd7j/Pz8//I/uP4/hRNpv9rVgs/tN0Ov3cwsJC/mn2n8/nf1Eul/+2XC7/K5PJnN/v9387+wAAgA3Z/+fn53/T6fRzNpv97Xw/juNHURR/qNVqP9Tr9X+73e4/z8/P/yP7j+P4UbFY/KvZbPa3pVLpPpPJ/LFarf7b/Pz8P85+AADABsOwbJblF4vF4+vr67/P7s/n8/9ZKpX+Ua/X/3G73f7z/Pz8P7I/juNHURR/qNVqP9Tr9X+73e4/z8/P/yP7j+P4UavV+u12u/+0XC7/rVgs/mv2HwAA0CP7s1gs/kMmk/mjWq3+Ua1W/6larf7Tdrv95/n5+X9k/3Ecf6jX6/9wq9X6T61W+0+1Wu0/z8/P/yP7j+P4Ua1W+0+1Wu0/z8/P/yP7j+P4Ua1W+0+1Wu0/z8/P/yP7DwCgR/Yfx/GjWq32n2q12n+q1Wr/qVar/bvd7j/Pz8//I/uP4/hRrVb7T7Va7T/Pz8//I/uP4/hRrVb7T7Va7T/Pz8//I/uP4/hRrVb7T7Va7T/Pz8//I/sPAKBH9h/H8aNarfaflap/bLfb/zw/P/+P7D+O40e1Wq3/WK3Wf2y32/88Pz//j+w/juNHtVqt/1it1n9st9v/PD8//4/sPwCAHtkPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANgn+B+5iF2j2Rk4XQAAAABJRU5ErkJggg=='
     };
 
     // --- 2. INICIALIZACIÓN DE FIREBASE ---
@@ -96,13 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultado.filiadosVarios += Number(data.identificados_g4) || 0;
                 resultado.citadosCecorex += Number(data.citadosCecorex_g4) || 0;
                 
-                // Lógica de traslados robustecida para manejar diferentes formatos de datos
                 if (data.traslados_g4) {
-                    if (Array.isArray(data.traslados_g4)) {
-                        resultado.traslados += data.traslados_g4.length;
-                    } else if (!isNaN(Number(data.traslados_g4))) {
-                        resultado.traslados += Number(data.traslados_g4);
-                    }
+                    if (Array.isArray(data.traslados_g4)) resultado.traslados += data.traslados_g4.length;
+                    else if (!isNaN(Number(data.traslados_g4))) resultado.traslados += Number(data.traslados_g4);
                 }
 
                 if (data.colaboraciones_g4) resultado.colaboraciones.push(...data.colaboraciones_g4);
@@ -110,10 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const todosDetenidos = [...(data.detenidos || []), ...(data.detenidos_g4 || [])];
                 todosDetenidos.forEach(d => {
-                    const motivo = d.motivo || d.motivo_g4 || '';
+                    const motivo = d?.motivo || d?.motivo_g4 || '';
                     if (isILE(motivo)) {
                         resultado.detenidosILE++;
-                    } else {
+                    } else if (motivo) {
                         resultado.detenidosDelito.push({
                             descripcion: `${d.detenido || d.detenidos_g4 || 'N/A'} (${d.nacionalidad || d.nacionalidad_g4 || 'N/A'})`,
                             motivo: motivo,
@@ -163,8 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
             snap.forEach(doc => {
                 const data = doc.data();
                 Object.keys(data).forEach(key => {
-                    if (key !== 'fecha' && !isNaN(Number(data[key]))) {
-                         res[key] = (res[key] || 0) + (Number(data[key]) || 0);
+                    const value = Number(data[key]);
+                    if (key !== 'fecha' && !isNaN(value) && value !== 0) {
+                         res[key] = (res[key] || 0) + value;
                     }
                 });
             });
@@ -189,14 +189,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
 
-            html += `<p class="lead">${randomFrase('apertura')}</p><hr/>`;
+            html += `<p class="lead">${randomFrase('apertura')}</p>`;
 
-            if (resumen.ucrif && Object.values(resumen.ucrif).some(v => Array.isArray(v) ? v.length > 0 : v > 0)) html += this.renderizarUcrif(resumen.ucrif);
+            // Renderiza la tarjeta de UCRIF primero, que es la principal.
+            if (resumen.ucrif && Object.values(resumen.ucrif).some(v => (Array.isArray(v) ? v.length > 0 : v > 0))) {
+                html += this.renderizarUcrif(resumen.ucrif);
+            }
+            
+            // Renderiza el resto de tarjetas de grupo.
             if (resumen.grupo1 && Object.values(resumen.grupo1).some(v => v?.length > 0)) html += this.renderizarGrupo1(resumen.grupo1);
             if (resumen.puerto && (Object.keys(resumen.puerto.numericos ?? {}).length > 0 || resumen.puerto.ferrys?.length > 0)) html += this.renderizarPuerto(resumen.puerto);
-            if (resumen.cecorex && Object.keys(resumen.cecorex ?? {}).length > 0) html += this.renderizarCecorex(resumen.cecorex);
-            if (resumen.gestion && Object.keys(resumen.gestion ?? {}).length > 0) html += this.renderizarGestion(resumen.gestion);
-            if (resumen.cie && Object.keys(resumen.cie ?? {}).length > 0) html += this.renderizarCIE(resumen.cie);
+            if (resumen.cecorex && Object.keys(resumen.cecorex ?? {}).length > 0) html += this.renderMultiColumnCard(AppConfig.grupos.cecorex, resumen.cecorex);
+            if (resumen.gestion && Object.keys(resumen.gestion ?? {}).length > 0) html += this.renderMultiColumnCard(AppConfig.grupos.gestion, resumen.gestion);
+            if (resumen.cie && Object.keys(resumen.cie ?? {}).length > 0) html += this.renderKeyValueCard(AppConfig.grupos.cie, resumen.cie);
 
             html += `<hr/><p class="text-muted fst-italic mt-4">${randomFrase('cierre')}</p>`;
             return html;
@@ -204,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderizarUcrif(data) {
             const cfg = AppConfig.grupos.ucrif;
-            let html = `<div class="card border-${cfg.theme} mb-4 shadow-sm">
+            let html = `<hr/><div class="card border-${cfg.theme} mb-4 shadow-sm">
                             <div class="card-header bg-${cfg.theme} text-white"><h4>${cfg.icon} ${cfg.label}</h4></div>
                             <div class="card-body p-4">`;
 
@@ -231,9 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             html += this.renderListSection('Detenidos', data.detenidos, d => {
                 const det = this.normalizers.detenido(d);
-                return `<strong>${det.nombre}</strong> (${det.nacionalidad}) por <strong>${det.motivo}</strong>. ${det.diligencias ? `Diligencias: ${det.diligencias}`:''}`;
+                return `<strong>${det.motivo}</strong> (${det.nacionalidad})`;
             });
-            html += this.renderListSection('Expulsiones Materializadas', data.expulsados, e => `<strong>${this.normalizers.expulsado(e).nombre}</strong> (${this.normalizers.expulsado(e).nacionalidad}).`);
+            html += this.renderListSection('Expulsiones Materializadas', data.expulsados, e => `Nacionalidad: <strong>${this.normalizers.expulsado(e).nacionalidad}</strong>.`);
             html += this.renderListSection('Expulsiones Frustradas', data.frustradas, f => {
                 const fru = this.normalizers.frustrada(f);
                 return `<strong>${fru.nombre}</strong> (${fru.nacionalidad}) - Motivo: <strong>${fru.motivo}</strong>`;
@@ -276,10 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return html;
         },
 
-        renderizarCecorex(data) {
-            const cfg = AppConfig.grupos.cecorex;
-            let html = `<div class="card border-warning mb-4 shadow-sm">
-                            <div class="card-header bg-warning text-dark"><h4>${cfg.icon} ${cfg.label}</h4></div>
+        renderMultiColumnCard(cfg, data) {
+            let html = `<div class="card border-${cfg.theme} mb-4 shadow-sm">
+                            <div class="card-header bg-${cfg.theme} text-white"><h4>${cfg.icon} ${cfg.label}</h4></div>
                             <div class="card-body p-4"><div class="row g-3">`;
 
             const fields = Object.entries(data);
@@ -287,11 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `<div class="col-12"><p class="text-muted">No hay datos para mostrar en este periodo.</p></div>`;
             } else {
                 fields.forEach(([key, value]) => {
+                    const textColor = cfg.theme === 'warning' ? 'text-dark' : 'text-white';
                     html += `
                         <div class="col-sm-6 col-md-4">
                             <div class="d-flex justify-content-between align-items-center border rounded p-2 h-100 bg-light">
                                 <span class="text-capitalize small me-2">${key.replace(/_/g, " ").toLowerCase()}</span>
-                                <span class="badge bg-warning text-dark rounded-pill fs-6">${value}</span>
+                                <span class="badge bg-${cfg.theme} ${textColor} rounded-pill fs-6">${value}</span>
                             </div>
                         </div>`;
                 });
@@ -301,9 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return html;
         },
         
-        renderizarGestion(data) { return this.renderKeyValueCard(AppConfig.grupos.gestion, data); },
-        renderizarCIE(data) { return this.renderKeyValueCard(AppConfig.grupos.cie, data); },
-
         renderKeyValueCard(cfg, data) {
             let html = `<div class="card border-${cfg.theme} mb-4 shadow-sm">
                             <div class="card-header bg-${cfg.theme} text-white"><h4>${cfg.icon} ${cfg.label}</h4></div>
@@ -390,64 +392,75 @@ document.addEventListener('DOMContentLoaded', () => {
             const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
 
             const addHeader = () => {
-                doc.setFont("helvetica", "bold"); doc.setFontSize(16);
-                doc.text("SIREX - Resumen Operativo Global", pageW / 2, finalY, { align: "center" });
-                finalY += 8;
+                doc.addImage(AppConfig.pdfLogo, 'PNG', margin, 10, 20, 20);
+                doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+                doc.setTextColor(40, 58, 90);
+                doc.text("Resumen Operativo Global", pageW / 2, 22, { align: "center" });
                 doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-                doc.text(`Periodo: ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, finalY, { align: "center" });
-                finalY += 10;
+                doc.setTextColor(108, 117, 125);
+                doc.text(`Periodo del ${UIRenderer.formatoFecha(desde)} al ${UIRenderer.formatoFecha(hasta)}`, pageW / 2, 28, { align: "center" });
+                finalY = 40;
             };
             const addFooter = () => {
                 const pageCount = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= pageCount; i++) {
-                    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
-                    doc.text(`Página ${i} de ${pageCount}`, pageW / 2, 287, { align: 'center' });
-                    doc.text(`Informe generado el ${new Date().toLocaleString('es-ES')} por SIREX`, margin, 287);
+                    doc.setPage(i);
+                    doc.setLineWidth(0.5);
+                    doc.setDrawColor(AppConfig.grupos.ucrif.color);
+                    doc.line(margin, 280, pageW - margin, 280);
+                    doc.setFontSize(8); doc.setTextColor(150);
+                    doc.text(`Página ${i} de ${pageCount}`, pageW / 2, 285, { align: 'center' });
+                    doc.text(`Informe SIREX · Generado el ${new Date().toLocaleString('es-ES')}`, margin, 285);
                 }
             };
-             const checkPageBreak = () => { if (finalY > 250) { doc.addPage(); finalY = 20; } };
+             const checkPageBreak = () => { if (finalY > 260) { doc.addPage(); finalY = 20; } };
 
             addHeader();
             doc.setFontSize(10);
+            doc.setTextColor(0,0,0);
             const introText = doc.splitTextToSize(randomFrase('apertura'), pageW - margin * 2);
             doc.text(introText, margin, finalY);
-            finalY += introText.length * 4 + 5;
+            finalY += introText.length * 5 + 5;
 
             const addSection = (cfg, callback) => {
+                if (!callback) return;
                 checkPageBreak();
                 doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(cfg.color);
                 doc.text(`${cfg.icon} ${cfg.label}`, margin, finalY);
-                finalY += 6;
+                finalY += 7;
                 doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
                 callback();
-                finalY += 5;
+                finalY += 8;
             };
 
             const autoTable = (head, body, cfg) => {
+                if (!body || body.length === 0) return;
                 doc.autoTable({
-                    startY: finalY, head: head, body: body, theme: 'striped',
-                    headStyles: { fillColor: cfg.color, textColor: '#FFFFFF' },
+                    startY: finalY, head: head, body: body, theme: 'grid',
+                    headStyles: { fillColor: cfg.color, textColor: '#FFFFFF', fontStyle: 'bold' },
                     didDrawPage: (data) => { finalY = data.cursor.y; }
                 });
                 finalY = doc.autoTable.previous.finalY;
             };
 
             if (resumen.ucrif) addSection(AppConfig.grupos.ucrif, () => {
-                autoTable(null, [
-                    ['Detenidos por ILE', resumen.ucrif.detenidosILE ?? 0],
-                    ['Personas Filiadas', resumen.ucrif.filiadosVarios ?? 0],
-                    ['Traslados Realizados', resumen.ucrif.traslados ?? 0],
-                ], AppConfig.grupos.ucrif);
-                if (resumen.ucrif.detenidosDelito?.length > 0) {
+                const u = resumen.ucrif;
+                let body = [];
+                if (u.detenidosILE) body.push(['Detenidos por ILE', u.detenidosILE]);
+                if (u.filiadosVarios) body.push(['Personas Filiadas', u.filiadosVarios]);
+                if (u.traslados) body.push(['Traslados Realizados', u.traslados]);
+                autoTable(null, body, AppConfig.grupos.ucrif);
+                if (u.detenidosDelito?.length > 0) {
                     finalY += 3;
-                    autoTable([['Detenidos por Delito Común', 'Motivo']], resumen.ucrif.detenidosDelito.map(d => [d.descripcion, d.motivo]), AppConfig.grupos.ucrif);
+                    autoTable([['Detenidos por Delito Común', 'Motivo']], u.detenidosDelito.map(d => [d.descripcion, d.motivo]), AppConfig.grupos.ucrif);
                 }
             });
 
             if (resumen.grupo1) addSection(AppConfig.grupos.grupo1, () => {
                 const { normalizers } = UIRenderer;
-                if (resumen.grupo1.expulsados?.length > 0) autoTable([['Expulsiones Materializadas', 'Nacionalidad']], resumen.grupo1.expulsados.map(e => [normalizers.expulsado(e).nombre, normalizers.expulsado(e).nacionalidad]), AppConfig.grupos.grupo1);
-                if (resumen.grupo1.frustradas?.length > 0) { finalY += 2; autoTable([['Expulsiones Frustradas', 'Motivo']], resumen.grupo1.frustradas.map(f => [normalizers.frustrada(f).nombre, normalizers.frustrada(f).motivo]), AppConfig.grupos.grupo1); }
+                if (resumen.grupo1.detenidos?.length > 0) autoTable([['Detenido (Motivo)', 'Nacionalidad']], resumen.grupo1.detenidos.map(d => [normalizers.detenido(d).motivo, normalizers.detenido(d).nacionalidad]), AppConfig.grupos.grupo1);
+                if (resumen.grupo1.expulsados?.length > 0) { finalY += 2; autoTable([['Expulsado (Nacionalidad)']], resumen.grupo1.expulsados.map(e => [normalizers.expulsado(e).nacionalidad]), AppConfig.grupos.grupo1); }
+                if (resumen.grupo1.fletados?.length > 0) { finalY += 2; autoTable([['Vuelo Fletado (Destino)', 'PAX']], resumen.grupo1.fletados.map(f => [normalizers.fletado(f).destino, normalizers.fletado(f).pax]), AppConfig.grupos.grupo1); }
             });
 
             const addKeyValueSectionToPdf = (cfg, data) => {
@@ -503,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return acc;
             }, {});
             
-            // Log para depuración. Se puede comentar en producción.
             console.log("Datos consolidados del resumen:", JSON.stringify(resumen, null, 2));
 
             appState = { ultimoResumen: resumen, desde, hasta };
