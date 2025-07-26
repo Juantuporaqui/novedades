@@ -29,15 +29,28 @@
             align-items: center;
             height: 200px;
         }
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-logos img {
+            height: 60px;
+        }
     </style>
 </head>
 <body>
 
     <div class="container mt-4">
-        <header class="text-center mb-4 p-4 bg-white rounded shadow-sm">
-            <img src="https://i.imgur.com/7dlqR3j.png" alt="Logo SIREX" style="width: 80px; margin-bottom: 1rem;">
-            <h1 class="display-6">Sistema de Informes de Extranjería (SIREX)</h1>
-            <p class="text-muted">Consulta Global de Actividad Operativa</p>
+        <header class="mb-4 p-4 bg-white rounded shadow-sm">
+            <div class="header-logos">
+                <img src="img/bpef.png" alt="Logo BPEF">
+                <div class="text-center">
+                    <h1 class="display-6">SIREX</h1>
+                    <p class="text-muted mb-0">Consulta Global de Actividad Operativa</p>
+                </div>
+                <img src="img/ucrif.png" alt="Logo UCRIF">
+            </div>
         </header>
 
         <div class="card shadow-sm mb-4">
