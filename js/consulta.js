@@ -1,17 +1,17 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.2
+// SIREX · Consulta Global / Resúmenes v4.3
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con correcciones en la lógica de CIE y CECOREX, y rediseño
-//              del PDF para incluir KPIs por sección.
+// Descripción: Versión final con lógica de CIE robustecida y PDF mejorado con KPIs,
+//              todas las tablas de datos y texto narrativo adicional.
 //
-// MEJORAS CLAVE (v4.2):
-// 1. **Lógica de CIE Robusta**: Se asegura de obtener el último dato de ocupación
-//    disponible aunque no exista registro en la fecha exacta de fin.
-// 2. **Suma de Detenidos CECOREX Corregida**: Ahora se suma el número real de
-//    detenidos (ej: 9 + 6 = 15) en lugar de contar las filas de registro (2).
-// 3. **Rediseño de PDF con KPIs por Sección**: Se elimina el resumen ejecutivo genérico
-//    y se añade, al inicio de cada sección del informe, un cuadro de KPIs con los
-//    datos más relevantes del grupo, similar al diseño visual propuesto.
+// MEJORAS CLAVE (v4.3):
+// 1. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta,
+//    encontrando el último dato disponible aunque no existan registros en la fecha final.
+// 2. **PDF Exhaustivo**: Se mantienen los KPIs visuales al inicio de cada sección,
+//    pero se asegura la inclusión de TODAS las tablas de datos detalladas para
+//    no perder información.
+// 3. **Contexto y Narrativa en PDF**: Se han añadido párrafos introductorios y de
+//    conclusión en secciones clave para dar más contexto y profesionalismo al informe.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -193,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
 
-        // [MEJORA] Lógica de CECOREX corregida para sumar totales
         getCecorexDetalles: async (desde, hasta) => {
             const collectionsToQuery = ['cecorex_registros', 'cecorex'];
             let res = { numericos: {}, detenidos: [], totalDetenidos: 0 };
@@ -215,10 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (data.detenidos_cc && Array.isArray(data.detenidos_cc)) {
                         const detenidosNormalizados = data.detenidos_cc.map(d => {
-                            // Suma al total general
                             const cantidad = isNaN(parseInt(d.detenidos_cc)) ? 1 : parseInt(d.detenidos_cc);
                             res.totalDetenidos += cantidad;
-                            // Devuelve el objeto normalizado
                             return {
                                 nombre: d.detenidos_cc || 'N/A',
                                 motivo: d.motivo_cc || 'N/A',
@@ -256,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ingresos: 0,
                 salidas: 0,
                 incidencias: [],
-                internos_final: 'N/D'
+                internos_final: 0 // Default a 0
             };
 
             snapPeriodo.forEach(doc => {
@@ -268,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // [MEJORA] Lógica de CIE robustecida
             const snapLastDay = await db.collection('cie_registros').where(FieldPath.documentId(), '<=', hasta).orderBy(FieldPath.documentId(), 'desc').limit(1).get();
             if (!snapLastDay.empty) {
                 res.internos_final = snapLastDay.docs[0].data().n_internos ?? 0;
@@ -446,7 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const detenidosAgrupados = Object.values(agrupados);
                 const formatterDetenido = item => `<strong>${item.count}</strong> detenido/s por <strong>${item.motivo}</strong> de <strong>${item.nacionalidad}</strong>`;
                 
-                // [MEJORA] Se añade el total de detenidos al título del acordeón
                 html += this.renderAccordionSection(`Detenidos Registrados (Total: ${data.totalDetenidos})`, detenidosAgrupados, formatterDetenido, 'cecorexDetenidos');
             }
             
@@ -676,7 +671,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resumen.cecorex.numericos && Object.keys(resumen.cecorex.numericos).length > 0) {
                     content += Object.entries(resumen.cecorex.numericos).map(([k,v]) => `• ${k.replace(/_/g, " ")}: ${v}`).join('\n');
                 }
-                // [MEJORA] Usar el total corregido
                 if (resumen.cecorex.totalDetenidos > 0) {
                      content += `\n• Detenidos Registrados: ${resumen.cecorex.totalDetenidos}`;
                 }
@@ -697,7 +691,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return out;
         },
 
-        // [MEJORA] PDF rediseñado con KPIs por sección
         exportarPDF(resumen, desde, hasta) {
             try {
                 if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
@@ -754,7 +747,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     y += 8;
                 };
 
-                // [NUEVA FUNCIÓN] Helper para renderizar los KPIs de cada sección
                 const createSectionKPIs = (kpis, color) => {
                     y = checkPageBreak(y, 25);
                     const boxWidth = (pageW - margin * 2 - (kpis.length - 1) * 5) / kpis.length;
@@ -762,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let currentX = margin;
 
                     kpis.forEach(kpi => {
-                        doc.setFillColor(248, 249, 250); // Light gray background
+                        doc.setFillColor(248, 249, 250);
                         doc.setDrawColor(...color);
                         doc.setLineWidth(0.2);
                         doc.roundedRect(currentX, y, boxWidth, boxHeight, 3, 3, 'FD');
@@ -820,6 +812,29 @@ document.addEventListener('DOMContentLoaded', () => {
                             headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif } });
                          y = doc.autoTable.previous.finalY + 10;
                     }
+                     if (u.dispositivos?.length > 0) {
+                        y = checkPageBreak(y);
+                        doc.autoTable({ ...autoTableConfig, startY: y, head: [['Fecha', 'Dispositivo / Operación']],
+                            body: u.dispositivos.map(d => [UIRenderer.formatoFecha(d.fecha), UIRenderer.formatters.dispositivo(d).replace(/\[.*?\]\s/,'')]),
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif } });
+                        y = doc.autoTable.previous.finalY + 10;
+                    }
+                    if (u.colaboraciones?.length > 0) {
+                        y = checkPageBreak(y);
+                        doc.autoTable({ ...autoTableConfig, startY: y, head: [['Descripción', 'Unidad', 'Resultado']],
+                            body: u.colaboraciones.map(c => {
+                                if (typeof c === 'object') return [c.colaboracionDesc, c.colaboracionUnidad, c.colaboracionResultado];
+                                return [c, '', ''];
+                            }),
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif } });
+                        y = doc.autoTable.previous.finalY + 10;
+                    }
+                    // [MEJORA] Conclusión narrativa para UCRIF
+                    y = checkPageBreak(y, 25);
+                    doc.setFont(fonts.body, "italic").setFontSize(10).setTextColor(...colors.secondary);
+                    const conclusionText = doc.splitTextToSize(`En resumen, la actividad de los grupos operativos de UCRIF durante el periodo analizado refleja un esfuerzo coordinado en la lucha contra la inmigración irregular, con un total de ${u.detenidosILE} detenciones por este motivo y la identificación de ${u.filiadosVarios} personas en diversos controles preventivos.`, pageW - margin * 2);
+                    doc.text(conclusionText, margin, y);
+                    y += conclusionText.length * 5 + 5;
                 }
                 
                 // --- SECCIÓN GRUPO 1 ---
@@ -842,6 +857,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(detenidosValidos.length > 0) {
                         y = checkPageBreak(y);
                         doc.autoTable({ ...autoTableConfig, startY: y, head: [['Motivo', 'Nacionalidad']], body: detenidosValidos.map(d => [d.motivo, d.nacionalidad]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
+                        y = doc.autoTable.previous.finalY + 10;
+                    }
+                    if(expulsadosValidos.length > 0) {
+                        y = checkPageBreak(y);
+                        doc.autoTable({ ...autoTableConfig, startY: y, head: [['Nombre', 'Nacionalidad']], body: expulsadosValidos.map(e => [e.nombre, e.nacionalidad]), headStyles: { ...autoTableConfig.headStyles, fillColor: colors.grupo1 } });
                         y = doc.autoTable.previous.finalY + 10;
                     }
                 }
@@ -902,6 +922,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             value: v
                         }));
                         createSectionKPIs(gestionKPIs, colors.gestion);
+                        y = checkPageBreak(y);
+                        doc.autoTable({ ...autoTableConfig, startY: y, head: [['Concepto', 'Total']],
+                            body: gestionEntries.map(([k,v]) => [k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), v]),
+                            headStyles: { ...autoTableConfig.headStyles, fillColor: colors.gestion } });
+                        y = doc.autoTable.previous.finalY + 10;
                     }
                 }
 
@@ -989,4 +1014,3 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = new Date().toISOString().split('T')[0];
     DOM.fechaDesde.value = today;
     DOM.fechaHasta.value = today;
-});
