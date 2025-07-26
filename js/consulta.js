@@ -1,17 +1,13 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.3
+// SIREX · Consulta Global / Resúmenes v4.4
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión final con lógica de CIE robustecida y PDF mejorado con KPIs,
-//              todas las tablas de datos y texto narrativo adicional.
+// Descripción: Versión con logos institucionales integrados en el informe PDF.
 //
-// MEJORAS CLAVE (v4.3):
-// 1. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta,
-//    encontrando el último dato disponible aunque no existan registros en la fecha final.
-// 2. **PDF Exhaustivo**: Se mantienen los KPIs visuales al inicio de cada sección,
-//    pero se asegura la inclusión de TODAS las tablas de datos detalladas para
-//    no perder información.
-// 3. **Contexto y Narrativa en PDF**: Se han añadido párrafos introductorios y de
-//    conclusión en secciones clave para dar más contexto y profesionalismo al informe.
+// MEJORAS CLAVE (v4.4):
+// 1. **Logos en PDF**: Se añaden los logos de BPEF y UCRIF en la portada y pie de
+//    página de los informes PDF para un aspecto más oficial.
+// 2. **Gestión de Errores de Imagen**: Se utiliza try-catch para que la generación
+//    del PDF no falle si las imágenes de los logos no se encuentran.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -705,7 +701,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pageH = doc.internal.pageSize.getHeight();
                 const margin = 15;
                 let y = 0; 
-                const logoURL = 'https://i.imgur.com/7dlqR3j.png';
+                const bpefLogoURL = 'img/bpef.png';
+                const ucrifLogoURL = 'img/ucrif.png';
 
                 const colors = {
                     primary: [40, 58, 90], secondary: [108, 117, 125], background: [248, 249, 250],
@@ -734,8 +731,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         doc.setPage(i);
                         doc.setFont(fonts.body, "normal").setFontSize(8).setTextColor(...colors.secondary);
                         doc.text(`Página ${i} de ${pageCount}`, pageW / 2, pageH - 10, { align: 'center' });
-                        doc.text('Informe Confidencial · SIREX', margin, pageH - 10);
-                        try { doc.addImage(logoURL, 'PNG', pageW - margin - 8, pageH - 13.5, 8, 8); } catch(e) { console.error("Error al añadir logo al pie."); }
+                        try {
+                            doc.addImage(bpefLogoURL, 'PNG', margin, pageH - 14, 10, 10);
+                            doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 10, pageH - 14, 10, 10);
+                        } catch (e) {
+                            console.warn("No se pudieron cargar los logos del pie de página. Asegúrate de que los archivos están en la carpeta 'img'.");
+                        }
                     }
                 };
                 
@@ -774,7 +775,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // --- PÁGINA 1: PORTADA ---
                 doc.setFillColor(...colors.primary).rect(0, 0, pageW, pageH, 'F');
-                try { doc.addImage(logoURL, 'PNG', pageW / 2 - 25, 40, 50, 50); } catch (e) { console.error("Error al añadir logo a portada."); }
+                try {
+                    doc.addImage(bpefLogoURL, 'PNG', margin + 20, 40, 40, 40);
+                    doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 60, 40, 40, 40);
+                } catch (e) {
+                    console.warn("No se pudieron cargar los logos de la portada. Asegúrate de que los archivos están en la carpeta 'img'.");
+                }
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(fonts.title, "bold").setFontSize(26).text("INFORME OPERATIVO GLOBAL", pageW / 2, 120, { align: 'center' });
                 doc.setFontSize(14).setFont(fonts.body, "normal").text("BRIGADA PROVINCIAL DE EXTRANJERÍA Y FRONTERAS", pageW / 2, 135, { align: 'center' });
@@ -829,7 +835,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             headStyles: { ...autoTableConfig.headStyles, fillColor: colors.ucrif } });
                         y = doc.autoTable.previous.finalY + 10;
                     }
-                    // [MEJORA] Conclusión narrativa para UCRIF
                     y = checkPageBreak(y, 25);
                     doc.setFont(fonts.body, "italic").setFontSize(10).setTextColor(...colors.secondary);
                     const conclusionText = doc.splitTextToSize(`En resumen, la actividad de los grupos operativos de UCRIF durante el periodo analizado refleja un esfuerzo coordinado en la lucha contra la inmigración irregular, con un total de ${u.detenidosILE} detenciones por este motivo y la identificación de ${u.filiadosVarios} personas en diversos controles preventivos.`, pageW - margin * 2);
