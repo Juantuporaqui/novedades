@@ -1014,3 +1014,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const today = new Date().toISOString().split('T')[0];
     DOM.fechaDesde.value = today;
     DOM.fechaHasta.value = today;
+});
