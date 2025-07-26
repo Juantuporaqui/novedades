@@ -13,7 +13,6 @@
       background: #f7f9fc;
       color: #182136;
     }
-
     .sirex-header-flex {
       display: flex;
       align-items: center;
@@ -25,13 +24,11 @@
       margin: 40px 0 32px 0;
       min-height: 146px;
       border: 1.5px solid #e0e6ed;
-      transition: box-shadow 0.2s;
       max-width: 1100px;
       width: 94%;
       margin-left: auto;
       margin-right: auto;
     }
-
     .header-escudo, .header-ucrif {
       flex: 0 0 120px;
       display: flex;
@@ -41,8 +38,6 @@
     .escudo-bpef, .logo-ucrif {
       max-width: 102px;
       max-height: 102px;
-      width: auto;
-      height: auto;
       background: #fff;
       border-radius: 13px;
       box-shadow: 0 2px 10px #a6b5cc18;
@@ -50,14 +45,12 @@
       filter: drop-shadow(0 0 2px #92a6c055);
       transition: box-shadow 0.25s;
     }
-
     .header-titulos {
       flex: 1 1 auto;
       text-align: center;
       padding: 0 24px;
     }
     .sirex-title {
-      font-family: 'Inter', Arial, Helvetica, sans-serif;
       font-size: 2.7rem;
       font-weight: 900;
       letter-spacing: 2.5px;
@@ -72,8 +65,6 @@
       letter-spacing: 0.4px;
       margin-bottom: 4px;
     }
-
-    /* Formulario */
     .consulta-form-wrap {
       max-width: 900px;
       margin: 0 auto 40px auto;
@@ -121,7 +112,6 @@
       border: 1.6px solid #3386ee;
       background: #fff;
     }
-
     .btn-consultar {
       padding: 14px 38px;
       font-size: 1.15rem;
@@ -141,16 +131,12 @@
       box-shadow: 0 3px 9px #3386ee3a;
       transform: translateY(-1px) scale(1.025);
     }
-
-    /* Responsive diseño */
     @media (max-width: 1100px) {
       .sirex-header-flex { max-width: 98%; }
       .consulta-form-wrap { max-width: 98%; }
     }
     @media (max-width: 900px) {
-      .sirex-header-flex {
-        padding: 18px 8px 14px 8px;
-      }
+      .sirex-header-flex { padding: 18px 8px 14px 8px; }
       .header-titulos { padding: 0 10px; }
     }
     @media (max-width: 700px) {
@@ -174,8 +160,6 @@
       .sirex-desc { font-size: 1.01rem; }
       .consulta-form-row { flex-direction: column; gap: 10px; }
     }
-
-    /* Footer */
     .footer {
       margin-top: 50px;
       text-align: center;
@@ -187,7 +171,7 @@
   </style>
 </head>
 <body>
-  <!-- Cabecera mejorada -->
+  <!-- Cabecera profesional con logos -->
   <header class="sirex-header-flex">
     <div class="header-escudo">
       <img src="img/bpef.png" alt="Logo BPEF" class="escudo-bpef">
@@ -200,27 +184,30 @@
       <img src="img/ucrif.png" alt="Logo UCRIF" class="logo-ucrif">
     </div>
   </header>
-  <!-- Formulario -->
+  <!-- Formulario de consulta -->
   <main>
-    <form class="consulta-form-wrap">
+    <form class="consulta-form-wrap" id="consultaForm">
       <div class="consulta-form-row">
         <div class="consulta-form-group">
           <label for="fecha-desde">Desde:</label>
-          <input type="date" id="fecha-desde" name="desde" value="2025-07-26" required>
+          <input type="date" id="fecha-desde" name="desde" required>
         </div>
         <div class="consulta-form-group">
           <label for="fecha-hasta">Hasta:</label>
-          <input type="date" id="fecha-hasta" name="hasta" value="2025-07-26" required>
+          <input type="date" id="fecha-hasta" name="hasta" required>
         </div>
         <div style="display: flex; align-items: flex-end; padding-bottom: 3px;">
           <button type="submit" class="btn-consultar">Consultar</button>
         </div>
       </div>
     </form>
+    <!-- Ventana de resumen/resultados, el script la utilizará -->
+    <div id="resumenVentana"></div>
   </main>
   <footer class="footer">
     &copy; 2025 SIREX · UCRIF · CNP
   </footer>
+  <!-- ENLACE AL SCRIPT DE LÓGICA -->
   <script src="js/consulta.js"></script>
 </body>
 </html>
