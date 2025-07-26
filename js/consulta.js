@@ -2,21 +2,6 @@
 // SIREX · Consulta Global / Resúmenes v4.1
 // Autor: Gemini (Asistente de Programación)
 // Descripción: Versión con lógica de CIE corregida y rediseño completo de la exportación PDF.
-//
-// NOTA IMPORTANTE: Para el correcto funcionamiento de los menús desplegables (acordeones),
-// asegúrate de que tu archivo HTML incluye el SCRIPT de Bootstrap 5 Bundle, por ejemplo:
-// <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-//
-// MEJORAS CLAVE (v4.1):
-// 1. **Lógica de CIE Corregida**:
-//    - El total de internos refleja el dato del último día del periodo, no una suma.
-//    - Se totalizan correctamente los ingresos y salidas.
-//    - Se añade la recopilación y muestra de incidencias.
-// 2. **Rediseño Profesional del PDF**:
-//    - Se añade una página de "Resumen Ejecutivo" con KPIs y un párrafo introductorio.
-//    - El contenido fluye de forma continua, eliminando páginas vacías.
-//    - Diseño mejorado con más elementos visuales, texto introductorio y aspecto profesional.
-//    - Inclusión de todas las tablas de datos para un informe 100% completo.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -247,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return res;
         },
 
-        // [MEJORA] Lógica de CIE completamente reescrita
         getCIE: async function(desde, hasta) {
             const snapPeriodo = await db.collection('cie_registros').where(FieldPath.documentId(), '>=', desde).where(FieldPath.documentId(), '<=', hasta).get();
             
@@ -451,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return html;
         },
         
-        // [MEJORA] Renderizado de CIE actualizado
         renderizarCIE(data) {
             const cfg = AppConfig.grupos.cie;
             let html = `<div class="card border-${cfg.theme} mb-4 shadow-sm">
@@ -536,8 +519,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (withCheckboxes) {
                     html += `<li class="list-group-item d-flex align-items-center">
                                 <div class="form-check">
-                                    <input class="form-check-input dispositivo-checkbox" type="checkbox" value="${index}" id="dispositivo-${index}">
-                                    <label class="form-check-label" for="dispositivo-${index}">${content}</label>
+                                    <input class="form-check-input dispositivo-checkbox" type="checkbox" value="${index}" id="dispositivo-${idPrefix}-${index}">
+                                    <label class="form-check-label" for="dispositivo-${idPrefix}-${index}">${content}</label>
                                 </div>
                              </li>`;
                 } else {
@@ -637,7 +620,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked')).map(cb => u.dispositivos[parseInt(cb.value)]);
+                const selectedDispositivos = Array.from(document.querySelectorAll('.dispositivo-checkbox:checked')).map(cb => {
+                    const index = parseInt(cb.value);
+                    return u.dispositivos[index];
+                });
 
                 if (selectedDispositivos.length > 0) {
                     content += `\n*En el marco de las investigaciones de UCRIF destacan los siguientes avances:*\n`;
@@ -691,7 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return out;
         },
 
-        // [MEJORA] Función de exportación a PDF completamente rediseñada
         exportarPDF(resumen, desde, hasta) {
             try {
                 if (typeof window.jspdf.jsPDF.API.autoTable !== 'function') {
@@ -754,14 +739,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.setFont(fonts.body, "normal").setFontSize(10);
                     data.forEach((item, index) => {
                         const xPos = (index % 2 === 0) ? margin : midPoint;
-                        if (index % 2 === 0 && index > 0) {
-                             y = checkPageBreak(y, 8);
-                             y += 8;
+                        if (index % 2 !== 0) {
+                            y -= 8; // Vuelve a la Y anterior para la segunda columna
+                        } else if (index > 0) {
+                            y = checkPageBreak(y, 8);
                         }
+                        
                         doc.setTextColor(...colors.secondary).text(`${item[0]}:`, xPos, y);
-                        doc.setFont(fonts.body, "bold").setTextColor(...color).text(String(item[1]), xPos + 55, y, {align: 'right', maxWidth: (pageW/2 - margin - 15)});
+                        doc.setFont(fonts.body, "bold").setTextColor(...color).text(String(item[1]), xPos + 55, y, {align: 'right', maxWidth: (pageW/2 - margin - 20)});
+                        
+                        if (index % 2 === 0 || index === data.length - 1) {
+                            y += 8; // Avanza Y después de la primera columna o al final
+                        }
                     });
-                    y += 10;
+                    y += 2; // Espacio extra post-sección
                 };
                 
                 const createKPIBox = (x, y, label, value, color) => {
@@ -974,3 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.fechaDesde.value = today;
     DOM.fechaHasta.value = today;
 });
+</script>
+
+</body>
+</html>
