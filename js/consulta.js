@@ -1,13 +1,12 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.4
+// SIREX · Consulta Global / Resúmenes v4.5
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con logos institucionales integrados en el informe PDF.
+// Descripción: Versión con logos de mayor tamaño en el informe PDF.
 //
-// MEJORAS CLAVE (v4.4):
-// 1. **Logos en PDF**: Se añaden los logos de BPEF y UCRIF en la portada y pie de
-//    página de los informes PDF para un aspecto más oficial.
-// 2. **Gestión de Errores de Imagen**: Se utiliza try-catch para que la generación
-//    del PDF no falle si las imágenes de los logos no se encuentran.
+// MEJORAS CLAVE (v4.5):
+// 1. **Logos en PDF más Grandes**: Se ha aumentado el tamaño de los logos en la
+//    portada y en el pie de página para mejorar su visibilidad y el aspecto
+//    general del informe.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -732,8 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         doc.setFont(fonts.body, "normal").setFontSize(8).setTextColor(...colors.secondary);
                         doc.text(`Página ${i} de ${pageCount}`, pageW / 2, pageH - 10, { align: 'center' });
                         try {
-                            doc.addImage(bpefLogoURL, 'PNG', margin, pageH - 14, 10, 10);
-                            doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 10, pageH - 14, 10, 10);
+                            // [MEJORA] Logos del pie de página más grandes
+                            doc.addImage(bpefLogoURL, 'PNG', margin, pageH - 15, 12, 12);
+                            doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 12, pageH - 15, 12, 12);
                         } catch (e) {
                             console.warn("No se pudieron cargar los logos del pie de página. Asegúrate de que los archivos están en la carpeta 'img'.");
                         }
@@ -776,8 +776,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- PÁGINA 1: PORTADA ---
                 doc.setFillColor(...colors.primary).rect(0, 0, pageW, pageH, 'F');
                 try {
-                    doc.addImage(bpefLogoURL, 'PNG', margin + 20, 40, 40, 40);
-                    doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 60, 40, 40, 40);
+                    // [MEJORA] Logos de portada más grandes
+                    doc.addImage(bpefLogoURL, 'PNG', margin + 15, 35, 50, 50);
+                    doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 65, 35, 50, 50);
                 } catch (e) {
                     console.warn("No se pudieron cargar los logos de la portada. Asegúrate de que los archivos están en la carpeta 'img'.");
                 }
