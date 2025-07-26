@@ -965,7 +965,3 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.fechaDesde.value = today;
     DOM.fechaHasta.value = today;
 });
-</script>
-
-</body>
-</html>
