@@ -142,6 +142,29 @@
         text-align: center;
         margin: 40px 0;
     }
+    .btn-export {
+        padding: 12px 30px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px #00000018;
+        transition: all 0.15s;
+        letter-spacing: 0.5px;
+        margin: 0 10px;
+    }
+    .btn-export:hover {
+        box-shadow: 0 3px 9px #0000003a;
+        transform: translateY(-1px) scale(1.02);
+    }
+    .btn-export-whatsapp {
+        background: linear-gradient(90deg,#25D366,#128C7E 90%);
+    }
+    .btn-export-pdf {
+        background: linear-gradient(90deg,#d32f2f,#c62828 90%);
+    }
     @media (max-width: 1100px) {
       .sirex-header-flex { max-width: 98%; }
       .consulta-form-wrap { max-width: 98%; }
@@ -217,7 +240,10 @@
     <!-- Ventana de resumen/resultados, el script la utilizará -->
     <div id="resumenVentana"></div>
     <!-- Contenedor para los botones de exportación -->
-    <div id="exportBtns" class="export-buttons d-none"></div>
+    <div id="exportBtns" class="export-buttons d-none">
+        <button id="btnWhatsapp" class="btn-export btn-export-whatsapp">Exportar a WhatsApp</button>
+        <button id="btnExportarPDF" class="btn-export btn-export-pdf">Exportar a PDF</button>
+    </div>
   </main>
   <footer class="footer">
     &copy; 2025 SIREX · UCRIF · CNP
