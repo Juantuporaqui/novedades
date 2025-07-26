@@ -1,216 +1,228 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SIREX · Consulta Global de Actividad Operativa</title>
-  <link rel="icon" type="image/png" href="img/bpef.png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', Arial, Helvetica, sans-serif;
-      margin: 0;
-      background: #f7f9fc;
-      color: #182136;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIREX · Consulta Global de Actividad Operativa</title>
+  <link rel="icon" type="image/png" href="img/bpef.png">
+  
+  <!-- Librerías JS (Firebase, jsPDF) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', Arial, Helvetica, sans-serif;
+      margin: 0;
+      background: #f7f9fc;
+      color: #182136;
+    }
+    .sirex-header-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      box-shadow: 0 4px 24px #0d2c5130;
+      border-radius: 22px;
+      padding: 32px 56px 26px 56px;
+      margin: 40px 0 32px 0;
+      min-height: 146px;
+      border: 1.5px solid #e0e6ed;
+      max-width: 1100px;
+      width: 94%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .header-escudo, .header-ucrif {
+      flex: 0 0 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .escudo-bpef, .logo-ucrif {
+      max-width: 102px;
+      max-height: 102px;
+      background: #fff;
+      border-radius: 13px;
+      box-shadow: 0 2px 10px #a6b5cc18;
+      padding: 6px;
+      filter: drop-shadow(0 0 2px #92a6c055);
+      transition: box-shadow 0.25s;
+    }
+    .header-titulos {
+      flex: 1 1 auto;
+      text-align: center;
+      padding: 0 24px;
+    }
+    .sirex-title {
+      font-size: 2.7rem;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: #15213b;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 8px #e9eef855, 0 1px 0 #fff;
+    }
+    .sirex-desc {
+      font-size: 1.24rem;
+      font-weight: 400;
+      color: #41557a;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .consulta-form-wrap {
+      max-width: 900px;
+      margin: 0 auto 40px auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 3px 18px #adc7e618;
+      padding: 36px 24px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border: 1px solid #e6ecf3;
+    }
+    .consulta-form-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 22px;
+      margin-bottom: 8px;
+    }
+    .consulta-form-group {
+      flex: 1 1 180px;
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label {
+      font-size: 1.03rem;
+      color: #28344e;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    input[type="date"] {
+      padding: 7px 10px;
+      font-size: 1.09rem;
+      border-radius: 8px;
+      border: 1.2px solid #b5c5d7;
+      outline: none;
+      font-family: inherit;
+      color: #1b2238;
+      background: #f4f7fc;
+      transition: border 0.18s;
+    }
+    input[type="date"]:focus {
+      border: 1.6px solid #3386ee;
+      background: #fff;
+    }
+    .btn-consultar {
+      padding: 14px 38px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(90deg,#1260d0,#1583ea 90%);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px #159cf418;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.11s;
+      letter-spacing: 1px;
+      margin-top: 20px;
+    }
+    .btn-consultar:hover {
+      background: linear-gradient(90deg,#1583ea,#1260d0 90%);
+      box-shadow: 0 3px 9px #3386ee3a;
+      transform: translateY(-1px) scale(1.025);
+    }
+    .export-buttons {
+        text-align: center;
+        margin: 40px 0;
     }
-    .sirex-header-flex {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #fff;
-      box-shadow: 0 4px 24px #0d2c5130;
-      border-radius: 22px;
-      padding: 32px 56px 26px 56px;
-      margin: 40px 0 32px 0;
-      min-height: 146px;
-      border: 1.5px solid #e0e6ed;
-      max-width: 1100px;
-      width: 94%;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .header-escudo, .header-ucrif {
-      flex: 0 0 120px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .escudo-bpef, .logo-ucrif {
-      max-width: 102px;
-      max-height: 102px;
-      background: #fff;
-      border-radius: 13px;
-      box-shadow: 0 2px 10px #a6b5cc18;
-      padding: 6px;
-      filter: drop-shadow(0 0 2px #92a6c055);
-      transition: box-shadow 0.25s;
-    }
-    .header-titulos {
-      flex: 1 1 auto;
-      text-align: center;
-      padding: 0 24px;
-    }
-    .sirex-title {
-      font-size: 2.7rem;
-      font-weight: 900;
-      letter-spacing: 2.5px;
-      color: #15213b;
-      margin-bottom: 6px;
-      text-shadow: 0 2px 8px #e9eef855, 0 1px 0 #fff;
-    }
-    .sirex-desc {
-      font-size: 1.24rem;
-      font-weight: 400;
-      color: #41557a;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-    .consulta-form-wrap {
-      max-width: 900px;
-      margin: 0 auto 40px auto;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 3px 18px #adc7e618;
-      padding: 36px 24px 28px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      border: 1px solid #e6ecf3;
-    }
-    .consulta-form-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 22px;
-      margin-bottom: 8px;
-    }
-    .consulta-form-group {
-      flex: 1 1 180px;
-      min-width: 150px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    label {
-      font-size: 1.03rem;
-      color: #28344e;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-    input[type="date"] {
-      padding: 7px 10px;
-      font-size: 1.09rem;
-      border-radius: 8px;
-      border: 1.2px solid #b5c5d7;
-      outline: none;
-      font-family: inherit;
-      color: #1b2238;
-      background: #f4f7fc;
-      transition: border 0.18s;
-    }
-    input[type="date"]:focus {
-      border: 1.6px solid #3386ee;
-      background: #fff;
-    }
-    .btn-consultar {
-      padding: 14px 38px;
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: #fff;
-      background: linear-gradient(90deg,#1260d0,#1583ea 90%);
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px #159cf418;
-      transition: background 0.15s, box-shadow 0.15s, transform 0.11s;
-      letter-spacing: 1px;
-      margin-top: 20px;
-    }
-    .btn-consultar:hover {
-      background: linear-gradient(90deg,#1583ea,#1260d0 90%);
-      box-shadow: 0 3px 9px #3386ee3a;
-      transform: translateY(-1px) scale(1.025);
-    }
-    @media (max-width: 1100px) {
-      .sirex-header-flex { max-width: 98%; }
-      .consulta-form-wrap { max-width: 98%; }
-    }
-    @media (max-width: 900px) {
-      .sirex-header-flex { padding: 18px 8px 14px 8px; }
-      .header-titulos { padding: 0 10px; }
-    }
-    @media (max-width: 700px) {
-      .sirex-header-flex {
-        flex-direction: column;
-        align-items: center;
-        padding: 18px 6px 12px 6px;
-        min-height: 0;
-        margin: 18px 0 16px 0;
-      }
-      .header-escudo, .header-ucrif {
-        margin: 4px 0;
-        max-width: 66px;
-      }
-      .escudo-bpef, .logo-ucrif {
-        max-width: 64px;
-        max-height: 64px;
-        padding: 3px;
-      }
-      .sirex-title { font-size: 1.4rem; }
-      .sirex-desc { font-size: 1.01rem; }
-      .consulta-form-row { flex-direction: column; gap: 10px; }
-    }
-    .footer {
-      margin-top: 50px;
-      text-align: center;
-      color: #6680a8;
-      font-size: 0.98rem;
-      padding-bottom: 18px;
-      letter-spacing: 0.1px;
-    }
-  </style>
+    @media (max-width: 1100px) {
+      .sirex-header-flex { max-width: 98%; }
+      .consulta-form-wrap { max-width: 98%; }
+    }
+    @media (max-width: 900px) {
+      .sirex-header-flex { padding: 18px 8px 14px 8px; }
+      .header-titulos { padding: 0 10px; }
+    }
+    @media (max-width: 700px) {
+      .sirex-header-flex {
+        flex-direction: column;
+        align-items: center;
+        padding: 18px 6px 12px 6px;
+        min-height: 0;
+        margin: 18px 0 16px 0;
+      }
+      .header-escudo, .header-ucrif {
+        margin: 4px 0;
+        max-width: 66px;
+      }
+      .escudo-bpef, .logo-ucrif {
+        max-width: 64px;
+        max-height: 64px;
+        padding: 3px;
+      }
+      .sirex-title { font-size: 1.4rem; }
+      .sirex-desc { font-size: 1.01rem; }
+      .consulta-form-row { flex-direction: column; gap: 10px; }
+    }
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      color: #6680a8;
+      font-size: 0.98rem;
+      padding-bottom: 18px;
+      letter-spacing: 0.1px;
+    }
+  </style>
 </head>
 <body>
-  <!-- Cabecera profesional con logos -->
-  <header class="sirex-header-flex">
-    <div class="header-escudo">
-      <img src="img/bpef.png" alt="Logo BPEF" class="escudo-bpef">
-    </div>
-    <div class="header-titulos">
-      <div class="sirex-title">SIREX</div>
-      <div class="sirex-desc">Consulta Global de Actividad Operativa</div>
-    </div>
-    <div class="header-ucrif">
-      <img src="img/ucrif.png" alt="Logo UCRIF" class="logo-ucrif">
-    </div>
-  </header>
-  <!-- Formulario de consulta -->
-  <main>
-    <form class="consulta-form-wrap" id="consultaForm">
-      <div class="consulta-form-row">
-        <div class="consulta-form-group">
-          <label for="fecha-desde">Desde:</label>
-          <input type="date" id="fecha-desde" name="desde" required>
-        </div>
-        <div class="consulta-form-group">
-          <label for="fecha-hasta">Hasta:</label>
-          <input type="date" id="fecha-hasta" name="hasta" required>
-        </div>
-        <div style="display: flex; align-items: flex-end; padding-bottom: 3px;">
-          <button type="submit" class="btn-consultar">Consultar</button>
-        </div>
-      </div>
-    </form>
-    <!-- Ventana de resumen/resultados, el script la utilizará -->
-    <div id="resumenVentana"></div>
-  </main>
-  <footer class="footer">
-    &copy; 2025 SIREX · UCRIF · CNP
-  </footer>
-  <!-- SCRIPTS FIREBASE ANTES DE TU LÓGICA -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="js/consulta.js"></script>
+  <!-- Cabecera profesional con logos -->
+  <header class="sirex-header-flex">
+    <div class="header-escudo">
+      <img src="img/bpef.png" alt="Logo BPEF" class="escudo-bpef">
+    </div>
+    <div class="header-titulos">
+      <div class="sirex-title">SIREX</div>
+      <div class="sirex-desc">Consulta Global de Actividad Operativa</div>
+    </div>
+    <div class="header-ucrif">
+      <img src="img/ucrif.png" alt="Logo UCRIF" class="logo-ucrif">
+    </div>
+  </header>
+  <!-- Formulario de consulta -->
+  <main>
+    <form class="consulta-form-wrap" id="consultaForm">
+      <div class="consulta-form-row">
+        <div class="consulta-form-group">
+          <label for="fechaDesde">Desde:</label>
+          <input type="date" id="fechaDesde" name="desde" required>
+        </div>
+        <div class="consulta-form-group">
+          <label for="fechaHasta">Hasta:</label>
+          <input type="date" id="fechaHasta" name="hasta" required>
+        </div>
+        <div style="display: flex; align-items: flex-end; padding-bottom: 3px;">
+          <button type="submit" class="btn-consultar">Consultar</button>
+        </div>
+      </div>
+    </form>
+    <!-- Contenedor para el spinner -->
+    <div id="spinner" class="d-none" style="text-align: center; margin: 40px 0;"></div>
+    <!-- Ventana de resumen/resultados, el script la utilizará -->
+    <div id="resumenVentana"></div>
+    <!-- Contenedor para los botones de exportación -->
+    <div id="exportBtns" class="export-buttons d-none"></div>
+  </main>
+  <footer class="footer">
+    &copy; 2025 SIREX · UCRIF · CNP
+  </footer>
+  <!-- ENLACE AL SCRIPT DE LÓGICA -->
+  <script src="js/consulta.js"></script>
 </body>
 </html>
