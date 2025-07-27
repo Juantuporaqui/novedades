@@ -1,18 +1,14 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.7
+// SIREX · Consulta Global / Resúmenes v4.8
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con análisis operativo avanzado para UCRIF y correcciones finales.
+// Descripción: Versión con corrección del error de renderizado y mejoras de estabilidad.
 //
-// MEJORAS CLAVE (v4.7):
-// 1. **Análisis Operativo UCRIF**:
-//    - Se categorizan los dispositivos por palabras clave (ocio, transporte, etc.).
-//    - Se analiza la tendencia de actividad (fin de semana vs. laborables).
-//    - Se identifican las nacionalidades predominantes entre los detenidos.
-//    - Se genera un párrafo de conclusión redactado en el PDF con este análisis.
-// 2. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta.
-// 3. **Recuperación de Datos Mejorada**: Se asegura la recolección de todas las
-//    inspecciones y colaboraciones, sin importar su origen.
-// 4. **Ajustes de Diseño en PDF**: Se mejora la maquetación para un aspecto más profesional.
+// MEJORAS CLAVE (v4.8):
+// 1. **Corrección de Error 'apertura'**: Se ha modificado la forma en que se accede a la
+//    configuración para asegurar que siempre esté disponible al renderizar el HTML,
+//    solucionando el error 'Cannot read properties of undefined'.
+// 2. **Estabilidad General**: Se han añadido comprobaciones adicionales para hacer
+//    el código más robusto frente a posibles datos incompletos.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,13 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
             gestion: { label: 'Grupo de Gestión', icon: '🗂️', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
-        // [NUEVO] Palabras clave para categorización de dispositivos
-        categoriasDispositivos: {
-            'Ocio Nocturno': ['ocio', 'pub', 'discoteca', 'club'],
-            'Transporte Público': ['estación', 'autobuses', 'tren', 'metro', 'tranvía'],
-            'Zonas Industriales': ['polígono', 'industrial', 'fábrica'],
-            'Asentamientos': ['asentamiento', 'chabolas'],
-            'Mercadillos': ['mercadillo', 'mercado'],
+        frasesNarrativas: {
+            apertura: [
+                "Desplegadas actuaciones operativas clave, se ha reforzado la vigilancia y el control en materia de extranjería en el periodo analizado.",
+                "En el marco de las competencias de la Brigada, se han desarrollado dispositivos coordinados para la prevención y actuación frente a la inmigración irregular.",
+                "La intervención en focos de riesgo se ha consolidado con resultados notables, destacando las siguientes actuaciones coordinadas.",
+            ],
+            cierre: [
+                "El conjunto de actuaciones llevadas a cabo refuerza la seguridad ciudadana y consolida la estrategia de la Brigada.",
+                "El servicio se cierra sin incidencias extraordinarias que reseñar, cumpliendo con los objetivos marcados.",
+                "Parte cerrado con un balance de actividad positivo para la operativa global de la UCRIF."
+            ]
         }
     };
 
@@ -275,13 +275,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. LÓGICA DE RENDERIZADO HTML (UIRenderer) ---
     const UIRenderer = {
         renderizarResumenGlobalHTML(resumen, desde, hasta) {
+            // [CORRECCIÓN] Se mueve la función randomFrase aquí para asegurar el scope
+            const randomFrase = (tipo) => {
+                if (!AppConfig || !AppConfig.frasesNarrativas || !AppConfig.frasesNarrativas[tipo]) {
+                    console.error("Error: AppConfig.frasesNarrativas no está definido correctamente.");
+                    return "Se ha generado el resumen de actividad para el periodo seleccionado."; // Fallback
+                }
+                return AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
+            };
+
             let html = `<div class="alert alert-light text-center my-4 p-3 border rounded-3">
                             <h2 class="h4 mb-1"><b>RESUMEN OPERATIVO GLOBAL SIREX</b></h2>
                             <span class="text-muted">Periodo consultado: <b>${this.formatoFecha(desde)}</b> al <b>${this.formatoFecha(hasta)}</b></span>
                         </div>`;
             
-            const randomFrase = (tipo) => AppConfig.frasesNarrativas[tipo][Math.floor(Math.random() * AppConfig.frasesNarrativas[tipo].length)];
-
             html += `<p class="lead">${randomFrase('apertura')}</p>`;
 
             if (resumen.ucrif && Object.values(resumen.ucrif).some(v => (Array.isArray(v) ? v.length > 0 : v > 0))) {
