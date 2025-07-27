@@ -37,21 +37,25 @@
       width: 94%;
     }
     .header-escudo, .header-ucrif {
-      flex: 0 0 180px; /* Aumentado para dar más espacio a los logos */
+      flex: 0 0 180px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .escudo-bpef, .logo-ucrif {
-      height: 162px;  /* Tamaño base aumentado un 20% y fijado para igualar altura */
-      width: auto;   /* Ancho automático para mantener la proporción */
-      max-width: 100%; /* Previene que la imagen se desborde de su contenedor */
+      height: 162px;
+      width: auto;
+      max-width: 100%;
       background: #fff;
       border-radius: 13px;
       box-shadow: 0 2px 10px #a6b5cc18;
       padding: 6px;
       filter: drop-shadow(0 0 2px #92a6c055);
-      transition: box-shadow 0.25s;
+      transition: all 0.25s;
+    }
+    .escudo-bpef:hover, .logo-ucrif:hover {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 8px #92a6c077);
     }
     .header-titulos {
       flex: 1 1 auto;
@@ -133,15 +137,58 @@
       transition: background 0.15s, box-shadow 0.15s, transform 0.11s;
       letter-spacing: 1px;
       margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .btn-consultar:hover {
       background: linear-gradient(90deg,#1583ea,#1260d0 90%);
       box-shadow: 0 3px 9px #3386ee3a;
       transform: translateY(-1px) scale(1.025);
     }
+    .spinner-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 0;
+    }
+    .spinner-visual {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e0e6ed;
+        border-top-color: #1260d0;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    .spinner-text {
+        margin-top: 15px;
+        font-size: 1.1rem;
+        color: #41557a;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .resultados-wrap {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 3px 18px #adc7e618;
+        border: 1px solid #e6ecf3;
+        padding: 20px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .resultados-wrap.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
     .export-buttons {
         text-align: center;
-        margin: 40px 0;
+        margin: 20px 0 0 0;
+        padding-top: 20px;
+        border-top: 1px solid #e6ecf3;
     }
     .btn-export {
         padding: 12px 30px;
@@ -232,20 +279,25 @@
           <input type="date" id="fechaHasta" name="hasta" required>
         </div>
         <div style="display: flex; align-items: flex-end; padding-bottom: 3px;">
-          <button type="submit" class="btn-consultar">Consultar</button>
+          <button type="submit" class="btn-consultar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Consultar
+          </button>
         </div>
       </div>
     </form>
     <!-- Contenedor para el spinner -->
-    <div id="spinner" class="d-none" style="text-align: center; margin: 40px 0;">
-        <!-- Puedes añadir un spinner visual de Bootstrap si quieres, pero el JS lo gestiona -->
+    <div id="spinner" class="spinner-container d-none">
+        <div class="spinner-visual"></div>
+        <p class="spinner-text">Consultando bases de datos...</p>
     </div>
-    <!-- Ventana de resumen/resultados, el script la utilizará -->
-    <div id="resumenVentana"></div>
-    <!-- Contenedor para los botones de exportación -->
-    <div id="exportBtns" class="export-buttons d-none">
-        <button id="btnWhatsapp" class="btn-export btn-export-whatsapp">Exportar a WhatsApp</button>
-        <button id="btnExportarPDF" class="btn-export btn-export-pdf">Exportar a PDF</button>
+    <!-- Contenedor para toda la sección de resultados -->
+    <div id="resultadosContainer" class="resultados-wrap d-none">
+        <div id="resumenVentana"></div>
+        <div id="exportBtns" class="export-buttons">
+            <button id="btnWhatsapp" class="btn-export btn-export-whatsapp">Exportar a WhatsApp</button>
+            <button id="btnExportarPDF" class="btn-export btn-export-pdf">Exportar a PDF</button>
+        </div>
     </div>
   </main>
   <footer class="footer">
