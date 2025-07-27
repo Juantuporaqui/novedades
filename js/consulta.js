@@ -1,15 +1,15 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.5
+// SIREX · Consulta Global / Resúmenes v4.6
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con mejoras de diseño en la interfaz y animaciones.
+// Descripción: Versión con recuperación de lógicas de datos de UCRIF y corrección
+//              en el tamaño de los logos del PDF.
 //
-// MEJORAS CLAVE (v4.5):
-// 1. **Animación de Resultados**: El contenedor de resultados ahora aparece con
-//    una suave animación de fundido y deslizamiento.
-// 2. **Spinner Personalizado**: Se ha mejorado el indicador de carga para que sea
-//    más visual y acorde al diseño.
-// 3. **Mejoras de UI**: Pequeños retoques en botones y contenedores para una
-//    experiencia de usuario más pulida.
+// MEJORAS CLAVE (v4.6):
+// 1. **Lógica de UCRIF Restaurada**: Se ha reincorporado la lógica para detectar
+//    inspecciones y colaboraciones a partir de los registros de actuaciones,
+//    asegurando que no se pierda información.
+// 2. **Logos en PDF Mejorados**: Se ha corregido la distorsión y aumentado el tamaño
+//    de los logos en la portada y pie de página del PDF para un acabado más profesional.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form: document.getElementById('consultaForm'),
         spinner: document.getElementById('spinner'),
         resumenVentana: document.getElementById('resumenVentana'),
-        resultadosContainer: document.getElementById('resultadosContainer'), // [NUEVO]
+        resultadosContainer: document.getElementById('resultadosContainer'),
         exportBtns: document.getElementById('exportBtns'),
         btnWhatsapp: document.getElementById('btnWhatsapp'),
         btnExportarPDF: document.getElementById('btnExportarPDF'),
@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- 5. LÓGICA DE CONSULTAS A FIRESTORE (QueryManager) ---
-    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const QueryManager = {
         getUcrifNovedades: async (desde, hasta) => {
             const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo', 'control_casas_citas'];
@@ -123,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultado.inspecciones.push(...inspeccionesConFecha);
                 }
                 if (data.actuaciones) {
-                     const actuacionesConFecha = data.actuaciones.map(act => ({...act, fecha: data.fecha}));
+                     const actuacionesConFecha = data.actuaciones.map(act => (typeof act === 'string' ? { descripcion: act, fecha: data.fecha } : {...act, fecha: data.fecha}));
                      resultado.dispositivos.push(...actuacionesConFecha);
                 }
                 
@@ -275,7 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 6. LÓGICA DE RENDERIZADO HTML (UIRenderer) ---
-    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const UIRenderer = {
         renderizarResumenGlobalHTML(resumen, desde, hasta) {
             let html = `<div class="alert alert-light text-center my-4 p-3 border rounded-3">
@@ -592,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 7. LÓGICA DE EXPORTACIÓN (ExportManager) ---
-    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const ExportManager = {
         generarTextoWhatsapp(resumen, desde, hasta) {
             const f = UIRenderer.formatoFecha;
