@@ -1,12 +1,15 @@
 // =======================================================================================
 // SIREX · Consulta Global / Resúmenes v4.5
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con logos de mayor tamaño en el informe PDF.
+// Descripción: Versión con mejoras de diseño en la interfaz y animaciones.
 //
 // MEJORAS CLAVE (v4.5):
-// 1. **Logos en PDF más Grandes**: Se ha aumentado el tamaño de los logos en la
-//    portada y en el pie de página para mejorar su visibilidad y el aspecto
-//    general del informe.
+// 1. **Animación de Resultados**: El contenedor de resultados ahora aparece con
+//    una suave animación de fundido y deslizamiento.
+// 2. **Spinner Personalizado**: Se ha mejorado el indicador de carga para que sea
+//    más visual y acorde al diseño.
+// 3. **Mejoras de UI**: Pequeños retoques en botones y contenedores para una
+//    experiencia de usuario más pulida.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form: document.getElementById('consultaForm'),
         spinner: document.getElementById('spinner'),
         resumenVentana: document.getElementById('resumenVentana'),
+        resultadosContainer: document.getElementById('resultadosContainer'), // [NUEVO]
         exportBtns: document.getElementById('exportBtns'),
         btnWhatsapp: document.getElementById('btnWhatsapp'),
         btnExportarPDF: document.getElementById('btnExportarPDF'),
@@ -70,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- 5. LÓGICA DE CONSULTAS A FIRESTORE (QueryManager) ---
+    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const QueryManager = {
         getUcrifNovedades: async (desde, hasta) => {
             const collections = ['grupo2_registros', 'grupo3_registros', 'grupo4_operativo', 'control_casas_citas'];
@@ -270,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 6. LÓGICA DE RENDERIZADO HTML (UIRenderer) ---
+    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const UIRenderer = {
         renderizarResumenGlobalHTML(resumen, desde, hasta) {
             let html = `<div class="alert alert-light text-center my-4 p-3 border rounded-3">
@@ -586,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 7. LÓGICA DE EXPORTACIÓN (ExportManager) ---
+    // (Esta sección no ha cambiado, se mantiene la v4.4)
     const ExportManager = {
         generarTextoWhatsapp(resumen, desde, hasta) {
             const f = UIRenderer.formatoFecha;
@@ -731,7 +738,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         doc.setFont(fonts.body, "normal").setFontSize(8).setTextColor(...colors.secondary);
                         doc.text(`Página ${i} de ${pageCount}`, pageW / 2, pageH - 10, { align: 'center' });
                         try {
-                            // [MEJORA] Logos del pie de página más grandes
                             doc.addImage(bpefLogoURL, 'PNG', margin, pageH - 15, 12, 12);
                             doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 12, pageH - 15, 12, 12);
                         } catch (e) {
@@ -776,7 +782,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- PÁGINA 1: PORTADA ---
                 doc.setFillColor(...colors.primary).rect(0, 0, pageW, pageH, 'F');
                 try {
-                    // [MEJORA] Logos de portada más grandes
                     doc.addImage(bpefLogoURL, 'PNG', margin + 15, 35, 50, 50);
                     doc.addImage(ucrifLogoURL, 'PNG', pageW - margin - 65, 35, 50, 50);
                 } catch (e) {
@@ -971,7 +976,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         DOM.resumenVentana.innerHTML = '';
         DOM.spinner.classList.remove('d-none');
-        DOM.exportBtns.classList.add('d-none');
+        DOM.resultadosContainer.classList.add('d-none');
+        DOM.resultadosContainer.classList.remove('visible');
 
         const desde = DOM.fechaDesde.value;
         const hasta = DOM.fechaHasta.value;
@@ -979,6 +985,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!desde || !hasta || desde > hasta) {
             DOM.resumenVentana.innerHTML = `<div class="alert alert-danger">Por favor, selecciona un rango de fechas válido. La fecha "Desde" no puede ser posterior a "Hasta".</div>`;
             DOM.spinner.classList.add('d-none');
+            DOM.resultadosContainer.classList.remove('d-none');
+            setTimeout(() => DOM.resultadosContainer.classList.add('visible'), 10);
             return;
         }
         
@@ -1002,10 +1010,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             appState = { ultimoResumen: resumen, desde, hasta };
             DOM.resumenVentana.innerHTML = UIRenderer.renderizarResumenGlobalHTML(resumen, desde, hasta);
-            DOM.exportBtns.classList.remove('d-none');
+            DOM.resultadosContainer.classList.remove('d-none');
+            setTimeout(() => DOM.resultadosContainer.classList.add('visible'), 10);
+
         } catch (err) {
             console.error("Error al generar resumen:", err);
             DOM.resumenVentana.innerHTML = `<div class="alert alert-danger"><strong>Error al consultar los datos:</strong> ${err.message}. Revisa la consola para más detalles.</div>`;
+            DOM.resultadosContainer.classList.remove('d-none');
+            setTimeout(() => DOM.resultadosContainer.classList.add('visible'), 10);
         } finally {
             DOM.spinner.classList.add('d-none');
         }
