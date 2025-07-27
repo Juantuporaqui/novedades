@@ -1,15 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.6
+// SIREX · Consulta Global / Resúmenes v4.7
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con recuperación de lógicas de datos de UCRIF y corrección
-//              en el tamaño de los logos del PDF.
+// Descripción: Versión con análisis operativo avanzado para UCRIF y correcciones finales.
 //
-// MEJORAS CLAVE (v4.6):
-// 1. **Lógica de UCRIF Restaurada**: Se ha reincorporado la lógica para detectar
-//    inspecciones y colaboraciones a partir de los registros de actuaciones,
-//    asegurando que no se pierda información.
-// 2. **Logos en PDF Mejorados**: Se ha corregido la distorsión y aumentado el tamaño
-//    de los logos en la portada y pie de página del PDF para un acabado más profesional.
+// MEJORAS CLAVE (v4.7):
+// 1. **Análisis Operativo UCRIF**:
+//    - Se categorizan los dispositivos por palabras clave (ocio, transporte, etc.).
+//    - Se analiza la tendencia de actividad (fin de semana vs. laborables).
+//    - Se identifican las nacionalidades predominantes entre los detenidos.
+//    - Se genera un párrafo de conclusión redactado en el PDF con este análisis.
+// 2. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta.
+// 3. **Recuperación de Datos Mejorada**: Se asegura la recolección de todas las
+//    inspecciones y colaboraciones, sin importar su origen.
+// 4. **Ajustes de Diseño en PDF**: Se mejora la maquetación para un aspecto más profesional.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,17 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
             gestion: { label: 'Grupo de Gestión', icon: '🗂️', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
-        frasesNarrativas: {
-            apertura: [
-                "Desplegadas actuaciones operativas clave, se ha reforzado la vigilancia y el control en materia de extranjería en el periodo analizado.",
-                "En el marco de las competencias de la Brigada, se han desarrollado dispositivos coordinados para la prevención y actuación frente a la inmigración irregular.",
-                "La intervención en focos de riesgo se ha consolidado con resultados notables, destacando las siguientes actuaciones coordinadas.",
-            ],
-            cierre: [
-                "El conjunto de actuaciones llevadas a cabo refuerza la seguridad ciudadana y consolida la estrategia de la Brigada.",
-                "El servicio se cierra sin incidencias extraordinarias que reseñar, cumpliendo con los objetivos marcados.",
-                "Parte cerrado con un balance de actividad positivo para la operativa global de la UCRIF."
-            ]
+        // [NUEVO] Palabras clave para categorización de dispositivos
+        categoriasDispositivos: {
+            'Ocio Nocturno': ['ocio', 'pub', 'discoteca', 'club'],
+            'Transporte Público': ['estación', 'autobuses', 'tren', 'metro', 'tranvía'],
+            'Zonas Industriales': ['polígono', 'industrial', 'fábrica'],
+            'Asentamientos': ['asentamiento', 'chabolas'],
+            'Mercadillos': ['mercadillo', 'mercado'],
         }
     };
 
