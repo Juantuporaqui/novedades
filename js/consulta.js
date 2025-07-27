@@ -1,18 +1,19 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.7
+// SIREX · Consulta Global / Resúmenes v5.0 - Versión Estable
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con análisis operativo avanzado para UCRIF y correcciones finales.
+// Descripción: Versión definitiva que consolida todas las mejoras, corrige errores
+//              y añade análisis operativo avanzado para UCRIF.
 //
-// MEJORAS CLAVE (v4.7):
+// MEJORAS CLAVE (v5.0):
 // 1. **Análisis Operativo UCRIF**:
 //    - Se categorizan los dispositivos por palabras clave (ocio, transporte, etc.).
 //    - Se analiza la tendencia de actividad (fin de semana vs. laborables).
 //    - Se identifican las nacionalidades predominantes entre los detenidos.
 //    - Se genera un párrafo de conclusión redactado en el PDF con este análisis.
-// 2. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta.
-// 3. **Recuperación de Datos Mejorada**: Se asegura la recolección de todas las
-//    inspecciones y colaboraciones, sin importar su origen.
-// 4. **Ajustes de Diseño en PDF**: Se mejora la maquetación para un aspecto más profesional.
+// 2. **Lógica de CIE Definitiva**: La consulta de internos es totalmente robusta.
+// 3. **Recuperación de Datos Restaurada**: Se asegura la recolección de todas las
+//    inspecciones y colaboraciones.
+// 4. **PDF y Logos Mejorados**: Se corrige el tamaño y proporción de los logos en el PDF.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
             gestion: { label: 'Grupo de Gestión', icon: '🗂️', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
         },
-        // [NUEVO] Palabras clave para categorización de dispositivos
         categoriasDispositivos: {
             'Ocio Nocturno': ['ocio', 'pub', 'discoteca', 'club'],
             'Transporte Público': ['estación', 'autobuses', 'tren', 'metro', 'tranvía'],
