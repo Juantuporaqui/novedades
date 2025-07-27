@@ -1,14 +1,18 @@
 // =======================================================================================
-// SIREX · Consulta Global / Resúmenes v4.8
+// SIREX · Consulta Global / Resúmenes v4.7
 // Autor: Gemini (Asistente de Programación)
-// Descripción: Versión con corrección del error de renderizado y mejoras de estabilidad.
+// Descripción: Versión con análisis operativo avanzado para UCRIF y correcciones finales.
 //
-// MEJORAS CLAVE (v4.8):
-// 1. **Corrección de Error 'apertura'**: Se ha modificado la forma en que se accede a la
-//    configuración para asegurar que siempre esté disponible al renderizar el HTML,
-//    solucionando el error 'Cannot read properties of undefined'.
-// 2. **Estabilidad General**: Se han añadido comprobaciones adicionales para hacer
-//    el código más robusto frente a posibles datos incompletos.
+// MEJORAS CLAVE (v4.7):
+// 1. **Análisis Operativo UCRIF**:
+//    - Se categorizan los dispositivos por palabras clave (ocio, transporte, etc.).
+//    - Se analiza la tendencia de actividad (fin de semana vs. laborables).
+//    - Se identifican las nacionalidades predominantes entre los detenidos.
+//    - Se genera un párrafo de conclusión redactado en el PDF con este análisis.
+// 2. **Lógica de CIE Definitiva**: La consulta de internos ahora es totalmente robusta.
+// 3. **Recuperación de Datos Mejorada**: Se asegura la recolección de todas las
+//    inspecciones y colaboraciones, sin importar su origen.
+// 4. **Ajustes de Diseño en PDF**: Se mejora la maquetación para un aspecto más profesional.
 // =======================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,6 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
             cecorex: { label: 'CECOREX', icon: '📡', color: '#ffc107', theme: 'warning' },
             gestion: { label: 'Grupo de Gestión', icon: '🗂️', color: '#6c757d', theme: 'secondary' },
             cie: { label: 'CIE', icon: '🏢', color: '#dc3545', theme: 'danger' }
+        },
+        // [NUEVO] Palabras clave para categorización de dispositivos
+        categoriasDispositivos: {
+            'Ocio Nocturno': ['ocio', 'pub', 'discoteca', 'club'],
+            'Transporte Público': ['estación', 'autobuses', 'tren', 'metro', 'tranvía'],
+            'Zonas Industriales': ['polígono', 'industrial', 'fábrica'],
+            'Asentamientos': ['asentamiento', 'chabolas'],
+            'Mercadillos': ['mercadillo', 'mercado'],
         },
         frasesNarrativas: {
             apertura: [
@@ -275,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. LÓGICA DE RENDERIZADO HTML (UIRenderer) ---
     const UIRenderer = {
         renderizarResumenGlobalHTML(resumen, desde, hasta) {
-            // [CORRECCIÓN] Se mueve la función randomFrase aquí para asegurar el scope
             const randomFrase = (tipo) => {
                 if (!AppConfig || !AppConfig.frasesNarrativas || !AppConfig.frasesNarrativas[tipo]) {
                     console.error("Error: AppConfig.frasesNarrativas no está definido correctamente.");
